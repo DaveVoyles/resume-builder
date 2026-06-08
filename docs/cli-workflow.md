@@ -1,4 +1,4 @@
-# CLI workflow
+# 🧰 CLI workflow
 
 Try this:
 
@@ -7,32 +7,32 @@ npm install
 npm start
 ```
 
-Use the CLI-only workflow when you want a structured, local job-search workspace but plan to do the thinking and writing yourself.
+The project is designed for an agent-first workflow. Use the CLI-only workflow when you want a structured, local job-search workspace but plan to do the thinking and writing yourself.
 
 ---
 
-## What the CLI can do
+## ✅ What the CLI can do
 
 The CLI can:
 
-- Initialize a private candidate workspace.
-- Ingest resumes, notes, text files, and optional public GitHub metadata.
-- Store source-backed facts in `evidence.jsonl`.
-- Create seed roles and tracked application records.
-- Render a markdown application tracker.
-- Generate similar-role search briefs.
-- Score manually collected candidate roles against seed-role patterns.
-- Validate workspace files, tracker freshness, and privacy boundaries.
+- 🗂️ Initialize a private candidate workspace.
+- 📥 Ingest resumes, notes, text files, and optional public GitHub metadata.
+- 🧾 Store source-backed facts in `evidence.jsonl`.
+- 📌 Create seed roles and tracked application records.
+- 📊 Render a markdown application tracker.
+- 🧭 Generate similar-role search briefs.
+- ⚖️ Score manually collected candidate roles against seed-role patterns.
+- 🔒 Validate workspace files, tracker freshness, and privacy boundaries.
 
 The CLI does not currently:
 
-- Write finished DOCX resumes.
-- Automatically scrape job boards.
-- Automatically decide which jobs you should apply to.
-- Interview the candidate for missing details.
-- Rewrite resume bullets or application answers on its own.
+- 📄 Write finished DOCX resumes.
+- 🕸️ Automatically scrape job boards.
+- 🎯 Automatically decide which jobs you should apply to.
+- 🙋 Interview the candidate for missing details.
+- ✍️ Rewrite resume bullets or application answers on its own.
 
-## Common commands
+## 🧾 Common commands
 
 | Workflow | Command |
 | --- | --- |
@@ -46,7 +46,7 @@ The CLI does not currently:
 | Validate workspace files and tracker freshness | `npm run workspace:validate -- --workspace <dir>` |
 | Check privacy before sharing | `npm run check:privacy` |
 
-## CLI-only path
+## 🧭 CLI-only path
 
 ```bash
 npm run setup
@@ -59,22 +59,23 @@ npm run workspace:validate -- --workspace candidate
 
 Then manually review:
 
-- `candidate/profile.json`
-- `candidate/evidence.jsonl`
-- `candidate/roles.seed.json`
-- `candidate/outputs/tracker.md`
-- `candidate/outputs/similar-roles.md`
+- 👤 `candidate/profile.json`
+- 🧾 `candidate/evidence.jsonl`
+- 📌 `candidate/roles.seed.json`
+- 📊 `candidate/outputs/tracker.md`
+- 🧭 `candidate/outputs/similar-roles.md`
 
 This is structured and private, but it is more hands-on. You provide the judgment, rewrite the content, and decide which roles to pursue.
 
-## Similar-role review
+## 🔎 Similar-role review
 
 `find-similar` is a bounded discovery helper, not a job-board scraper. It derives search briefs from seed roles and preferences, scores optional manually researched candidate roles from a local JSON file, and writes `<workspace>/outputs/similar-roles.md` for review.
 
 Promote only candidate-approved roles with `add-role --tracked`, update application state in `roles.tracked.json`, then run `workspace:tracker` and `workspace:validate`.
 
-## Related pages
+## 📚 Related pages
 
 - [Getting started](getting-started.md)
+- [Agent workflow](agent-workflow.md)
 - [Candidate workspace](candidate-workspace.md)
 - [Workspace schemas](workspace-schemas.md)
