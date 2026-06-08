@@ -12,6 +12,9 @@
   },
   "homepage": "https://github.com/DaveVoyles/resume-builder#readme",
   "type": "commonjs",
+  "engines": {
+    "node": ">=16"
+  },
   "scripts": {
     "workspace": "node src/cli/index.js",
     "workspace:init": "node src/cli/index.js init",
