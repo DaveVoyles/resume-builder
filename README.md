@@ -44,6 +44,69 @@ You do not need the GitHub Copilot CLI or a Copilot subscription to run the work
 
 No OpenAI, Anthropic, or GitHub Copilot API key is required by the current code.
 
+## 🧑‍🏫 Start here if you are not technical
+
+If terminal commands are new to you, think of this repo as a guided filing system for a job search. You put your resume, notes, and role links into a private workspace. The tool organizes those inputs into structured files that an agent or human reviewer can use to tailor resumes and application materials.
+
+The simplest path is:
+
+1. 📦 Install Node.js, which includes `npm`.
+2. ⬇️ Download or clone this repo.
+3. 🧪 Run `npm install` and `npm run sample:quickstart` to try the fictional sample.
+4. 🗂️ Create your own private workspace with `npm run workspace:init -- --workspace candidate`.
+5. 📄 Add your resume, notes, and a few job links.
+6. 🤖 Ask an agent to review the workspace, ask you follow-up questions, and help tailor the materials.
+
+You do not need to understand every file in the repo before starting. Run the sample first, then use the agent-assisted workflow if you want help with the command line.
+
+## 🧳 Before you begin
+
+Gather the materials you already have. The better the source material, the better the resume strategy.
+
+- 📄 Your current resume, ideally as `.docx`, `.md`, or `.txt`.
+- 🧾 Any older resumes that include projects, roles, or accomplishments you might want to reuse.
+- 🔗 Your LinkedIn, portfolio, personal site, or GitHub profile.
+- 🧠 Notes about projects, metrics, launches, communities, teams, publications, or speaking work.
+- 🎯 Three job links that represent roles you believe are a good fit.
+- 🚫 Any constraints, such as locations, compensation expectations, industries to avoid, or claims you do not want to make.
+
+## 🎁 What you get at the end
+
+The current CLI creates the structured workspace that makes a targeted search easier to manage. With an agent, those files become the source material for tailored resume drafts and application answers.
+
+| Output | What it means |
+| --- | --- |
+| `profile.json` | A structured summary of the candidate's background. |
+| `evidence.jsonl` | A source-backed list of facts extracted from resumes, notes, and optional GitHub metadata. |
+| `roles.seed.json` | The first roles the candidate says are a good fit. |
+| `roles.tracked.json` | Roles the candidate has chosen to actively track. |
+| `outputs/tracker.md` | A readable job-search tracker generated from workspace data. |
+| `outputs/similar-roles.md` | Search briefs and scoring notes for similar roles. |
+| Agent notes or drafts | Optional resume strategy, application answers, follow-up questions, and claim warnings. |
+
+The planned DOCX resume generator is not part of the current modular CLI yet. Today, finished resumes should be drafted by the agent or candidate from the structured evidence and reviewed before use.
+
+## 🧯 What this tool does not do
+
+This project helps organize and validate a targeted resume workflow, but it does not replace your judgment.
+
+- It does not apply to jobs for you.
+- It does not guarantee interviews or job offers.
+- It does not invent experience, metrics, degrees, employers, or production usage.
+- It does not automatically scrape every job board.
+- It does not publish private candidate files unless you intentionally commit them.
+- It does not remove the need to review every resume and application answer before sending it.
+
+## 🧭 Choose your path
+
+| If you are... | Start with |
+| --- | --- |
+| New to command-line tools | Agent-assisted workflow and the sample workspace. |
+| Comfortable with terminal commands | CLI-only workflow, then ask an agent for strategy help. |
+| Helping a friend | A separate private workspace for that person. |
+| Publishing changes to this repo | Fictional sample data only. |
+| Unsure what to apply to | Seed three roles, then use similar-role review with an agent. |
+
 ## 🤖 With an agent vs. without an agent
 
 The **CLI is the product foundation**. It creates the workspace, stores evidence, renders trackers, and validates privacy boundaries. An AI agent is optional, but it makes the workflow much more useful because resume targeting requires judgment, follow-up questions, and writing support.
@@ -86,6 +149,14 @@ An agent can:
 - 🧑‍💼 Help the candidate decide what to emphasize for each role.
 
 Think of the CLI as the **filing system and validation layer**. Think of the agent as the **resume strategist and researcher** that uses those files safely.
+
+### 💬 Copy and paste this prompt into your agent
+
+Use this starter prompt after you clone the repo and install dependencies:
+
+```text
+Help me use this resume-builder repo for a targeted job search. Start by running the sample workflow so I understand the output. Then help me create a private candidate workspace, ingest my resume and notes, review three job links I provide, and ask clarifying questions about my work history, education, metrics, projects, and preferences. Do not invent claims. If a fact is missing or unsupported, add it to follow-up questions instead of putting it in a resume or application answer.
+```
 
 ## 🧭 What the workflow looks like
 
@@ -261,6 +332,20 @@ npm run check:privacy
 ```
 
 The privacy check fails if private workspace paths are staged or already tracked. Commit reusable code, docs, scripts, templates, schemas, and fictional examples instead.
+
+## 📚 Glossary
+
+| Term | Plain-English meaning |
+| --- | --- |
+| Agent | An AI assistant that can read files, ask questions, suggest edits, and sometimes run commands. |
+| CLI | A command-line tool you run from a terminal with commands like `npm run ...`. |
+| Workspace | A private folder for one candidate's resumes, notes, roles, outputs, and tracker files. |
+| Evidence | A source-backed fact from a resume, note, GitHub profile, or other candidate-provided material. |
+| Role tracker | A markdown table that tracks jobs, links, status, notes, and fit. |
+| Seed role | A job the candidate provides as an example of what they want. |
+| Similar role | A job that looks related to the seed roles and needs candidate review before tracking. |
+| ATS | Applicant tracking system, the software many companies use to collect and filter applications. |
+| Unsupported claim | A resume or application statement that does not have evidence in the workspace yet. |
 
 ## 🧪 Validation
 
