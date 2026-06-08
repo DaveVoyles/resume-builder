@@ -16,6 +16,8 @@
     "node": ">=16"
   },
   "scripts": {
+    "start": "npm run sample:quickstart",
+    "setup": "npm run workspace:init -- --workspace candidate",
     "workspace": "node src/cli/index.js",
     "workspace:init": "node src/cli/index.js init",
     "workspace:ingest": "node src/cli/index.js ingest",

@@ -1,6 +1,7 @@
 "use strict";
 
 const path = require("path");
+const fs = require("fs");
 const { createDefaultProfile } = require("../../core/candidate-profile");
 const { renderTracker } = require("../../renderers/markdown-tracker");
 const { renderSimilarRoles } = require("../../renderers/markdown-similar-roles");
@@ -54,6 +55,8 @@ function run(options) {
   const workspace = resolveWorkspace(options.workspace);
   const paths = workspacePaths(workspace);
   const force = Boolean(options.force);
+  const intakeTemplate = path.resolve(__dirname, "../../../templates/candidate-intake.md");
+  const intakeText = fs.readFileSync(intakeTemplate, "utf8");
 
   [paths.resumes, paths.notes, paths.outputResumes].forEach(ensureDir);
   writeTextIfMissing(path.join(paths.resumes, ".gitkeep"), "", force);
@@ -65,6 +68,7 @@ function run(options) {
   writeJsonIfMissing(paths.rolesTracked, [], force);
   writeJsonIfMissing(paths.claimPolicy, defaultClaimPolicy(), force);
   writeTextIfMissing(paths.evidence, "", force);
+  writeTextIfMissing(path.join(paths.notes, "intake.md"), intakeText, force);
   writeTextIfMissing(paths.tracker, renderTracker([]), force);
   writeTextIfMissing(paths.similarRoles, renderSimilarRoles({ searchBriefs: [], recommendations: [], duplicateCandidates: [] }), force);
   writeTextIfMissing(paths.gitignore, gitignoreText(), force);
