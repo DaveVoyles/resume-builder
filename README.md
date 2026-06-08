@@ -2,7 +2,13 @@
 
 Evidence-backed resume workspace tooling for targeted job searches.
 
-Try this:
+Try this with a terminal agent:
+
+```text
+Download https://github.com/DaveVoyles/resume-builder and help me get started. Run the sample workflow first, then help me create a private workspace for my resume, notes, and job links. Ask clarifying questions before making resume claims.
+```
+
+Try this locally:
 
 ```bash
 npm install
