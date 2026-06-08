@@ -2,6 +2,8 @@
 
 Evidence-backed resume workspace tooling for AI-assisted job searches.
 
+This project is designed to be used with a **terminal agent** such as GitHub Copilot CLI, Claude, ChatGPT, or another assistant that can work in your repo. You can run the local CLI without an agent, and it is still useful for organizing resumes, roles, evidence, and trackers. The real value comes from the agent interaction: it runs the workflow with you, asks clarifying questions, helps connect your experience to roles, and does most of the writing and research work from evidence-backed files.
+
 ## 🚀 Start here
 
 ### Recommended: ask a terminal agent
