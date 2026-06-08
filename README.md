@@ -46,14 +46,124 @@ No OpenAI, Anthropic, or GitHub Copilot API key is required by the current code.
 
 ## 🤖 With an agent vs. without an agent
 
-The local CLI is useful on its own. An AI agent adds judgment, writing help, and research support on top of the structured workflow.
+The **CLI is the product foundation**. It creates the workspace, stores evidence, renders trackers, and validates privacy boundaries. An AI agent is optional, but it makes the workflow much more useful because resume targeting requires judgment, follow-up questions, and writing support.
 
-| Mode | What it can do |
-| --- | --- |
-| **Without an agent** | Initialize a private workspace; ingest resumes, notes, text files, and optional public GitHub metadata; create seed or tracked role records; render the markdown application tracker; generate similar-role search briefs; score manually collected candidate roles; validate workspace files and privacy boundaries. |
-| **With an agent** | Interview the candidate for missing work history, education, metrics, and preferences; map evidence to job requirements; suggest stronger role positioning; identify unsupported or risky claims; draft resume strategy notes and application answers; research similar roles manually; decide which recommendations are worth tracking; maintain follow-up questions for the candidate. |
+### 🧰 Without an agent: local CLI workflow
 
-Think of the CLI as the filing system and validation layer. Think of the agent as the resume strategist and researcher that uses those files safely.
+Use this mode when you want a structured, local job-search workspace but plan to do the thinking and writing yourself.
+
+The CLI can:
+
+- 🗂️ Initialize a private candidate workspace.
+- 📥 Ingest resumes, notes, text files, and optional public GitHub metadata.
+- 🧾 Store source-backed facts in `evidence.jsonl`.
+- 📌 Create seed roles and tracked application records.
+- 📊 Render a markdown application tracker.
+- 🧭 Generate similar-role search briefs.
+- ⚖️ Score manually collected candidate roles against seed-role patterns.
+- 🔒 Validate workspace files, tracker freshness, and privacy boundaries.
+
+The CLI does **not** currently:
+
+- Write finished DOCX resumes.
+- Automatically scrape job boards.
+- Automatically decide which jobs you should apply to.
+- Interview the candidate for missing details.
+- Rewrite resume bullets or application answers on its own.
+
+### 🧠 With an agent: collaborative resume strategy workflow
+
+Use this mode when you want the tool to feel like a resume strategist plus researcher working from the structured CLI files.
+
+An agent can:
+
+- 🙋 Interview the candidate about missing work history, education, metrics, projects, and preferences.
+- 🔍 Map candidate evidence to job requirements.
+- ✍️ Draft resume strategy notes, application answers, and follow-up questions.
+- ⚠️ Identify unsupported, risky, inflated, or vague claims.
+- 🧭 Research similar roles manually and explain fit.
+- ✅ Recommend which roles should be promoted from review to tracked status.
+- 🧑‍💼 Help the candidate decide what to emphasize for each role.
+
+Think of the CLI as the **filing system and validation layer**. Think of the agent as the **resume strategist and researcher** that uses those files safely.
+
+## 🧭 What the workflow looks like
+
+### Path A: CLI-only
+
+```bash
+npm run workspace:init -- --workspace candidate
+npm run workspace:ingest -- --workspace candidate --resume ./my-resume.docx --notes ./notes.md
+npm run workspace:add-role -- --workspace candidate --url https://example.com/job
+npm run workspace:similar -- --workspace candidate
+npm run workspace:tracker -- --workspace candidate
+npm run workspace:validate -- --workspace candidate
+```
+
+Then you manually review:
+
+- 📄 `candidate/profile.json`
+- 🧾 `candidate/evidence.jsonl`
+- 📌 `candidate/roles.seed.json`
+- 📊 `candidate/outputs/tracker.md`
+- 🧭 `candidate/outputs/similar-roles.md`
+
+This is structured and private, but it is more hands-on. You provide the judgment, rewrite the content, and decide which roles to pursue.
+
+### Path B: agent-assisted
+
+1. 🧰 Run the same CLI commands to create and validate the workspace.
+2. 🤖 Ask an agent to review the workspace files and role links.
+3. 🙋 Let the agent ask clarifying questions about work history, education, projects, metrics, and preferences.
+4. ✍️ Have the agent draft role positioning, resume strategy notes, and application answers from evidence.
+5. ⚠️ Review the agent's unsupported-claim warnings and follow-up questions.
+6. 📌 Promote only candidate-approved roles to tracked status.
+7. ✅ Run `npm run workspace:validate -- --workspace candidate` before using outputs.
+
+This is the recommended experience if you have access to a capable coding agent.
+
+## 🧑‍🚀 Which agent should I use?
+
+You can use this project with any AI assistant that can read files and help you edit a workspace. The best experience comes from an agent that can work directly in the repository.
+
+### Recommended: GitHub Copilot CLI
+
+GitHub Copilot CLI is a good fit because it can operate in the terminal, read and edit local files, run validation commands, and use repository instructions.
+
+Helpful Copilot CLI commands include:
+
+- `/login` — sign in to GitHub Copilot.
+- `/agent` — browse and select available agents.
+- `/model` — choose the model to use.
+- `/plan` — plan a larger migration or resume workflow before editing.
+- `/review` — review code changes.
+- `/fleet` — use parallel subagents for larger work, such as research plus docs plus validation.
+
+You need GitHub Copilot access to use GitHub Copilot CLI. You do **not** need Copilot to run this repo's local CLI commands.
+
+### Other workable options
+
+You can also use:
+
+- ChatGPT, Claude, Gemini, or another assistant by copying relevant files and outputs into the chat.
+- A local model or local agent if it can read the workspace files.
+- A human-only workflow, using the CLI outputs as structured notes.
+
+### Copilot plans and cost
+
+GitHub's current Copilot plan documentation lists:
+
+- 🆓 **Copilot Free** — limited access for individual developers.
+- 🎓 **Copilot Student** — free for verified students.
+- 💼 **Copilot Pro** — listed at **$10 USD/month**.
+- ⚡ **Copilot Pro+** — listed at **$39 USD/month**.
+- 🚀 **Copilot Max** — listed at **$100 USD/month**.
+- 🏢 **Copilot Business** — listed at **$19 USD per granted seat/month**.
+- 🏛️ **Copilot Enterprise** — listed at **$39 USD per granted seat/month**.
+
+See GitHub's current plan page before choosing a plan because availability and pricing can change: `https://docs.github.com/en/copilot/get-started/plans`.
+
+> ℹ️ GitHub's plan documentation may include temporary sign-up restrictions or plan availability notes. Check the official page for the latest details.
 
 ## 🗂️ Repository layout
 
