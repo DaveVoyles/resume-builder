@@ -38,8 +38,6 @@ You do not need the GitHub Copilot CLI or a Copilot subscription to run the work
 | --- | --- | --- |
 | Node.js 16+ and npm | Running all `npm run ...` commands | Node 18+ is recommended. |
 | Git | Cloning the repo and running privacy checks | `npm run check:privacy` uses Git to detect staged or tracked private files. |
-| `unzip` | Ingesting `.docx` resumes | macOS and most Linux systems include it. Windows users can use WSL, Git Bash, or another `unzip` provider. |
-| Internet access | Optional GitHub metadata ingestion | Only needed when using `--github <user>`. |
 | AI assistant or Copilot CLI | Optional collaboration layer | Helpful for interviewing the candidate, tailoring strategy, and finding roles. Not required by the CLI itself. |
 
 No OpenAI, Anthropic, or GitHub Copilot API key is required by the current code.
