@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "1.0",
+  "roleTargets": [
+    {
+      "titles": [
+        "Developer platform product manager",
+        "AI tools program lead"
+      ],
+      "seniority": "senior",
+      "employmentTypes": ["full-time"],
+      "keywords": ["AI workflows", "developer experience", "platform strategy"],
+      "priority": "must"
+    }
+  ],
+  "locations": {
+    "workModes": ["remote", "hybrid"],
+    "preferredRegions": ["US East Coast"],
+    "excludedRegions": [],
+    "priority": "should"
+  },
+  "industries": [
+    {
+      "name": "Developer tools",
+      "priority": "must"
+    },
+    {
+      "name": "Ad tech",
+      "priority": "avoid"
+    }
+  ],
+  "technologies": [
+    {
+      "name": "AI-assisted development",
+      "priority": "must"
+    }
+  ],
+  "compensation": {
+    "currency": "USD",
+    "baseMinimum": 160000,
+    "totalTarget": 220000,
+    "publiclyShare": false
+  },
+  "travel": "limited",
+  "dealBreakers": [
+    {
+      "id": "deal-001",
+      "text": "Requires relocation outside the United States.",
+      "priority": "must"
+    }
+  ],
+  "resumeStyle": {
+    "tone": "direct",
+    "length": "one-page",
+    "emphasis": ["developer platforms", "launch leadership", "evidence-backed claims"]
+  },
+  "notes": "Fictional preferences for validating the reusable sample workflow.",
+  "updatedAt": "2026-06-08"
+}

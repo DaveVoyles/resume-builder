@@ -1,0 +1,48 @@
+[
+  {
+    "id": "role-tracked-001",
+    "sourceSeedId": "role-seed-001",
+    "company": "Northwind Tools",
+    "title": "Senior product manager, AI developer workflows",
+    "status": "interested",
+    "urls": {
+      "job": "https://jobs.example.invalid/northwind/ai-developer-workflows",
+      "apply": "https://apply.example.invalid/northwind/ai-developer-workflows"
+    },
+    "posting": {
+      "location": "Remote, United States",
+      "workMode": "remote",
+      "compensation": {
+        "currency": "USD",
+        "minimum": 170000,
+        "maximum": 220000
+      }
+    },
+    "fit": {
+      "level": "strong",
+      "rationale": "The role emphasizes developer experience, platform strategy, and AI workflow adoption.",
+      "matchedEvidenceIds": ["ev-001", "ev-002"],
+      "gaps": ["Needs candidate confirmation before using public demo details."]
+    },
+    "resume": {
+      "status": "review-needed",
+      "outputPath": "outputs/resumes/alex-rivera-northwind-ai-workflows.docx",
+      "emphasis": ["developer platforms", "launch leadership", "AI workflow demos"]
+    },
+    "evidenceMap": [
+      {
+        "requirement": "Developer platform product experience",
+        "evidenceIds": ["ev-001"],
+        "coverage": "strong"
+      }
+    ],
+    "nextAction": {
+      "type": "candidate-review",
+      "owner": "candidate",
+      "dueDate": "2026-06-12"
+    },
+    "notes": ["Use evidence-backed claims only; do not generate or commit DOCX files for this sample."],
+    "followUpQuestions": ["Can the sample candidate discuss the workflow demo publicly?"],
+    "updatedAt": "2026-06-08"
+  }
+]

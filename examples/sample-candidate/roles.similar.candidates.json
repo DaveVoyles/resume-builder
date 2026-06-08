@@ -1,0 +1,38 @@
+[
+  {
+    "company": "Northstar Tools",
+    "title": "Senior product manager, AI developer workflows",
+    "location": "Remote, United States",
+    "seniority": "senior",
+    "employmentType": "full-time",
+    "workMode": "remote",
+    "urls": {
+      "job": "https://jobs.example.invalid/northstar/ai-dev-workflows"
+    },
+    "description": "Owns AI-assisted developer workflow strategy, platform adoption, and launch readiness.",
+    "keywords": ["AI workflows", "developer experience", "platform strategy"],
+    "compensation": {
+      "currency": "USD",
+      "minimum": 175000,
+      "maximum": 225000
+    }
+  },
+  {
+    "company": "Fabrikam AI",
+    "title": "Developer platform program lead",
+    "location": "Hybrid, Boston",
+    "seniority": "staff",
+    "employmentType": "full-time",
+    "workMode": "hybrid",
+    "urls": {
+      "job": "https://jobs.example.invalid/fabrikam/platform-program-lead"
+    },
+    "description": "Coordinates developer platform roadmap, launch operations, and partner adoption for AI tooling.",
+    "keywords": ["developer platforms", "launch", "AI tooling"],
+    "compensation": {
+      "currency": "USD",
+      "minimum": 165000,
+      "maximum": 210000
+    }
+  }
+]

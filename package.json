@@ -1,0 +1,32 @@
+{
+  "name": "resume-builder",
+  "version": "1.0.0",
+  "description": "Evidence-backed resume workspace tooling for targeted job searches.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DaveVoyles/resume-builder.git"
+  },
+  "bugs": {
+    "url": "https://github.com/DaveVoyles/resume-builder/issues"
+  },
+  "homepage": "https://github.com/DaveVoyles/resume-builder#readme",
+  "type": "commonjs",
+  "scripts": {
+    "workspace": "node src/cli/index.js",
+    "workspace:init": "node src/cli/index.js init",
+    "workspace:ingest": "node src/cli/index.js ingest",
+    "workspace:add-role": "node src/cli/index.js add-role",
+    "workspace:similar": "node src/cli/index.js find-similar",
+    "workspace:tracker": "node src/cli/index.js build-tracker",
+    "workspace:validate": "node src/cli/index.js validate",
+    "sample:quickstart": "npm run workspace:tracker -- --workspace examples/sample-candidate && npm run workspace:similar -- --workspace examples/sample-candidate --candidates examples/sample-candidate/roles.similar.candidates.json && npm run workspace:validate -- --workspace examples/sample-candidate",
+    "check:privacy": "node scripts/check-privacy.js",
+    "check:workspace": "node scripts/check-workspace.js --workspace examples/sample-candidate",
+    "check": "npm run check:workspace && npm run check:privacy",
+    "validate": "npm run sample:quickstart && npm run check:privacy"
+  },
+  "dependencies": {
+    "docx": "^9.7.1"
+  }
+}

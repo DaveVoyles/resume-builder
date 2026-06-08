@@ -1,0 +1,24 @@
+.DS_Store
+node_modules/
+npm-debug.log*
+*.log
+tmp/
+temp/
+*.tmp
+__MACOSX/
+*.unpacked/
+unpacked/
+validation-output/
+
+# Candidate workspace private data
+candidate/inputs/
+candidate/profile.json
+candidate/preferences.json
+candidate/evidence.jsonl
+candidate/roles.seed.json
+candidate/roles.tracked.json
+candidate/claim-policy.json
+candidate/outputs/
+
+# Modular workflow generated outputs
+outputs/

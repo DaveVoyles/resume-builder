@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "1.0",
+  "candidate": {
+    "id": "sample-candidate",
+    "preferredName": "Alex Rivera",
+    "name": "Alex Rivera",
+    "headline": "Developer platform product leader",
+    "location": "Raleigh, NC",
+    "email": "alex.rivera@example.invalid",
+    "links": [
+      "https://portfolio.example.invalid/alex-rivera",
+      "https://github.example.invalid/alex-rivera"
+    ]
+  },
+  "summary": "Fictional product and program leader focused on developer platforms, AI-assisted workflows, and launch readiness.",
+  "skills": [
+    "AI workflows",
+    "developer experience",
+    "platform strategy",
+    "launch readiness"
+  ],
+  "experience": [
+    {
+      "id": "exp-001",
+      "organization": "Contoso Labs",
+      "title": "Senior platform program manager",
+      "startDate": "2022-04",
+      "endDate": null,
+      "location": "Remote",
+      "highlights": [
+        {
+          "text": "Led launch coordination for an internal developer platform used by multiple product teams.",
+          "evidenceIds": ["ev-001"]
+        }
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "id": "proj-001",
+      "name": "Northwind Workflow Studio",
+      "summary": "Fictional demo project for documenting AI-assisted developer workflow experiments.",
+      "evidenceIds": ["ev-002"]
+    }
+  ],
+  "education": [],
+  "sources": [
+    {
+      "id": "src-001",
+      "kind": "resume",
+      "path": "inputs/resumes/alex-platform-summary.md"
+    },
+    {
+      "id": "src-002",
+      "kind": "notes",
+      "path": "inputs/notes/project-notes.md"
+    }
+  ],
+  "updatedAt": "2026-06-08"
+}

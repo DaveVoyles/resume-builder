@@ -1,0 +1,46 @@
+{
+  "schemaVersion": "1.0",
+  "defaultMinimumConfidence": "medium",
+  "style": {
+    "voice": "direct",
+    "metricWording": "use-exact-only-when-evidenced",
+    "avoidFirstPerson": true
+  },
+  "rules": [
+    {
+      "id": "policy-001",
+      "action": "block",
+      "appliesTo": {
+        "category": "metric"
+      },
+      "reason": "Do not invent metrics for the sample candidate."
+    },
+    {
+      "id": "policy-002",
+      "action": "needs-review",
+      "appliesTo": {
+        "confidence": "low"
+      },
+      "reason": "Low-confidence claims need candidate confirmation before use."
+    }
+  ],
+  "reviewRequiredFor": ["low-confidence", "metrics", "public-use"],
+  "blockedPhrases": [
+    {
+      "pattern": "managed a multimillion-dollar budget",
+      "reason": "The fictional fixture does not include budget evidence."
+    }
+  ],
+  "approvedPhrases": [
+    {
+      "text": "coordinated launch readiness across engineering, product, and customer-facing teams",
+      "evidenceIds": ["ev-001"]
+    }
+  ],
+  "metricPolicy": {
+    "allowApproximateMetrics": false,
+    "allowRanges": true,
+    "requiresEvidenceCategory": "metric"
+  },
+  "updatedAt": "2026-06-08"
+}

@@ -1,0 +1,23 @@
+[
+  {
+    "id": "role-seed-001",
+    "company": "Fabrikam AI",
+    "title": "Developer platform product manager",
+    "status": "seeded",
+    "urls": {
+      "job": "https://jobs.example.invalid/fabrikam/developer-platform-product-manager",
+      "apply": ""
+    },
+    "source": "candidate",
+    "location": "Remote, United States",
+    "seniority": "senior",
+    "employmentType": "full-time",
+    "workMode": "remote",
+    "rationale": "Matches the sample candidate's developer platform and AI workflow interests.",
+    "keywords": ["developer experience", "AI workflows", "platform strategy"],
+    "evidenceNeeded": ["Confirm which workflow experiments are safe to mention publicly."],
+    "notes": ["Fictional seed role for testing search brief generation."],
+    "followUpQuestions": ["Which platform launch example should the sample resume emphasize?"],
+    "createdAt": "2026-06-08"
+  }
+]
