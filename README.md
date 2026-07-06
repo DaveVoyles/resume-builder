@@ -1,5 +1,6 @@
 # 📄 Resume builder
 
+[![Validate](https://github.com/DaveVoyles/resume-builder/actions/workflows/validate.yml/badge.svg)](https://github.com/DaveVoyles/resume-builder/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Node.js 16+](https://img.shields.io/badge/node-%3E%3D16-339933?logo=node.js&logoColor=white)
 ![No API key required](https://img.shields.io/badge/API%20key-not%20required-brightgreen)
