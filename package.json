@@ -24,6 +24,7 @@
     "workspace:add-role": "node src/cli/index.js add-role",
     "workspace:similar": "node src/cli/index.js find-similar",
     "workspace:tracker": "node src/cli/index.js build-tracker",
+    "workspace:tracker:html": "node src/cli/index.js build-tracker --format html",
     "workspace:validate": "node src/cli/index.js validate",
     "sample:quickstart": "npm run workspace:tracker -- --workspace examples/sample-candidate && npm run workspace:similar -- --workspace examples/sample-candidate --candidates examples/sample-candidate/roles.similar.candidates.json && npm run workspace:validate -- --workspace examples/sample-candidate",
     "check:privacy": "node scripts/check-privacy.js",

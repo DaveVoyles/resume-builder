@@ -16,6 +16,7 @@ function workspacePaths(workspace) {
     outputs: path.join(workspace, "outputs"),
     outputResumes: path.join(workspace, "outputs", "resumes"),
     tracker: path.join(workspace, "outputs", "tracker.md"),
+    htmlTracker: path.join(workspace, "outputs", "tracker.html"),
     similarRoles: path.join(workspace, "outputs", "similar-roles.md"),
     profile: path.join(workspace, "profile.json"),
     preferences: path.join(workspace, "preferences.json"),

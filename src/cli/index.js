@@ -24,7 +24,7 @@ function help() {
     "  ingest --workspace <dir> [--resume <file> ...] [--notes <file> ...] [--input <file> ...] [--github <user>]",
     "  add-role --workspace <dir> (--url <url> | --title <title> --company <company>) [--tracked]",
     "  find-similar --workspace <dir> [--candidates <file>] [--max <count>]",
-    "  build-tracker --workspace <dir>",
+    "  build-tracker --workspace <dir> [--format md|html] [--output <file>] [--title <text>]",
     "  validate --workspace <dir>",
     "",
     "Common options:",
