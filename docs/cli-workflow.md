@@ -43,6 +43,7 @@ The CLI does not currently:
 | Add a seed or tracked role | `npm run workspace:add-role -- --workspace <dir> --url <url>` or add `--tracked` |
 | Build similar-role review output | `npm run workspace:similar -- --workspace <dir> [--candidates <file>]` |
 | Render the application tracker | `npm run workspace:tracker -- --workspace <dir>` |
+| Render an interactive HTML tracker (searchable/filterable, stat cards) | `npm run workspace:tracker -- --workspace <dir> --format html` |
 | Validate workspace files and tracker freshness | `npm run workspace:validate -- --workspace <dir>` |
 | Check privacy before sharing | `npm run check:privacy` |
 
@@ -63,6 +64,7 @@ Then manually review:
 - 🧾 `candidate/evidence.jsonl`
 - 📌 `candidate/roles.seed.json`
 - 📊 `candidate/outputs/tracker.md`
+- 🖥️ `candidate/outputs/tracker.html` (optional, generate with `--format html`)
 - 🧭 `candidate/outputs/similar-roles.md`
 
 This is structured and private, but it is more hands-on. You provide the judgment, rewrite the content, and decide which roles to pursue.

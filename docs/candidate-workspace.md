@@ -30,11 +30,12 @@ candidate/
   outputs/
     resumes/
     tracker.md
+    tracker.html (optional)
     similar-roles.md
     follow-up-questions.md
 ```
 
-The v1 CLI creates the core JSON files, `inputs/`, `outputs/`, `outputs/tracker.md`, and `outputs/similar-roles.md`. The `outputs/follow-up-questions.md` file is an optional handoff file for unresolved candidate questions.
+The v1 CLI creates the core JSON files, `inputs/`, `outputs/`, `outputs/tracker.md`, and `outputs/similar-roles.md`. The `outputs/follow-up-questions.md` file is an optional handoff file for unresolved candidate questions. `outputs/tracker.html` is an optional interactive companion to `tracker.md`, generated on demand with `build-tracker --format html`.
 
 ## What each area stores
 
@@ -51,6 +52,7 @@ The v1 CLI creates the core JSON files, `inputs/`, `outputs/`, `outputs/tracker.
 | `candidate/claim-policy.json` | Candidate-specific wording rules and claims to avoid. | No |
 | `candidate/outputs/resumes/` | Planned tailored DOCX resumes. | No |
 | `candidate/outputs/tracker.md` | Generated application tracker. | No |
+| `candidate/outputs/tracker.html` | Optional interactive HTML tracker (searchable/filterable, stat cards). | No |
 | `candidate/outputs/similar-roles.md` | Recommended similar roles for review. | No |
 | `candidate/outputs/follow-up-questions.md` | Questions the candidate needs to answer. | No |
 

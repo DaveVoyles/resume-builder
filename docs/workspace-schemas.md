@@ -416,6 +416,14 @@ npm run workspace:tracker -- --workspace <workspace>
 npm run workspace:validate -- --workspace <workspace>
 ```
 
+An optional interactive HTML tracker (`outputs/tracker.html`) can be generated alongside the markdown tracker for a searchable, filterable view with summary stat cards. It reads from the same `roles.tracked.json` data and is safe to regenerate at any time; `validate` does not require it to exist.
+
+```bash
+npm run workspace:tracker -- --workspace <workspace> --format html
+```
+
+Pass `--title <text>` to override the page title, or `--output <file>` to change the destination path. By default the title uses `profile.json`'s `candidate.preferredName` (falling back to `candidate.name`) so the page is branded per-candidate without editing renderer code.
+
 The tracker renderer reads the structured v1 fields first:
 
 - `posting.location`

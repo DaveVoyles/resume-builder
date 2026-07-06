@@ -36,7 +36,7 @@ npm start
 
 - A private candidate workspace.
 - An evidence ledger that ties resume claims back to source material.
-- A markdown application tracker.
+- A markdown application tracker (and an optional interactive HTML tracker).
 - Similar-role search briefs and scoring notes.
 - Follow-up questions and strategy notes when you use an agent.
 
