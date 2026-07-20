@@ -159,4 +159,25 @@ secret rotations, or external sends anywhere in this plan.
 
 ## Execution Tracking
 
-Not yet exported — to be filled in by `plan-to-issues` once this plan is approved.
+Exported 2026-07-20 via `plan-to-issues` (second Lavish preview waived — 1:1 with the approved
+deliverable table, no new slicing decisions).
+
+- **Issues (the frontier):** https://github.com/DaveVoyles/resume-builder/issues?q=is%3Aissue+state%3Aopen+label%3Aplan%3A0004
+  — Feature 1 (cover letters): D1 is [#43](https://github.com/DaveVoyles/resume-builder/issues/43)
+  (unblocked), D2 is [#46](https://github.com/DaveVoyles/resume-builder/issues/46) (blocked by D1),
+  D3 is [#49](https://github.com/DaveVoyles/resume-builder/issues/49) (blocked by D2), D4 is
+  [#52](https://github.com/DaveVoyles/resume-builder/issues/52) (blocked by D3). Feature 2 (ATS
+  scoring): D5 is [#44](https://github.com/DaveVoyles/resume-builder/issues/44) (unblocked), D6 is
+  [#47](https://github.com/DaveVoyles/resume-builder/issues/47) (blocked by D5), D7 is
+  [#50](https://github.com/DaveVoyles/resume-builder/issues/50) (blocked by D5, D6), D8 is
+  [#53](https://github.com/DaveVoyles/resume-builder/issues/53) (blocked by D7). Feature 3
+  (networking): D9 is [#45](https://github.com/DaveVoyles/resume-builder/issues/45) (unblocked),
+  D10 is [#48](https://github.com/DaveVoyles/resume-builder/issues/48) (blocked by D9), D11 is
+  [#51](https://github.com/DaveVoyles/resume-builder/issues/51) (blocked by D9, D10), D12 is
+  [#54](https://github.com/DaveVoyles/resume-builder/issues/54) (blocked by D11), D13 is
+  [#55](https://github.com/DaveVoyles/resume-builder/issues/55) (blocked by D12). Native GitHub
+  issue-dependency relationships (`blocked_by`) mirror the Dependencies column exactly.
+- **Board:** Agent Work (Projects v2) — https://github.com/users/DaveVoyles/projects/2 — all 13
+  slices seeded to Todo.
+- The frontier rule is: open + `plan:0004` + no open blockers + unassigned — so only D1 (#43), D5
+  (#44), and D9 (#45) are actually claimable until they close.
