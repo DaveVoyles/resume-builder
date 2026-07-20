@@ -229,6 +229,33 @@ test("set-status: preserves the original appliedAt across later status transitio
   }
 });
 
+test("set-status: a repeat call to 'applied' (no --date) must not reset an already-set appliedAt", async () => {
+  const tmpDir = createFixtureWorkspace();
+  try {
+    await run({
+      workspace: tmpDir,
+      company: "Acme Corp",
+      title: "Senior Engineer",
+      status: "applied",
+      date: "2026-06-15",
+    });
+
+    // Idempotent retry / accidental re-run of the same "applied" call, no
+    // --date — must not silently reset appliedAt to today.
+    await run({
+      workspace: tmpDir,
+      company: "Acme Corp",
+      title: "Senior Engineer",
+      status: "applied",
+    });
+
+    const afterRoles = readJson(workspacePaths(tmpDir).rolesTracked);
+    assert.strictEqual(afterRoles[0].application.appliedAt, "2026-06-15", "Repeat 'applied' call must not reset the original date");
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
 test("set-status: an explicit --date on a later transition still overrides appliedAt", async () => {
   const tmpDir = createFixtureWorkspace();
   try {
@@ -311,9 +338,16 @@ test("set-status: rebuilds HTML tracker after status change", async () => {
 });
 
 test("set-status: supports all enum statuses and each renders visibly (not silently dropped)", async () => {
-  const statuses = ["interested", "applied", "interview", "offer", "rejected", "withdrawn"];
+  const statusBuckets = {
+    interested: "not-applied",
+    applied: "applied",
+    interview: "interview",
+    offer: "offer",
+    rejected: "rejected",
+    withdrawn: "withdrawn",
+  };
 
-  for (const status of statuses) {
+  for (const [status, expectedBucket] of Object.entries(statusBuckets)) {
     const workspace = createFixtureWorkspace();
     try {
       await run({
@@ -329,6 +363,17 @@ test("set-status: supports all enum statuses and each renders visibly (not silen
       const tracker = fs.readFileSync(workspacePaths(workspace).tracker, "utf8");
       const label = status.charAt(0).toUpperCase() + status.slice(1);
       assert.ok(tracker.includes(label), `Tracker should visibly show "${label}" for status ${status}`);
+
+      // Each status must land in its own distinct badge bucket in the HTML
+      // tracker, not lumped into the generic "other" bucket alongside any
+      // unrecognized/garbage status — the entire point of a deterministic
+      // status enum is that it's visibly distinguishable.
+      const htmlTracker = fs.readFileSync(workspacePaths(workspace).htmlTracker, "utf8");
+      assert.match(
+        htmlTracker,
+        new RegExp(`"statusBucket":\\s*"${expectedBucket}"`),
+        `HTML tracker should bucket status "${status}" as "${expectedBucket}", not "other"`,
+      );
     } finally {
       cleanupWorkspace(workspace);
     }

@@ -4,7 +4,10 @@ const { formatNextAction, normalizeRole } = require("../core/role-view");
 
 const STATUS_LABELS = {
   applied: "Applied",
+  interview: "Interview",
+  offer: "Offer",
   rejected: "Rejected",
+  withdrawn: "Withdrawn",
   "not-applied": "Not applied",
   other: "Other",
 };
@@ -108,7 +111,10 @@ function renderHtmlTracker(roles, options = {}) {
   tr:last-child td { border-bottom: none; }
   .badge { display: inline-block; padding: 0.15rem 0.6rem; border-radius: 999px; font-size: 0.7rem; font-weight: 600; }
   .badge-applied { background: #dcfce7; color: #166534; }
+  .badge-interview { background: #dbeafe; color: #1e40af; }
+  .badge-offer { background: #ede9fe; color: #5b21b6; }
   .badge-rejected { background: #fee2e2; color: #991b1b; }
+  .badge-withdrawn { background: #f1f5f9; color: #475569; }
   .badge-not-applied { background: #fef3c7; color: #92400e; }
   .badge-other { background: #e2e8f0; color: #334155; }
   .empty-state { padding: 2rem; text-align: center; color: #64748b; }
@@ -132,7 +138,10 @@ function renderHtmlTracker(roles, options = {}) {
     <button data-filter="all" class="active">All</button>
     <button data-filter="not-applied">Not applied</button>
     <button data-filter="applied">Applied</button>
+    <button data-filter="interview">Interview</button>
+    <button data-filter="offer">Offer</button>
     <button data-filter="rejected">Rejected</button>
+    <button data-filter="withdrawn">Withdrawn</button>
   </div>
 
   <table id="rolesTable">
