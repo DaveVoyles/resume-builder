@@ -1,77 +1,56 @@
 # Handoff
 
-## Design plan 0004 — grilled, approved, exported to issues + board
-
-Dave asked for further resume-builder improvements; ran a `/grilling` session to scope three
-job-search-workflow gaps, in build order: **cover letter generation → ATS keyword-match scoring →
-networking/referral tracking**. Full decisions, a 13-deliverable table (all XS/S/M, build-ready),
-testing decisions, and out-of-scope items are in
-[`docs/design/0004-cover-letters-ats-scoring-networking.md`](docs/design/0004-cover-letters-ats-scoring-networking.md)
-(merged via [PR #42](https://github.com/DaveVoyles/resume-builder/pull/42)). Also added `contact`,
-`keyword coverage`, and `nextAction` to `CONTEXT.md` (first entries in this file).
-
-Exported via `plan-to-issues`: issues [#43-#55](https://github.com/DaveVoyles/resume-builder/issues?q=is%3Aissue+state%3Aopen+label%3Aplan%3A0004)
-created (label `plan:0004`), native GitHub `blocked_by` dependencies wired to mirror the plan's
-Dependencies column, all 13 seeded to the Agent Work board (Projects v2, https://github.com/users/DaveVoyles/projects/2)
-Todo column. The plan doc's Execution Tracking section (issue map + board link) is in
-[PR #56](https://github.com/DaveVoyles/resume-builder/pull/56) — **awaiting Dave's manual merge**
-(same known gap: this repo still has no `scripts/review-lens-receipt.sh`, so PR merges keep
-requiring Dave by hand rather than the autonomous `land-pr.sh` path).
-
-The paste-ready hand-off statement for a fresh orchestrator session was delivered in-chat — it
-names the frontier rule (open + `plan:0004` + no open blockers + unassigned → currently D1 #43,
-D5 #44, D9 #45), the single-orchestrator rule, and Haiku as the sub-agent default per Dave's ask
-for this session.
-
-## Next steps
-
-1. Dave merges [PR #56](https://github.com/DaveVoyles/resume-builder/pull/56) (Execution Tracking).
-2. A fresh `orchestrate` session (spun up via the hand-off statement already given) works the
-   frontier: D1 → D2 → D3 → D4 (cover letters), D5 → D6 → D7 → D8 (ATS scoring), D9 → D10 → D11 →
-   D12 → D13 (networking) — one worktree per issue, `implement` skill per slice, Haiku sub-agents
-   by default.
-3. This session's own worktree (`.claude/worktrees/resume-builder-improvements-9dd600`) is still on
-   disk with two branches now merged/pending (`claude/resume-builder-improvements-9dd600` merged;
-   `docs/plan-0004-execution-tracking` pending PR #56). Prune both via
-   `scripts/git-prune-merged-branch.sh` once PR #56 merges and this session ends.
-## Design plan 0004 exported; landing-floor gap fixed at the source
+## Design plan 0004 — landing floor fixed, orchestrator running the frontier
 
 Plan 0004 (cover letters, ATS keyword scoring, networking/referral tracking — full details in
 [`docs/design/0004-cover-letters-ats-scoring-networking.md`](docs/design/0004-cover-letters-ats-scoring-networking.md))
-merged via [PR #42](https://github.com/DaveVoyles/resume-builder/pull/42), exported to issues
-[#43-#55](https://github.com/DaveVoyles/resume-builder/issues?q=is%3Aissue+state%3Aopen+label%3Aplan%3A0004)
-(label `plan:0004`, native `blocked_by` dependencies, seeded to the Agent Work board), Execution
-Tracking recorded via [PR #56](https://github.com/DaveVoyles/resume-builder/pull/56) (**awaiting
-Dave's manual merge**). An orchestrator session is already running the frontier in the background
-(spawned via the paste-ready hand-off statement) — Haiku sub-agents implementing D1/D5/D9 and
-onward.
+is fully merged and exported: [PR #42](https://github.com/DaveVoyles/resume-builder/pull/42) (plan
+doc), [PR #56](https://github.com/DaveVoyles/resume-builder/pull/56) (Execution Tracking, issues
+[#43-#55](https://github.com/DaveVoyles/resume-builder/issues?q=is%3Aissue+state%3Aopen+label%3Aplan%3A0004),
+label `plan:0004`, seeded to the [Agent Work board](https://github.com/users/DaveVoyles/projects/2)).
 
-**Recurring gap fixed at the source:** this repo's `HANDOFF.md` has noted "no
-`scripts/review-lens-receipt.sh`, so PR merges keep requiring Dave by hand" across every plan
-0001-0004 close-out. Dave asked why that script can't just be global; the answer (Chat-Agents
-[ADR 0030](https://github.com/DaveVoyles/Chat-Agents/blob/main/docs/decisions/0030-landing-floor-scripts-symlinked-per-repo-opt-in.md))
-is a new `scripts/enable-landing-floor.sh` in Chat-Agents that symlinks the whole
-`land-pr.sh`/`gatekeeper.sh`/`review-lens-*.sh`/`board-seed.sh` bundle into any target repo as an
-explicit per-repo opt-in — run against this repo in
-[PR #60](https://github.com/DaveVoyles/resume-builder/pull/60). **Once that PR merges, this repo
-finally has the autonomous landing floor** — subsequent PRs (including the plan-0004
-orchestrator's own PRs) can go through `land-pr.sh` instead of needing Dave's manual merge, once
-a `review-lenses` receipt is posted.
+**Landing-floor gap fixed at the source:** this repo's `HANDOFF.md` had noted "no
+`scripts/review-lens-receipt.sh`, so PR merges keep requiring Dave by hand" across plans
+0001-0004. Fixed via Chat-Agents [ADR 0030](https://github.com/DaveVoyles/Chat-Agents/blob/main/docs/decisions/0030-landing-floor-scripts-symlinked-per-repo-opt-in.md)
+— a new `scripts/enable-landing-floor.sh` there symlinks the `land-pr.sh`/`gatekeeper.sh`/
+`review-lens-*.sh`/`board-seed.sh` bundle into any target repo as an explicit, `.gitignore`d,
+per-repo opt-in (never committed — a first attempt that committed them broke this repo's CI,
+since they resolve to an absolute path that doesn't exist on GitHub's runners; fixed before
+merging). Enabled here via [PR #60](https://github.com/DaveVoyles/resume-builder/pull/60).
+An attempt to actually self-merge the Chat-Agents PR via the new autonomous path was blocked by
+the harness's own auto-mode classifier (credential-minting actions get extra scrutiny by
+design) — Dave merged all three PRs (#42, #56, #60) by hand instead.
+
+**An orchestrator session is running the plan-0004 frontier in the background** (spawned via a
+paste-ready hand-off statement, Haiku sub-agents per slice via `orchestrate`/`implement`). As of
+this write-up it has already merged D1 ([#43](https://github.com/DaveVoyles/resume-builder/issues/43),
+[PR #57](https://github.com/DaveVoyles/resume-builder/pull/57)), D9 ([#45](https://github.com/DaveVoyles/resume-builder/issues/45),
+[PR #58](https://github.com/DaveVoyles/resume-builder/pull/58)), D5 ([#44](https://github.com/DaveVoyles/resume-builder/issues/44),
+[PR #59](https://github.com/DaveVoyles/resume-builder/pull/59)), D10 ([#48](https://github.com/DaveVoyles/resume-builder/issues/48),
+[PR #61](https://github.com/DaveVoyles/resume-builder/pull/61)), D6 ([#47](https://github.com/DaveVoyles/resume-builder/issues/47),
+[PR #62](https://github.com/DaveVoyles/resume-builder/pull/62)), and D2 ([#46](https://github.com/DaveVoyles/resume-builder/issues/46),
+[PR #63](https://github.com/DaveVoyles/resume-builder/pull/63)) — **check the
+[issues list](https://github.com/DaveVoyles/resume-builder/issues?q=is%3Aissue+state%3Aopen+label%3Aplan%3A0004)
+and [board](https://github.com/users/DaveVoyles/projects/2) for the live state**, this list goes
+stale within minutes since the orchestrator keeps merging.
+
+**Known issue, fixed in this write-up:** a prior version of this file had two full copies of its
+own content concatenated together with no conflict markers — PR #56 and PR #60 were each branched
+from `main` before the other merged, and GitHub's squash-merge auto-resolved without flagging a
+conflict, silently duplicating the whole file. Rewritten clean here.
 
 ## Next steps
 
-1. Dave merges [PR #56](https://github.com/DaveVoyles/resume-builder/pull/56) (Execution
-   Tracking) and [PR #60](https://github.com/DaveVoyles/resume-builder/pull/60) (landing-floor
-   symlinks) — both are plain, low-risk docs/symlink-only diffs.
-2. Once `chore/enable-landing-floor` merges, verify the landing floor actually works end-to-end
-   on the *next* PR this repo produces: `scripts/review-lens-receipt.sh` should successfully post
-   a commit status, and `scripts/land-pr.sh` should be able to auto-approve/merge a clean PR
-   without Dave's hand — first real live-fire test of the new capability here.
-3. Let the already-running orchestrator session keep working the plan-0004 frontier
-   (D1 → D2 → D3 → D4 cover letters; D5 → D6 → D7 → D8 ATS scoring; D9 → D10 → D11 → D12 → D13
-   networking) — it's a background task in this session, not something to restart.
-4. This session's own worktree (`.claude/worktrees/resume-builder-improvements-9dd600`) now has
-   several branches that have moved through it (`claude/resume-builder-improvements-9dd600`
-   merged, `docs/plan-0004-execution-tracking` pending PR #56, `chore/enable-landing-floor`
-   pending). Prune whichever have merged via `scripts/git-prune-merged-branch.sh` once this
-   session ends and everything's landed.
+1. Let the orchestrator finish the plan-0004 frontier — it's a background task in this session,
+   not something to restart. Remaining slices: D3, D4, D7, D8, D11, D12, D13 (some now unblocked
+   as their dependencies close above).
+2. Now that the landing floor is live here, verify `scripts/land-pr.sh` actually auto-merges a
+   PR autonomously (posts a `review-lenses/verdict` commit status, App-approves, merges) rather
+   than needing Dave by hand — hasn't been confirmed yet; every merge so far (#57-#63) was still
+   done manually.
+3. This session's own worktree (`.claude/worktrees/resume-builder-improvements-9dd600`) has
+   several fully-merged branches on it (`claude/resume-builder-improvements-9dd600`,
+   `docs/plan-0004-execution-tracking`, `chore/enable-landing-floor`) plus this fix's own
+   `docs/fix-handoff-duplication` once merged — prune all via `git-prune-merged-branch.sh` (from
+   Chat-Agents) once this session ends, being careful not to touch any worktree/branch the
+   orchestrator is actively using.
