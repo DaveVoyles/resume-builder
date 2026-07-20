@@ -22,6 +22,7 @@
     "workspace:init": "node src/cli/index.js init",
     "workspace:ingest": "node src/cli/index.js ingest",
     "workspace:add-role": "node src/cli/index.js add-role",
+    "workspace:add-contact": "node src/cli/index.js add-contact",
     "workspace:similar": "node src/cli/index.js find-similar",
     "workspace:tracker": "node src/cli/index.js build-tracker",
     "workspace:tracker:html": "node src/cli/index.js build-tracker --format html",
