@@ -105,4 +105,10 @@ and doc corrections. No deletions, data migrations, secret rotations, or externa
 
 ## Execution Tracking
 
-_Pending `plan-to-issues` export._
+Exported 2026-07-20 via plan-to-issues (second Lavish preview waived — 1:1 with the approved
+deliverable table, no new slicing decisions).
+
+- **Issues (the frontier):** https://github.com/DaveVoyles/resume-builder/issues?q=is%3Aissue+state%3Aopen+label%3Aplan%3A0003 — D1 is [#31](https://github.com/DaveVoyles/resume-builder/issues/31) (unblocked), D2 is [#32](https://github.com/DaveVoyles/resume-builder/issues/32) (blocked by D1), D3 is [#33](https://github.com/DaveVoyles/resume-builder/issues/33) (blocked by D1, D2). Native GitHub issue-dependency relationships mirror the Dependencies column.
+- **Board:** Agent Work (Projects v2) — https://github.com/users/DaveVoyles/projects/2 — all three slices seeded to Todo.
+- The frontier rule is: open + `plan:0003` + no open blockers + unassigned — so only D1 is actually claimable until it closes.
+- This plan doc, plus plan 0002's plan doc, the `CONTEXT.md` glossary entry, and `HANDOFF.md` are all on [PR #28](https://github.com/DaveVoyles/resume-builder/pull/28) — open, awaiting manual merge (this repo lacks `scripts/review-lens-receipt.sh`, so the usual autonomous `land-pr.sh` auto-merge path isn't available here).
