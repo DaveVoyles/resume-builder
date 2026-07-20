@@ -1,1 +1,0 @@
-/Users/davevoyles/REPOS/Chat-Agents/scripts/review-lens-receipt.sh
