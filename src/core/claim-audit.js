@@ -250,19 +250,23 @@ function assessLedgerStrength(evidenceEntries, threshold = THIN_LEDGER_THRESHOLD
 }
 
 /**
- * Audits every claim-bearing field in a resume config against a workspace's
- * evidence ledger. Returns { errors, warnings, claimsFound }. `errors` is
- * blocking (per plan 0001 Decision 8, claim guards block `validate`, they
- * don't just warn); `warnings` covers ledger-strength messaging, which is
- * informational and never blocks.
+ * Audits metric claims extracted from a set of claim sites (e.g. resume bullets,
+ * summary text) against a workspace's evidence ledger. Generic utility that
+ * operates on claim sites with the shape { path, text, context? } — used
+ * internally by auditResumeConfig and intended for use by other auditing
+ * consumers (e.g. cover letter claim auditing, per plan 0004).
+ *
+ * Returns { errors, warnings, claimsFound }. `errors` is blocking (per plan
+ * 0001 Decision 8, claim guards block `validate`, they don't just warn);
+ * `warnings` covers ledger-strength messaging, which is informational and
+ * never blocks.
  */
-function auditResumeConfig(config, evidenceEntries) {
-  const claimSites = collectConfigClaimSites(config || {});
+function auditClaims(claimSites, evidenceEntries) {
   const evidenceIndex = buildEvidenceClaimIndex(evidenceEntries);
   const errors = [];
   const claimsFound = [];
 
-  claimSites.forEach((site) => {
+  (claimSites || []).forEach((site) => {
     for (const claim of extractClaims(site.text)) {
       claimsFound.push({ ...claim, path: site.path });
       if (!evidenceIndex.has(claimKey(claim))) {
@@ -283,10 +287,26 @@ function auditResumeConfig(config, evidenceEntries) {
   return { errors, warnings, claimsFound };
 }
 
+/**
+ * Audits every claim-bearing field in a resume config against a workspace's
+ * evidence ledger. Returns { errors, warnings, claimsFound }. `errors` is
+ * blocking (per plan 0001 Decision 8, claim guards block `validate`, they
+ * don't just warn); `warnings` covers ledger-strength messaging, which is
+ * informational and never blocks.
+ *
+ * Thin wrapper: collects claim sites from the config, then delegates to
+ * auditClaims for the generic audit logic.
+ */
+function auditResumeConfig(config, evidenceEntries) {
+  const claimSites = collectConfigClaimSites(config || {});
+  return auditClaims(claimSites, evidenceEntries);
+}
+
 module.exports = {
   CLAIM_PATTERNS,
   THIN_LEDGER_THRESHOLD,
   assessLedgerStrength,
+  auditClaims,
   auditResumeConfig,
   claimKey,
   extractClaims,

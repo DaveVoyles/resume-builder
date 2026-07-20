@@ -27,6 +27,7 @@ function workspacePaths(workspace) {
     rolesSeed: path.join(workspace, "roles.seed.json"),
     rolesTracked: path.join(workspace, "roles.tracked.json"),
     claimPolicy: path.join(workspace, "claim-policy.json"),
+    contacts: path.join(workspace, "contacts.json"),
     gitignore: path.join(workspace, ".gitignore"),
   };
 }
