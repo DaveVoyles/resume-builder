@@ -412,6 +412,37 @@ test("tailor with invalid --keywords file path warns but does not block", async 
   });
 });
 
+test("tailor with a malformed (non-array) --keywords file warns but does not block", async () => {
+  await withWorkspace({ evidenceEntries: backedEvidence }, async ({ workspace, configPath, paths }) => {
+    const keywordsPath = path.join(workspace, "malformed-keywords.json");
+    writeJson(keywordsPath, { not: "an array" });
+
+    const originalWarn = console.warn;
+    const warns = [];
+    console.warn = (message) => warns.push(message);
+    try {
+      await command.run({
+        workspace,
+        config: configPath,
+        keywords: keywordsPath,
+        title: "Developer platform product manager",
+      });
+
+      assert.ok(
+        warns.some((message) => /keyword coverage analysis failed/.test(message)),
+        "expected a warning about the keywords file not being a JSON array",
+      );
+    } finally {
+      console.warn = originalWarn;
+    }
+
+    // Command must still succeed (malformed keywords input never blocks).
+    assert.ok(fs.existsSync(path.join(workspace, "outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai.docx")));
+    const [role] = readJson(paths.rolesTracked);
+    assert.strictEqual(role.application.status, "interested");
+  });
+});
+
 // End-to-end run against the real fictional sample candidate (design plan
 // 0001, D4 acceptance criteria: "End-to-end run on the fictional sample
 // candidate documented and tested" — docs/playbooks/tailor.md's "Sample-
