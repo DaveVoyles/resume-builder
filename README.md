@@ -5,9 +5,9 @@
 ![Node.js 16+](https://img.shields.io/badge/node-%3E%3D16-339933?logo=node.js&logoColor=white)
 ![No API key required](https://img.shields.io/badge/API%20key-not%20required-brightgreen)
 
-Evidence-backed resume workspace tooling for AI-assisted job searches — drop in your docs, let
-an agent interview you, find and vet roles, tailor an evidence-backed DOCX resume per posting,
-and track every application without a spreadsheet.
+Evidence-backed resume workspace tooling for AI-assisted job searches — drop in your resumes,
+notes, and links, let an agent interview you, find and vet roles, tailor an evidence-backed DOCX
+resume per posting, and track every application without a spreadsheet.
 
 This project assumes you have a **terminal AI agent at all times** — GitHub Copilot CLI, Claude,
 ChatGPT, or anything else that can read and edit files in your repo. The agent is the primary
@@ -25,8 +25,9 @@ Paste this to your terminal agent:
 
 ```text
 Download https://github.com/DaveVoyles/resume-builder and help me get started. Run the sample
-workflow first (npm start), then help me create a private workspace for my resume, notes, and
-job links. Ask clarifying questions before making resume claims.
+workflow first (npm start), then follow docs/playbooks/onboarding.md to set up my private
+workspace and walk me through dropping my resumes, notes, and links into candidate/inputs/.
+Ask clarifying questions before making resume claims.
 ```
 
 Prefer to drive it yourself first?
@@ -44,12 +45,12 @@ touches is real: the sample candidate ("Alex Rivera"), companies, and postings a
 ## 🧭 The lifecycle
 
 <p align="center">
-  <img src="docs/images/lifecycle-flow.svg" alt="Resume Builder agent-operated lifecycle: drop in docs, grill intake, find roles, tailor, rendered DOCX, track, status updates, study guide" width="820">
+  <img src="docs/images/lifecycle-flow.svg" alt="Resume Builder agent-operated lifecycle: onboarding, grill intake, find roles, tailor, rendered DOCX, track, status updates, study guide" width="820">
 </p>
 
 | Stage | What happens | Playbook / command |
 | --- | --- | --- |
-| 1. Drop in docs | You hand your agent resumes, notes, and links. | `npm run workspace:ingest` |
+| 1. Onboarding | You drop resumes, notes, and links into `candidate/inputs/` (or share a GitHub username); your agent ingests them. | [`docs/playbooks/onboarding.md`](docs/playbooks/onboarding.md) · `npm run workspace:ingest` |
 | 2. Grill intake | The agent interviews you one question at a time — work history, target roles, location, compensation, constraints — and writes `profile.json`, `preferences.json`, `evidence.jsonl`. | [`docs/playbooks/grill.md`](docs/playbooks/grill.md) |
 | 3. Find roles | The agent searches, vets postings against your preferences, verifies links are live, and maintains `leads.json`; you accept or skip each lead. | [`docs/playbooks/find-roles.md`](docs/playbooks/find-roles.md) |
 | 4. Tailor | The agent drafts a resume config for one job posting; `tailor` validates it, audits every claim against your evidence ledger, renders the DOCX, and tracks the role — all in one pass. | [`docs/playbooks/tailor.md`](docs/playbooks/tailor.md) · `npm run workspace:tailor` |
