@@ -129,6 +129,14 @@ npm run workspace:render -- --workspace <workspace> --config <workspace>/resume-
 
 This writes `outputs/resumes/<Company>/<file>.docx`. See [Candidate workspace schemas](workspace-schemas.md) for the full resume render config schema and a fictional example.
 
+### Tailoring a resume to a job posting
+
+The `tailor` command composes drafting a config with tracking the role: it validates the config, runs the evidence-backed claim audit, renders the DOCX, and registers a tracked role in one pass — landing it with a not-yet-applied status so a human reviews the resume before anything is sent. See [`docs/playbooks/tailor.md`](playbooks/tailor.md) for the full agent workflow.
+
+```bash
+npm run workspace:tailor -- --workspace <workspace> --config <workspace>/resume-configs/<role-slug>.json --url <job-posting-url> --title <role-title>
+```
+
 ## Similar-role recommendations
 
 Use seed roles to derive title patterns, seniority level, domain keywords, company patterns, compensation signals, and location preferences. Keep recommendations separate from tracked roles until the candidate accepts them.

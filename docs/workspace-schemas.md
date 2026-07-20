@@ -352,7 +352,7 @@ The validator flags evidence before output when:
 | `posting` | object | Captured title, location, compensation, and posting date. |
 | `application` | object | `status` (enum above, set by `set-status`), `appliedAt` (date the candidate applied — preserved across later status transitions unless explicitly overridden), referral contact label, and notes. |
 | `fit` | object | Fit level, rationale, matched evidence, and gaps. |
-| `resume` | object | Output path, status, and tailored emphasis. |
+| `resume` | object | `outputPath` (rendered DOCX path), `configPath` (the resume-config JSON this role was tailored from, set by `tailor` — see below), `status`, and tailored emphasis. |
 | `evidenceMap` | array | Role requirements mapped to evidence IDs. |
 | `nextAction` | object | Next action type, owner, and due date. |
 | `updatedAt` | string | Last update date. |
@@ -665,6 +665,27 @@ npm run workspace:render -- --workspace <workspace> --config <workspace>/resume-
 This writes `outputs/resumes/<Company>/<file>.docx` and throws a validation error (no file written) if the config fails schema validation. The full fictional sample lives at `examples/sample-candidate/resume-configs/northwind-tools-senior-pm.json` and renders as part of `npm run sample:quickstart`.
 
 `render-resume` only checks schema validity. Before treating a config as ready to send, run `validate` (`npm run workspace:validate -- --workspace <workspace>`) — it additionally runs the evidence-backed claim audit against every config under `resume-configs/`, blocking on any metric claim (a percentage, dollar amount, count, team size, or years of experience) with no supporting `evidence.jsonl` entry. See [Accuracy and claims](accuracy-and-claims.md#evidence-backed-claim-audit-blocking).
+
+## Tailor workflow (`tailor`)
+
+`tailor` (design plan 0001, D4) composes `render-resume`'s schema validation, the evidence-backed claim audit (D3), DOCX rendering (D2), and `add-role`/`set-status` (D6/D7) into one command: point it at a drafted resume config and job-posting details, and it validates, audits, renders, and registers a tracked role in a single pass. See [`docs/playbooks/tailor.md`](playbooks/tailor.md) for the full agent workflow.
+
+```bash
+npm run workspace:tailor -- --workspace <workspace> \
+  --config <workspace>/resume-configs/<role-slug>.json \
+  --url <job-posting-url> \
+  --title <role-title>
+```
+
+`--company` is optional and defaults to the resume config's own `company` field (an explicit `--company` that disagrees with the config's `company` is a hard error, not a silent mismatch). `--applyUrl`, `--location`, `--compensation`, `--fit`, and `--notes` behave the same as they do for `add-role`.
+
+`tailor` always:
+
+1. Validates the config against the resume-config schema above (`src/core/resume-config.js`) — blocking, with an itemized error.
+2. Runs the evidence-backed claim audit (`src/core/claim-audit.js`) against the config and `evidence.jsonl` — blocking on any unsupported claim, non-blocking-warns on a thin ledger.
+3. Renders the DOCX via `render-resume`'s own command.
+4. Registers (or finds the existing) tracked role via `add-role`'s own command, then sets `resume.configPath` and `resume.outputPath` on it (relative to the workspace root) so the role carries an explicit link back to the exact config and DOCX it was tailored from — this is also what `study-guide-bundle` (D8) now prefers over its content-matching fallback, when the link is present.
+5. Sets `application.status` to `interested` — the D7 enum's not-yet-applied value (buckets to `not-applied` in the tracker) — via `set-status`, unless the role already has a real `application.status` (a re-run never reverts genuine progress), and rebuilds the tracker.
 
 ## `claim-policy.json`
 

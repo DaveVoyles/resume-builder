@@ -241,6 +241,58 @@ test("study-guide-bundle: does not silently match a config for an unrelated comp
   }
 });
 
+test("study-guide-bundle: prefers role.resume.configPath (set by tailor, D4) over content-matching by company", async () => {
+  const tmpDir = createFixtureWorkspace();
+  try {
+    const paths = workspacePaths(tmpDir);
+
+    // A second config with a DIFFERENT company than the role, linked via
+    // resume.configPath — if the lookup were still content-matching by
+    // company, this config would never be selected (the role's company is
+    // "Test Company", not "Linked Co"). Selecting it proves the explicit
+    // link is used instead of the fallback scan.
+    const linkedConfigPath = path.join(tmpDir, "resume-configs", "linked-config.json");
+    writeJson(linkedConfigPath, {
+      schemaVersion: "1.0",
+      company: "Linked Co",
+      candidate: { name: "Test User", contact: [{ text: "test@example.invalid" }] },
+      summary: { text: "Config reached only via the explicit resume.configPath link." },
+      experienceSections: [{ heading: "Experience", jobs: [{ title: "X", company: "Y", dates: "Z", bullets: ["b"] }] }],
+      skills: [["A", "B"]],
+    });
+
+    const roles = readJson(paths.rolesTracked);
+    roles[0].resume = { configPath: "resume-configs/linked-config.json" };
+    writeJson(paths.rolesTracked, roles);
+
+    await run({ workspace: tmpDir, id: "role-tracked-001" });
+
+    const bundlePath = path.join(tmpDir, "outputs", "study-guide-bundles", "role-tracked-001.json");
+    const bundle = readJson(bundlePath);
+    assert.equal(bundle.resumeConfig.company, "Linked Co", "should bundle the linked config, not the content-matched one");
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
+test("study-guide-bundle: falls back to content-matching when resume.configPath points to a missing file", async () => {
+  const tmpDir = createFixtureWorkspace();
+  try {
+    const paths = workspacePaths(tmpDir);
+    const roles = readJson(paths.rolesTracked);
+    roles[0].resume = { configPath: "resume-configs/does-not-exist.json" };
+    writeJson(paths.rolesTracked, roles);
+
+    await run({ workspace: tmpDir, id: "role-tracked-001" });
+
+    const bundlePath = path.join(tmpDir, "outputs", "study-guide-bundles", "role-tracked-001.json");
+    const bundle = readJson(bundlePath);
+    assert.equal(bundle.resumeConfig.company, "Test Company", "should fall back to the content-matched config");
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
 test("study-guide-bundle: fails loud (ambiguous) rather than guessing when two configs match the same company", async () => {
   const tmpDir = createFixtureWorkspace();
   try {

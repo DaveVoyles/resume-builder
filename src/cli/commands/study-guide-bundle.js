@@ -43,6 +43,23 @@ function findRole(roles, options) {
 }
 
 /**
+ * A role registered via `tailor` (design plan 0001, D4) carries an explicit
+ * `resume.configPath` link back to the exact config it rendered, relative to
+ * the workspace root — see src/cli/commands/tailor.js. Prefer it when
+ * present and the file still exists: it's an exact, unambiguous reference,
+ * not a content-based guess, and it resolves the same-company/two-configs
+ * ambiguity findRoleConfigPath below has to fail loud on. Falls through to
+ * the content-match scan for roles registered before this link existed
+ * (e.g. via plain `add-role`), so no schema migration is required.
+ */
+function findLinkedConfigPath(workspace, role) {
+  const configPath = role.resume?.configPath;
+  if (!configPath) return null;
+  const fullPath = path.resolve(workspace, configPath);
+  return fs.existsSync(fullPath) ? fullPath : null;
+}
+
+/**
  * Find the role config file for a given role by matching each candidate
  * config's own `company` field (read from its content), not by guessing
  * from the filename — a filename substring match can silently return the
@@ -55,6 +72,9 @@ function findRole(roles, options) {
  * schema-level link exists.
  */
 function findRoleConfigPath(workspace, role) {
+  const linked = findLinkedConfigPath(workspace, role);
+  if (linked) return linked;
+
   const configDir = path.join(workspace, "resume-configs");
 
   if (!fs.existsSync(configDir)) {
