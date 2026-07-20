@@ -603,3 +603,60 @@ test("tailor without --cover-letter flag does not create a coverLetter entry on 
     assert.strictEqual(role.coverLetter, undefined, "coverLetter should not be set when --cover-letter is not provided");
   });
 });
+
+test("tailor with --cover-letter runs the cover letter's own independent claim audit — blocks on its unsupported claim even though the resume's own claims are all backed", async () => {
+  await withWorkspace({ evidenceEntries: backedEvidence }, async ({ workspace, configPath, paths }) => {
+    const coverLetterConfigPath = path.join(paths.resumeConfigs, "fabrikam-ai-cover-letter.json");
+    writeJson(
+      coverLetterConfigPath,
+      fictionalCoverLetterConfig({
+        bodyParagraphs: ["I led a team that grew revenue by 40% in one year, with no matching evidence entry."],
+      }),
+    );
+
+    await assert.rejects(
+      () =>
+        command.run({
+          workspace,
+          config: configPath,
+          coverLetter: coverLetterConfigPath,
+          url: "https://jobs.example.invalid/fabrikam/developer-platform-pm",
+          title: "Developer platform product manager",
+        }),
+      /evidence-backed claim audit/,
+      "tailor should block on the cover letter's own unsupported claim, independent of the resume's (fully-backed) claims",
+    );
+  });
+});
+
+test("tailor persists the resume linkage even when the cover letter step blocks afterward", async () => {
+  await withWorkspace({ evidenceEntries: backedEvidence }, async ({ workspace, configPath, paths }) => {
+    const coverLetterConfigPath = path.join(paths.resumeConfigs, "fabrikam-ai-cover-letter.json");
+    writeJson(
+      coverLetterConfigPath,
+      fictionalCoverLetterConfig({
+        bodyParagraphs: ["I led a team that grew revenue by 40% in one year, with no matching evidence entry."],
+      }),
+    );
+
+    await assert.rejects(() =>
+      command.run({
+        workspace,
+        config: configPath,
+        coverLetter: coverLetterConfigPath,
+        url: "https://jobs.example.invalid/fabrikam/developer-platform-pm",
+        title: "Developer platform product manager",
+      }),
+    );
+
+    // Regression test (PR #67 review): the resume DOCX already rendered
+    // successfully and the role was already tracked before the cover letter
+    // step threw — that resume linkage must not be silently discarded just
+    // because the independent cover-letter audit blocked afterward.
+    const [role] = readJson(paths.rolesTracked);
+    assert.ok(role, "the role should still be tracked even though the cover letter step blocked");
+    assert.strictEqual(role.resume.configPath, "resume-configs/fabrikam-ai.json", "the resume linkage must survive a cover-letter-step failure");
+    assert.strictEqual(role.resume.status, "review-needed");
+    assert.strictEqual(role.coverLetter, undefined, "coverLetter must not be set since its own render/audit step never completed");
+  });
+});
