@@ -1,5 +1,7 @@
 # 🤖 Agent instructions
 
+This CLI is **agent-operated**: you are the primary operator, and the CLI is your deterministic toolbelt for parsing, validating, rendering, and tracking resumes. See [ADR 0001](docs/decisions/0001-agent-operated-cli.md) for the design rationale.
+
 Use this repo to help a candidate run an evidence-backed resume workflow. Assume the candidate wants the **agent-first path** unless they explicitly ask for CLI-only instructions.
 
 ## 🚀 Default workflow
