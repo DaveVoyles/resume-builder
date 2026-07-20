@@ -32,8 +32,6 @@
     "check:privacy": "node scripts/check-privacy.js",
     "check:workspace": "node scripts/check-workspace.js --workspace examples/sample-candidate",
     "check": "npm run check:workspace && npm run check:privacy",
-    "validate": "npm test && npm run sample:quickstart && npm run check:privacy"
-    "test": "node --test",
     "validate": "npm run test && npm run sample:quickstart && npm run check:privacy"
   },
   "dependencies": {
