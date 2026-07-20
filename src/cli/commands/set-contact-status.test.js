@@ -164,6 +164,32 @@ test("set-contact-status: status='reached-out' sets nextAction to follow-up with
   }
 });
 
+test("set-contact-status: initializes a missing notes array before pushing the rule's note", async () => {
+  const tmpDir = createFixtureWorkspace();
+  try {
+    // Simulate a legacy contact record with no notes field at all — not just
+    // an empty array — to prove the `!Array.isArray(contact.notes)` guard
+    // actually initializes it rather than being dead defensive code.
+    const paths = workspacePaths(tmpDir);
+    const contacts = readJson(paths.contacts);
+    delete contacts[0].notes;
+    writeJson(paths.contacts, contacts);
+
+    await run({
+      workspace: tmpDir,
+      id: "contact-001",
+      status: "reached-out",
+      date: "2026-06-15",
+    });
+
+    const afterContacts = readJson(paths.contacts);
+    const contact = afterContacts[0];
+    assert.deepStrictEqual(contact.notes, ["check in if no response"], "notes should be initialized to an array containing the rule's note");
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
 test("set-contact-status: status='responded' sets nextAction to follow-up with 3-day dueDate and appends note", async () => {
   const tmpDir = createFixtureWorkspace();
   try {
