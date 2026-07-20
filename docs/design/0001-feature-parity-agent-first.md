@@ -69,4 +69,8 @@ No deletions, data migrations, secret rotations, or external sends beyond the pu
 
 ## Execution Tracking
 
-_Populated by plan-to-issues after approval._
+Exported 2026-07-19 via plan-to-issues (second Lavish preview waived — 1:1 with the approved deliverable table).
+
+- **Issues (the frontier):** https://github.com/DaveVoyles/resume-builder/issues?q=is%3Aissue+state%3Aopen+label%3Aplan%3A0001 — D1–D9 are [#5](https://github.com/DaveVoyles/resume-builder/issues/5), [#6](https://github.com/DaveVoyles/resume-builder/issues/6), [#9](https://github.com/DaveVoyles/resume-builder/issues/9), [#12](https://github.com/DaveVoyles/resume-builder/issues/12), [#7](https://github.com/DaveVoyles/resume-builder/issues/7), [#10](https://github.com/DaveVoyles/resume-builder/issues/10), [#8](https://github.com/DaveVoyles/resume-builder/issues/8), [#11](https://github.com/DaveVoyles/resume-builder/issues/11), [#13](https://github.com/DaveVoyles/resume-builder/issues/13) (in D-order); D10 is filed in the private upstream repo (its issue #27) under label `plan:0001-public`.
+- **Board:** Agent Work (Projects v2) — https://github.com/users/DaveVoyles/projects/2 — all ten slices seeded to Todo.
+- Native GitHub blocked-by relationships mirror the Dependencies column; the frontier rule is: open + `plan:0001` + no open blockers + unassigned.
