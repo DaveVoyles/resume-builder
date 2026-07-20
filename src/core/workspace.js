@@ -16,6 +16,7 @@ function workspacePaths(workspace) {
     links: path.join(workspace, "inputs", "links.md"),
     outputs: path.join(workspace, "outputs"),
     outputResumes: path.join(workspace, "outputs", "resumes"),
+    outputCoverLetters: path.join(workspace, "outputs", "cover-letters"),
     resumeConfigs: path.join(workspace, "resume-configs"),
     tracker: path.join(workspace, "outputs", "tracker.md"),
     htmlTracker: path.join(workspace, "outputs", "tracker.html"),

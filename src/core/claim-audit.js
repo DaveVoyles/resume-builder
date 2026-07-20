@@ -302,12 +302,42 @@ function auditResumeConfig(config, evidenceEntries) {
   return auditClaims(claimSites, evidenceEntries);
 }
 
+/** Locates every claim-bearing text field in a cover letter config, with a human-readable location and context. */
+function collectCoverLetterClaimSites(config) {
+  const sites = [];
+
+  (config.bodyParagraphs || []).forEach((paragraph, i) => {
+    if (isNonBlankString(paragraph)) {
+      sites.push({ path: `bodyParagraphs[${i}]`, text: paragraph });
+    }
+  });
+
+  return sites;
+}
+
+/**
+ * Audits every claim-bearing field in a cover letter config against a workspace's
+ * evidence ledger. Returns { errors, warnings, claimsFound }. `errors` is
+ * blocking (per plan 0004, claim guards block validation, they don't just warn);
+ * `warnings` covers ledger-strength messaging, which is informational and never blocks.
+ *
+ * Thin wrapper: collects claim sites from the config, then delegates to
+ * auditClaims for the generic audit logic.
+ */
+function auditCoverLetterConfig(config, evidenceEntries) {
+  const claimSites = collectCoverLetterClaimSites(config || {});
+  return auditClaims(claimSites, evidenceEntries);
+}
+
 module.exports = {
   CLAIM_PATTERNS,
   THIN_LEDGER_THRESHOLD,
   assessLedgerStrength,
   auditClaims,
+  auditCoverLetterConfig,
   auditResumeConfig,
   claimKey,
+  collectConfigClaimSites,
+  collectCoverLetterClaimSites,
   extractClaims,
 };
