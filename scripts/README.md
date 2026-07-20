@@ -10,6 +10,16 @@ subfolders here.
 | [`check-workspace.js`](check-workspace.js) | `npm run check:workspace` | Validates a workspace's evidence ledger and feedback ledger, and regenerates the tracker to confirm it's current — used against the fictional sample candidate in CI. |
 | [`sample-quickstart.js`](sample-quickstart.js) | `npm start` / `npm run sample:quickstart` | Runs the full lifecycle against `examples/sample-candidate/`: builds the tracker and similar-role review from the committed fixtures, renders the tracked DOCX, then exercises `tailor`, `set-status`, and `study-guide-bundle` in a disposable temp-dir copy so the committed fixtures never change. |
 
+## Agent-landing-floor tooling
+
+`land-pr.sh`, `gatekeeper.sh`, `review-lens-route.sh`/`-fanout.sh`/`-synthesize.sh`/
+`-validate-findings.sh`/`-receipt.sh`, and `board-seed.sh` are symlinks into Chat-Agents' canonical
+copies (via `scripts/enable-landing-floor.sh` there — [ADR
+0030](https://github.com/DaveVoyles/Chat-Agents/blob/main/docs/decisions/0030-landing-floor-scripts-symlinked-per-repo-opt-in.md)),
+not product scripts of this repo — they're the self-review/PR-approval automation an agent session
+uses when landing a PR here, not something a resume-builder user ever runs. Not listed in the table
+above, which is scoped to this repo's own `npm run` surface.
+
 ## Related pages
 
 - [`package.json`](../package.json) — the `npm run` scripts these wrap.
