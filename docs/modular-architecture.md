@@ -7,7 +7,7 @@ Review this guide before you create a candidate workspace for a friend.
 Use it to separate reusable engine work from private candidate data.
 ```
 
-This guide describes the modular workflow for reusable resume generation. The v1 workspace CLI covers workspace setup, source ingestion, role intake, similar-role review, tracker rendering, and validation.
+This guide describes the modular workflow for reusable resume generation. The workspace CLI covers workspace setup, source ingestion, role intake, similar-role review, DOCX resume rendering, tailoring, status updates, study-guide bundling, tracker rendering, and validation. For the full lifecycle narrative (drop in docs → grill → find roles → tailor → track → study guide), see the [README](../README.md); this page describes the underlying architecture layers.
 
 ---
 
@@ -31,25 +31,29 @@ Keep reusable templates and documentation in the repository. Keep raw candidate 
 2. Normalize candidate facts into a profile.
 3. Create an evidence ledger that ties each claim to a source.
 4. Analyze each role for requirements, seniority signals, domain keywords, and gaps.
-5. Generate tracker rows and, in a later DOCX phase, tailored resumes from structured data.
+5. Generate tracker rows and evidence-audited, tailored DOCX resumes from structured data (`render-resume`, `tailor`).
 6. Recommend similar roles from the seed-role pattern.
 7. Validate files, duplicate links, placeholders, and unsupported claims.
 8. Hand off outputs, follow-up questions, and risks.
 
-## V1 CLI command surface
+## CLI command surface
 
-The v1 command plan is intentionally small and modular. It unblocks ingestion adapters by giving them stable workspace files to read from and write to.
+The command surface is intentionally small and modular — each command is a thin wrapper around the same structured workspace files.
 
-| Command | Package script | Purpose | V1 status |
+| Command | Package script | Purpose | Status |
 | --- | --- | --- | --- |
 | `init --workspace <dir> [--force]` | `npm run workspace:init -- --workspace <dir>` | Create the candidate workspace directories, default JSON files, evidence ledger, tracker, and workspace-local ignore rules. | Implemented. |
 | `ingest --workspace <dir> [--resume <file> ...] [--notes <file> ...] [--input <file> ...] [--github <user>]` | `npm run workspace:ingest -- --workspace <dir>` | Add local resume, notes, generic text, and public GitHub profile evidence to `evidence.jsonl` and update `profile.json`. | Implemented. |
 | `add-role --workspace <dir> (--url <url> \| --title <title> --company <company>) [--tracked]` | `npm run workspace:add-role -- --workspace <dir>` | Add seed roles to `roles.seed.json`, or tracked roles to `roles.tracked.json` with `--tracked`. | Implemented. |
 | `find-similar --workspace <dir> [--candidates <file>] [--max <count>]` | `npm run workspace:similar -- --workspace <dir>` | Build search briefs from seed roles and score optional manually researched candidate roles for candidate review. | Implemented. |
+| `render-resume --workspace <dir> --config <resume-config.json>` | `npm run workspace:render -- --workspace <dir>` | Validate a schema-conformant resume config and render it to `outputs/resumes/<Company>/<file>.docx`. | Implemented. |
+| `tailor --workspace <dir> --config <file> (--url <url> \| --title <title>)` | `npm run workspace:tailor -- --workspace <dir>` | Validate a resume config, audit every claim against `evidence.jsonl`, render the DOCX, and register the tracked role — in one pass. | Implemented. |
+| `set-status --workspace <dir> (--id <id> \| --company <name> --title <name>) --status <status>` | `npm run workspace:set-status -- --workspace <dir>` | Set a tracked role's application status (`interested`/`applied`/`interview`/`offer`/`rejected`/`withdrawn`) and rebuild the tracker. | Implemented. |
+| `study-guide-bundle --workspace <dir> (--id <id> \| --company <name> --title <name>)` | `npm run workspace:bundle -- --workspace <dir>` | Gather profile, evidence, resume config, and job-posting context into one bundle for interview prep. | Implemented. |
 | `build-tracker --workspace <dir> [--format md\|html] [--output <file>] [--title <text>]` | `npm run workspace:tracker -- --workspace <dir>` | Render `outputs/tracker.md` (default) or an interactive `outputs/tracker.html` from `roles.tracked.json`. The CLI also accepts `build` as an alias. | Implemented. |
-| `validate --workspace <dir>` | `npm run workspace:validate -- --workspace <dir>` | Validate required workspace files, schema shape, evidence JSONL, role lists, and tracker freshness. | Implemented. |
+| `validate --workspace <dir>` | `npm run workspace:validate -- --workspace <dir>` | Validate required workspace files, schema shape, evidence JSONL, role lists, evidence-backed claims, and tracker freshness. | Implemented. |
 
-`find-similar` is intentionally bounded. It does not scrape job boards; it creates search briefs and scores roles from an optional local JSON file. `mark-applied` is deferred beyond the v1 command surface. For v1, agents should record researched similar roles with `add-role --tracked` after candidate review, update application state in `roles.tracked.json`, then run `build-tracker` and `validate`. Future commands should be thin wrappers around those same structured files rather than separate stores.
+`find-similar` is intentionally bounded. It does not scrape job boards; it creates search briefs and scores roles from an optional local JSON file. Agents should record researched similar roles with `add-role --tracked` after candidate review, update application state with `set-status`, then run `build-tracker` and `validate`. Commands stay thin wrappers around those same structured files rather than separate stores.
 
 ## Expected inputs
 
@@ -61,14 +65,14 @@ The v1 command plan is intentionally small and modular. It unblocks ingestion ad
 
 ## Expected outputs
 
-The current v1 workflow creates:
+The current workflow creates:
 
 - A generated markdown tracker with role status, fit notes, links, compensation, and next actions.
 - Similar-role review output with search briefs, fit rationale, duplicate suppression, and source links.
+- Evidence-audited, tailored DOCX resumes for accepted seed roles and tracked roles, rendered by `render-resume`/`tailor`.
+- Interview study-guide context bundles for tracked roles.
 - Follow-up questions captured in notes or handoff output for missing evidence, uncertain claims, or application decisions.
 - Validation notes that show which workspace files, role records, tracker outputs, or claim inputs need review.
-
-The planned DOCX phase adds tailored resumes for accepted seed roles and selected similar roles.
 
 ## Collaboration model
 
@@ -106,7 +110,7 @@ Compare each role against the evidence ledger. Identify matching experience, gap
 
 ### Generation
 
-Create role-specific tracker entries and, in the planned DOCX phase, resumes from structured data. Use only supported claims unless the candidate approves an addition.
+Create role-specific tracker entries and evidence-audited DOCX resumes from structured data. Use only supported claims unless the candidate approves an addition.
 
 ### Validation
 
