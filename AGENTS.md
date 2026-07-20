@@ -8,13 +8,14 @@ Use this repo to help a candidate run an evidence-backed resume workflow. Assume
 
 1. 📦 Run `npm install` if dependencies are missing.
 2. 🧪 Run `npm start` so the candidate can see the fictional sample workflow.
-3. 🗂️ Run `npm run setup` to create the default private `candidate/` workspace.
-4. 📝 Help the candidate fill `candidate/inputs/notes/intake.md`.
-5. 📥 Ingest candidate-provided resumes, notes, links, and role URLs.
-6. 🙋 Ask clarifying questions before making claims that are missing, vague, or high impact.
-7. 📌 Record unanswered questions in workspace notes or `candidate/outputs/follow-up-questions.md`.
-8. ✅ Run `npm run workspace:validate -- --workspace candidate` before handoff.
-9. 🔒 Run `npm run check:privacy` before committing or sharing anything.
+3. 🧭 Follow [`docs/playbooks/onboarding.md`](docs/playbooks/onboarding.md) for first-run sequencing — it checks the workspace's actual state (does it exist? has real material been dropped in? has it been ingested? has intake happened?) and greets the candidate at the right step instead of always starting from scratch.
+
+Throughout the lifecycle, not just at first launch:
+
+4. 🙋 Ask clarifying questions before making claims that are missing, vague, or high impact.
+5. 📌 Record unanswered questions in workspace notes or `candidate/outputs/follow-up-questions.md`.
+6. ✅ Run `npm run workspace:validate -- --workspace candidate` before handoff.
+7. 🔒 Run `npm run check:privacy` before committing or sharing anything.
 
 ## ⚠️ Claim rules
 
