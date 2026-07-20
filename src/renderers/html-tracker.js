@@ -8,6 +8,7 @@ const STATUS_LABELS = {
   offer: "Offer",
   rejected: "Rejected",
   withdrawn: "Withdrawn",
+  ghosted: "Ghosted",
   "not-applied": "Not applied",
   other: "Other",
 };
@@ -69,7 +70,7 @@ function renderHtmlTracker(roles, options = {}) {
       acc[role.statusBucket] = (acc[role.statusBucket] || 0) + 1;
       return acc;
     },
-    { applied: 0, rejected: 0, "not-applied": 0, other: 0 },
+    { applied: 0, rejected: 0, "not-applied": 0, ghosted: 0, other: 0 },
   );
 
   const rowsData = normalized.map((role, index) => ({
@@ -116,6 +117,7 @@ function renderHtmlTracker(roles, options = {}) {
   .badge-offer { background: #ede9fe; color: #5b21b6; }
   .badge-rejected { background: #fee2e2; color: #991b1b; }
   .badge-withdrawn { background: #f1f5f9; color: #475569; }
+  .badge-ghosted { background: #fed7aa; color: #92400e; }
   .badge-not-applied { background: #fef3c7; color: #92400e; }
   .badge-other { background: #e2e8f0; color: #334155; }
   .empty-state { padding: 2rem; text-align: center; color: #64748b; }
@@ -143,6 +145,7 @@ function renderHtmlTracker(roles, options = {}) {
     <button data-filter="offer">Offer</button>
     <button data-filter="rejected">Rejected</button>
     <button data-filter="withdrawn">Withdrawn</button>
+    <button data-filter="ghosted">Ghosted</button>
   </div>
 
   <table id="rolesTable">

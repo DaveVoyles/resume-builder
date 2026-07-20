@@ -3,7 +3,7 @@
 const buildTracker = require("./build-tracker");
 const { readJson, resolveWorkspace, workspacePaths, writeJson } = require("../../core/workspace");
 
-const VALID_STATUSES = ["interested", "applied", "interview", "offer", "rejected", "withdrawn"];
+const VALID_STATUSES = ["interested", "applied", "interview", "offer", "rejected", "withdrawn", "ghosted"];
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 // Rule table for auto-generating nextAction on status transitions
@@ -30,6 +30,10 @@ const NEXT_ACTION_RULES = {
   withdrawn: {
     type: "close",
     // no dueDate, no note
+  },
+  ghosted: {
+    type: "close",
+    note: "follow up or consider moving on",
   },
   // interested: untouched entirely
 };
@@ -137,8 +141,18 @@ async function run(options) {
   // "interested" has no entry in NEXT_ACTION_RULES, so nextAction is left
   // completely untouched for it.
   const rule = NEXT_ACTION_RULES[options.status];
-  if (rule && (options.status === "rejected" || options.status === "withdrawn")) {
+  if (rule && (options.status === "rejected" || options.status === "withdrawn" || options.status === "ghosted")) {
     role.nextAction = { type: rule.type };
+    // For statuses with closing notes (e.g., ghosted), append the note
+    if (rule.note) {
+      if (!Array.isArray(role.notes)) {
+        role.notes = [];
+      }
+      // Guard against duplicate notes from a repeat call to the same status
+      if (role.notes[role.notes.length - 1] !== rule.note) {
+        role.notes.push(rule.note);
+      }
+    }
   } else if (rule) {
     const statusDate = options.date || getCurrentDate();
     const dueDate = addDays(statusDate, rule.dueDateOffsetDays);

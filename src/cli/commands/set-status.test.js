@@ -818,3 +818,75 @@ test("set-status: a repeat call to the same status does not duplicate the follow
     cleanupWorkspace(tmpDir);
   }
 });
+
+test("set-status: status='ghosted' clears nextAction to close type with no dueDate and appends note", async () => {
+  const tmpDir = createFixtureWorkspace();
+  try {
+    await run({
+      workspace: tmpDir,
+      company: "Acme Corp",
+      title: "Senior Engineer",
+      status: "ghosted",
+      date: "2026-06-15",
+    });
+
+    const afterRoles = readJson(workspacePaths(tmpDir).rolesTracked);
+    const role = afterRoles[0];
+
+    assert.deepStrictEqual(
+      role.nextAction,
+      { type: "close" },
+      "nextAction should be cleared to { type: 'close' } with no dueDate"
+    );
+    assert.ok(
+      role.notes.includes("follow up or consider moving on"),
+      "Note 'follow up or consider moving on' should be appended to role.notes"
+    );
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
+test("set-status: supports all enum statuses including ghosted and each renders visibly (not silently dropped)", async () => {
+  const statusBuckets = {
+    interested: "not-applied",
+    applied: "applied",
+    interview: "interview",
+    offer: "offer",
+    rejected: "rejected",
+    withdrawn: "withdrawn",
+    ghosted: "ghosted",
+  };
+
+  for (const [status, expectedBucket] of Object.entries(statusBuckets)) {
+    const workspace = createFixtureWorkspace();
+    try {
+      await run({
+        workspace,
+        company: "Acme Corp",
+        title: "Senior Engineer",
+        status,
+      });
+
+      const roles = readJson(workspacePaths(workspace).rolesTracked);
+      assert.strictEqual(roles[0].application.status, status, `Status should be set to ${status}`);
+
+      const tracker = fs.readFileSync(workspacePaths(workspace).tracker, "utf8");
+      const label = status.charAt(0).toUpperCase() + status.slice(1);
+      assert.ok(tracker.includes(label), `Tracker should visibly show "${label}" for status ${status}`);
+
+      // Each status must land in its own distinct badge bucket in the HTML
+      // tracker, not lumped into the generic "other" bucket alongside any
+      // unrecognized/garbage status — the entire point of a deterministic
+      // status enum is that it's visibly distinguishable.
+      const htmlTracker = fs.readFileSync(workspacePaths(workspace).htmlTracker, "utf8");
+      assert.match(
+        htmlTracker,
+        new RegExp(`"statusBucket":\\s*"${expectedBucket}"`),
+        `HTML tracker should bucket status "${status}" as "${expectedBucket}", not "other"`,
+      );
+    } finally {
+      cleanupWorkspace(workspace);
+    }
+  }
+});
