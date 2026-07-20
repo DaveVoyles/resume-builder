@@ -102,12 +102,31 @@ test("score-keywords: human-readable output prints without --json flag", async (
 
     try {
       const result = await run({ config: configPath, keywords: keywordsPath });
-      const combined = capturedLogs.join("\n");
-      assert.match(combined, /Keyword coverage:/);
-      assert.match(combined, /Present:/);
-      assert.match(combined, /Missing:/);
-      // Verify it's not JSON output format; 2/3 = 66.67%, rounds to 67
+      // 2/3 = 66.67%, rounds to 67 — assert the exact rendered lines, not just label presence,
+      // so a format regression (wrong separator, dropped count, broken pluralization) is caught.
+      assert.strictEqual(capturedLogs[0], "Keyword coverage: 67% (2/3)");
+      assert.strictEqual(capturedLogs[1], "Present: React, Node.js");
+      assert.strictEqual(capturedLogs[2], "Missing: Python");
       assert.strictEqual(result.percent, 67);
+    } finally {
+      console.log = originalLog;
+    }
+  });
+});
+
+test("score-keywords: human-readable output uses (none) fallback for empty present/missing lists", async () => {
+  await withWorkspace(fictionalConfig(), ["React"], async ({ configPath, keywordsPath }) => {
+    let capturedLogs = [];
+    const originalLog = console.log;
+    console.log = (msg) => {
+      capturedLogs.push(msg);
+    };
+
+    try {
+      await run({ config: configPath, keywords: keywordsPath });
+      assert.strictEqual(capturedLogs[0], "Keyword coverage: 100% (1/1)");
+      assert.strictEqual(capturedLogs[1], "Present: React");
+      assert.strictEqual(capturedLogs[2], "Missing: (none)");
     } finally {
       console.log = originalLog;
     }
