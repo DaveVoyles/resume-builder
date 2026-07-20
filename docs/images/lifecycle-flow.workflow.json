@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Resume Builder: Agent-Operated Lifecycle",
+    "subtitle": "Drop in docs → grill → find roles → tailor → track → study guide",
+    "output": "lifecycle-flow.html"
+  },
+  "lanes": [
+    { "id": "intake", "label": "Setup & Intake" },
+    { "id": "render", "label": "Tailor & Render" },
+    { "id": "track", "label": "Track & Prepare" }
+  ],
+  "phases": [
+    { "id": "loop", "label": "Per-role application loop repeats for every tracked role", "fromCol": 0, "toCol": 4, "variant": "emphasis" }
+  ],
+  "nodes": [
+    { "id": "drop_docs", "lane": "intake", "col": 0, "type": "external", "label": "Drop In Docs", "sublabel": "resumes, notes, links" },
+    { "id": "grill", "lane": "intake", "col": 2, "type": "backend", "label": "Grill Intake", "sublabel": "one question at a time", "tag": "playbook" },
+    { "id": "find_roles", "lane": "intake", "col": 4, "type": "backend", "label": "Find Roles", "sublabel": "vet + verify postings", "tag": "playbook" },
+    { "id": "tailor", "lane": "render", "col": 0, "type": "security", "label": "Tailor", "sublabel": "validate + audit claims", "tag": "blocking" },
+    { "id": "docx", "lane": "render", "col": 2, "type": "database", "label": "Rendered DOCX", "sublabel": "outputs/resumes/<Company>/" },
+    { "id": "track", "lane": "track", "col": 0, "type": "database", "label": "Track", "sublabel": "roles.tracked.json + tracker" },
+    { "id": "status", "lane": "track", "col": 2, "type": "backend", "label": "Status Updates", "sublabel": "set-status" },
+    { "id": "study_guide", "lane": "track", "col": 4, "type": "backend", "label": "Study Guide", "sublabel": "study-guide-bundle", "tag": "playbook" }
+  ],
+  "edges": [
+    { "from": "drop_docs", "to": "grill", "variant": "default" },
+    { "from": "grill", "to": "find_roles", "variant": "default" },
+    { "from": "find_roles", "to": "tailor", "label": "accepted lead", "variant": "emphasis", "fromSide": "bottom", "toSide": "top", "route": "drop", "labelDy": 40 },
+    { "from": "tailor", "to": "docx", "variant": "emphasis" },
+    { "from": "docx", "to": "track", "label": "resume + role linked", "variant": "default", "fromSide": "bottom", "toSide": "top", "route": "drop" },
+    { "from": "track", "to": "status", "variant": "default" },
+    { "from": "status", "to": "study_guide", "variant": "default" },
+    { "from": "study_guide", "to": "tailor", "label": "next role", "variant": "dashed", "role": "branch", "fromSide": "top", "toSide": "top", "route": "outside-right" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Agent vs. CLI (ADR 0001)",
+      "items": [
+        "The CLI never calls an LLM",
+        "Any terminal agent does the semantic work",
+        "Playbooks are the agent's instructions",
+        "Schema validation is the contract"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Claim Safety",
+      "items": [
+        "tailor audits every claim against evidence.jsonl",
+        "An unsupported claim blocks the render",
+        "New tracked roles land un-applied",
+        "A human reviews before applying"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Try It",
+      "items": [
+        "npm start runs the fictional sample end to end",
+        "Alex Rivera / Northwind Tools / Fabrikam AI are fictional",
+        "Real candidate data stays private and gitignored",
+        "See docs/playbooks/ for each step"
+      ]
+    }
+  ]
+}
