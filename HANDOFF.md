@@ -24,18 +24,26 @@ required Dave by hand, and direct `gh pr merge` calls were denied by the session
 system on every attempt. Worth wiring up the real review-lens toolchain here if this repo keeps
 shipping PRs at this cadence.
 
-## Plan 0003 — Interactive, state-aware onboarding — still open, not touched this session
+## Plan 0003 — Interactive, state-aware onboarding
 
 - Plan doc: `docs/design/0003-interactive-onboarding.md`.
-- D1 [#31](https://github.com/DaveVoyles/resume-builder/issues/31) — links.md fix — merged
-  (board shows Done).
-- D2 [#32](https://github.com/DaveVoyles/resume-builder/issues/32) — onboarding playbook — Todo,
-  unblocked (D1 merged).
-- D3 [#33](https://github.com/DaveVoyles/resume-builder/issues/33) — doc sync — Todo, blocked by
-  D2.
+- D1 [#31](https://github.com/DaveVoyles/resume-builder/issues/31) — links.md fix —
+  [PR #34](https://github.com/DaveVoyles/resume-builder/pull/34) — merged, closed/completed.
+- D2 [#32](https://github.com/DaveVoyles/resume-builder/issues/32) — onboarding playbook —
+  [PR #38](https://github.com/DaveVoyles/resume-builder/pull/38) — merged, closed/completed.
+- D3 [#33](https://github.com/DaveVoyles/resume-builder/issues/33) — doc sync (README +
+  getting-started) — Todo, now unblocked (D1 + D2 both merged).
+
+## This session
+Fixed a docs-drift bug PR #34 left behind: `src/cli/index.js`'s top-level `--help` usage line for
+`ingest` never got `--links` added, even though `ingest.js`'s own runtime "no sources" message and
+`--links` flag parsing were already there. One-line fix, merged via
+[PR #37](https://github.com/DaveVoyles/resume-builder/pull/37), CI green on `main`.
 
 ## Next step
 
-A fresh orchestrator session can claim plan 0003's D2 off the board (`plan:0003` label,
-unassigned, unblocked) whenever that plan should proceed — no dependency on plan 0002's now-closed
-work.
+1. Plan 0003 D3 ([#33](https://github.com/DaveVoyles/resume-builder/issues/33)) is the next
+   claimable item off the board — unblocked, unassigned.
+2. Longer-term, low-priority: this repo has no `scripts/review-lens-*.sh` toolchain, so
+   self-review and auto-merge are done by hand here rather than through the real automation —
+   worth wiring up if this repo starts shipping PRs at a higher cadence.
