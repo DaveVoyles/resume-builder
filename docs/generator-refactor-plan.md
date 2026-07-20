@@ -1,5 +1,17 @@
 # Generator refactor plan
 
+## Implementation status
+
+Phases 1–3 (read-only schema/role-config contracts, the sidecar `render-resume` command, and the ported DOCX styling helpers) are implemented — [design plan 0001](design/0001-feature-parity-agent-first.md), deliverable D2, issue [#6](https://github.com/DaveVoyles/resume-builder/issues/6). The private repo's role-config engine (renderer, docx helpers, schema validation) was ported and genericized rather than rebuilt from scratch:
+
+- `src/core/resume-config.js` — role-config schema validation (the "read-only contracts" from Phase 1, scoped to a single role config rather than the full `resumePlan`/role-strategy pipeline described below).
+- `src/renderers/docx-helpers.js` — the ported low-level DOCX styling primitives (Phase 3), with all candidate-specific constants (name, contact, education, publications, speaking) removed and replaced by config fields — the engine itself carries no candidate data.
+- `src/renderers/docx-resume.js` — the ported renderer (Phase 2's sidecar generator, scoped to direct role-config → DOCX rendering rather than the full `resumePlan` model below).
+- `src/cli/commands/render-resume.js` — the `render-resume` workspace command (`npm run workspace:render`).
+- Schema documented in [`docs/workspace-schemas.md`](workspace-schemas.md#resume-render-config-render-resume); fictional sample at `examples/sample-candidate/resume-configs/northwind-tools-senior-pm.json`, exercised by `npm run sample:quickstart`.
+
+This implements a deliberately narrower slice than the full `resumePlan`/role-strategy/claim-guard pipeline this document originally proposed: a role config is authored directly (by an agent or human) rather than derived automatically from `roles.tracked.json` and evidence via a role-strategy layer. The broader "JD → role config → resume → tracker row" pipeline (role analysis, role strategy, claim guard enforcement) is deliverable D4 ("tailor workflow") in plan 0001, and D3 layers the evidence-backed claim audit in `validate`. The rest of this document — the target module table, `resumePlan` shape, and migration phases below — describes that larger intended architecture and remains the reference for D3/D4.
+
 Try this:
 
 ```text

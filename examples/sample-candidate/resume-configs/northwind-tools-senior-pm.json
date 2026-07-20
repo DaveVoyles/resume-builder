@@ -1,0 +1,50 @@
+{
+  "schemaVersion": "1.0",
+  "company": "Northwind Tools",
+  "outputFileName": "alex-rivera-northwind-ai-workflows.docx",
+  "candidate": {
+    "name": "Alex Rivera",
+    "contact": [
+      { "text": "Raleigh, NC" },
+      { "text": "alex.rivera@example.invalid", "link": "mailto:alex.rivera@example.invalid" },
+      { "text": "portfolio.example.invalid/alex-rivera", "link": "https://portfolio.example.invalid/alex-rivera" },
+      { "text": "github.example.invalid/alex-rivera", "link": "https://github.example.invalid/alex-rivera" }
+    ]
+  },
+  "summary": {
+    "text": "Fictional product and program leader focused on developer platforms, AI-assisted workflows, and launch readiness. Strong fit for developer-platform teams building AI-assisted tooling.",
+    "fitOverride": "Exceptional fit for Northwind Tools' developer-experience roadmap and AI workflow adoption goals."
+  },
+  "experienceSections": [
+    {
+      "heading": "Experience",
+      "jobs": [
+        {
+          "title": "Senior Platform Program Manager",
+          "company": "Contoso Labs",
+          "dates": "2022 - Present",
+          "subHeader": "Remote",
+          "bullets": [
+            "Led launch coordination for an internal developer platform used by multiple product teams.",
+            "Created a fictional demo project for documenting AI-assisted developer workflow experiments."
+          ]
+        }
+      ]
+    }
+  ],
+  "skills": [
+    ["Developer platforms", "Platform strategy, internal tooling, developer experience"],
+    ["AI workflows", "AI-assisted developer tooling, workflow automation"],
+    ["Launch readiness", "Cross-functional launch coordination, rollout planning"]
+  ],
+  "education": [
+    {
+      "degree": "B.S. Fictional Information Systems",
+      "institution": "Example State University",
+      "dates": "2012 - 2016",
+      "details": "Fictional coursework in information systems and product management."
+    }
+  ],
+  "includeEducation": true,
+  "includePublicationsSpeaking": false
+}
