@@ -227,3 +227,15 @@ organized — useful whether you're a human browsing the repo or an agent naviga
 - An AI assistant is optional, but recommended for non-technical users.
 
 No OpenAI, Anthropic, or GitHub Copilot API key is required by the local CLI.
+
+## 🙏 Acknowledgements
+
+This project adopts several feature concepts from Scott Galloway's
+[lucidRESUME](https://github.com/scottgal/lucidRESUME), released under the
+Unlicense. Specific inspirations include the pipeline staleness-tracking model,
+the gap taxonomy for surfacing actionable skills feedback, explicit
+tailoring-quality passes (relevance compression and de-AI style review), and a
+dashboard-feel visual refresh for the application tracker. lucidRESUME is a
+polished, standalone desktop tool with its own architectural approach — if you're
+exploring resume-building ideas, check it out directly. Thanks to Scott Galloway
+for open-sourcing it.
