@@ -160,6 +160,33 @@ itself from that bundle is agent prose, not CLI output — the playbook's own "E
 guide structure" section (using the already-tracked Northwind Tools role) is that worked
 example, and it still matches the bundle shape produced above.
 
+## 5. Debrief — [`docs/playbooks/debrief.md`](playbooks/debrief.md)
+
+`debrief` ships no CLI code of its own (playbook-only) — it produces a Q&A feedback entry and
+writes it directly to `feedback.jsonl`. Both parts run for real here, against a disposable copy
+of the sample workspace:
+
+**Step 1 — capture a Q&A debrief entry** (playbook Section 1), fictional and tied to the
+already-tracked Northwind Tools role for the sample candidate:
+
+```json
+{"schemaVersion":"1.0","id":"fb-001","context":"interview","relatedRoleId":"role-tracked-001","question":"Tell us about your experience building platform infrastructure for developer-facing products.","answer":"I described the API gateway work I led, but I didn't clearly articulate how it improved developer experience metrics or adoption rates.","sentiment":"neutral","sentimentNote":"Felt like I had good technical depth but missed the business impact angle. Interviewer seemed interested in the adoption metrics specifically.","proposedAnswer":"I would lead with the business outcome first: 'We increased third-party API adoption by 40% in six months by rebuilding our developer platform infrastructure. Here's how: [architectural decisions and metrics].' This frames the technical work in terms of outcomes, then dives into implementation details.","createdAt":"2026-07-20T14:30:00.000Z"}
+```
+
+**Step 2 — validate the workspace** (playbook Closing section):
+
+```text
+$ npm run workspace:validate -- --workspace <sample-copy>
+
+Warning: resume-configs/northwind-tools-senior-pm.json: Evidence ledger is thin: only 2 source-backed evidence entries are available (recommended minimum: 3). Metric claims in this resume config rest on a narrow evidence base — ingest more source material (resumes, notes, GitHub activity) before treating generated claims as fully vetted.
+Workspace valid: <sample-copy>
+```
+
+The feedback entry lands in `feedback.jsonl` with all fields populated — `context`, `relatedRoleId`,
+the original question and answer, sentiment, and the proposed improvement for next time. The
+`validate` pass confirms the entry conforms to the feedback schema; workspace remains otherwise
+unchanged (debrief writes only to the feedback ledger, per the playbook's note in Section 1).
+
 ---
 
 ## Extended sample workflow (`npm start`)
@@ -185,6 +212,7 @@ state happens inside a fresh OS-temp-dir copy that gets deleted at the end of th
 | `find-roles.md` | Fabrikam AI lead → promoted via `add-role --tracked` | Works as documented |
 | `tailor.md` | Fabrikam AI resume config → `tailor` | Works as documented; found and fixed a missing `workspace:set-status` npm script |
 | `study-guide.md` | Fabrikam AI tracked role → `study-guide-bundle` | Works as documented |
+| `debrief.md` | Northwind Tools role → Q&A feedback entry to `feedback.jsonl` | Works as documented |
 
 ## Visual artifacts
 
