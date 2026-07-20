@@ -23,7 +23,7 @@ A July 2026 audit found the public repo already covers ingestion (adapters + evi
 8. **Claim guards block:** the ported claim audit runs against the evidence ledger inside `validate` and fails on unsupported claims — making the "evidence-backed" brand enforceable and deterministic.
 9. **E2E showcase:** README rewritten around the lifecycle, agent-always framing ("paste this to your agent" is the primary path); the `npm start` sample exercises the full loop including a rendered sample DOCX; flow diagram + screenshots included.
 10. **This plan and its public-repo issues live in the public repo**, scrubbed of personal data; the private repo is referenced only as "the upstream private implementation."
-11. **Private-repo docs refresh** *(added at review)*: Dave's private resume-builder-Dave repo also gets its docs updated to reflect the current end-to-end workflow, with workflow visualizations. Docs-only; its issue is filed in the private repo.
+11. **Private-repo docs refresh** *(added at review)*: the private upstream repo also gets its docs updated to reflect the current end-to-end workflow, with workflow visualizations. Docs-only; its issue is filed in the private repo.
 
 ## Deliverables
 
@@ -38,7 +38,7 @@ A July 2026 audit found the public repo already covers ingestion (adapters + evi
 | D7 | `set-status` command + agent status recipe | S | `set-status` CLI matches a tracked role by company/role, sets an enum status (interested/applied/interview/offer/rejected/withdrawn) with date stamp, and rebuilds the tracker; AGENTS.md carries the "I was denied for X" one-liner recipe; fixture tests | D1 | Todo |
 | D8 | Study-guide context bundle + playbook | S | A CLI command gathers profile, evidence, the role's config, and JD reference into one context bundle under `outputs/`; `docs/playbooks/study-guide.md` directs the agent to write the guide to `outputs/study-guides/<company>/`; sample run documented | D2 | Todo |
 | D9 | E2E showcase (README lifecycle + extended sample + visuals) | M | README rewritten around the full lifecycle with agent-always framing (the "paste this to your agent" path is the front door; raw-CLI usage moves to a secondary reference page); `npm start` sample renders the sample DOCX + tracker end-to-end; flow diagram (archify-generated SVG) + tracker/resume screenshots embedded; CI green; **prose is human-reviewed — no auto-merge** | D2–D8 | Todo |
-| D10 | Private-repo E2E docs refresh (resume-builder-Dave) | S | Private repo's README + architecture doc updated to reflect the current end-to-end workflow (ingest → tailor → track → status → study guides) with an archify-generated workflow diagram embedded; docs-only change; issue filed in the private repo | — (parallel-safe) | Todo |
+| D10 | Private-repo E2E docs refresh (upstream) | S | Private upstream repo's README + architecture doc updated to reflect the current end-to-end workflow (ingest → tailor → track → status → study guides) with an archify-generated workflow diagram embedded; docs-only change; issue filed in the private repo | — (parallel-safe) | Todo |
 
 All deliverables are XS–M: build-ready, no decomposition required.
 
@@ -64,7 +64,7 @@ No deletions, data migrations, secret rotations, or external sends beyond the pu
 - Local server, API endpoints, or dashboard write-back buttons.
 - Multiple visual resume templates (possible follow-up release).
 - Headless-LLM integration of any kind (`claude -p` etc.) — contradicts ADR 0001.
-- Code changes to the private resume-builder-Dave repo (D10 is docs-only).
+- Code changes to the private upstream repo (D10 is docs-only).
 - New leads CLI commands or schema validation (descoped at review; leads stay an agent-maintained file).
 
 ## Execution Tracking
