@@ -58,15 +58,65 @@ touches is real: the sample candidate ("Alex Rivera"), companies, and postings a
 | 6. Track | The role is registered in `roles.tracked.json`; `build-tracker` regenerates the markdown and HTML tracker. | `npm run workspace:tracker` |
 | 7. Status updates | Tell your agent "I applied" / "I have an interview" / "I got rejected" — it runs `set-status` to record the enum status and rebuild the tracker. | `npm run workspace:set-status` |
 | 8. Study guide | Before an interview, `study-guide-bundle` gathers your profile, evidence, resume config, and the job posting into one context bundle; the agent writes the actual study guide from it. | [`docs/playbooks/study-guide.md`](docs/playbooks/study-guide.md) · `npm run workspace:bundle` |
+| 9. Debrief | After an interview or practice session, the agent runs a Q&A debrief — capturing each question, your answer, sentiment, and a proposed better answer for next time — into a private feedback ledger. | [`docs/playbooks/debrief.md`](docs/playbooks/debrief.md) |
 
-Steps 4–8 repeat for every role you track. The CLI never calls an LLM at any stage — schema
-validation is the contract between what your agent drafts and what the CLI is willing to write
-to disk or render.
+Steps 4–8 repeat for every role you track; step 9 (debrief) can run any time, for any Q&A you
+want to learn from — a real interview, a practice session, or even a grill/tailor conversation.
+The CLI never calls an LLM at any stage — schema validation is the contract between what your
+agent drafts and what the CLI is willing to write to disk or render.
 
-Every playbook above was run end to end against the fictional sample candidate as part of
-shipping this page, with real command output captured in
+Steps 1–8 (onboarding through study guide) were run end to end against the fictional sample
+candidate as part of shipping this page, with real command output captured in
 [`docs/e2e-showcase.md`](docs/e2e-showcase.md) — that page is also the regression pass over each
-playbook, and it names one bug it found and fixed along the way.
+playbook, and it names one bug it found and fixed along the way. Debrief shipped after that
+regression pass and isn't in it yet.
+
+## 🗺️ Every feature has a doc
+
+Each stage above is backed by an agent playbook (the how-to-run-it instructions) and a reference
+doc (the file/schema details) — so whether you're a human skimming for "how does this work" or
+an agent looking for the exact contract, there's one place to look:
+
+| Feature | What it does | Agent playbook | Reference doc |
+| --- | --- | --- | --- |
+| Onboarding | State-aware first-run setup: workspace init, dropping in material, ingest, hand off to intake. | [`onboarding.md`](docs/playbooks/onboarding.md) | [Getting started](docs/getting-started.md) |
+| Grill intake | One-question-at-a-time interview → `profile.json`, `preferences.json`, `evidence.jsonl`. | [`grill.md`](docs/playbooks/grill.md) | [Workspace schemas](docs/workspace-schemas.md#profilejson) |
+| Find roles | Search, vet, and track prospective roles as leads before promoting them. | [`find-roles.md`](docs/playbooks/find-roles.md) | [Workspace schemas](docs/workspace-schemas.md#leadsjson) |
+| Tailor | Draft a resume config, then validate, audit claims, render DOCX, and track — in one pass. | [`tailor.md`](docs/playbooks/tailor.md) | [Accuracy and claims](docs/accuracy-and-claims.md#evidence-backed-claim-audit-blocking) |
+| Status updates | Record an application status change and auto-propose the next follow-up. | Recipe in [`AGENTS.md`](AGENTS.md#-status-update-recipe) | [Workspace schemas](docs/workspace-schemas.md#auto-generating-nextaction-on-status-transitions) |
+| Study guide | Bundle profile, evidence, resume config, and job posting into interview prep. | [`study-guide.md`](docs/playbooks/study-guide.md) | [Workspace schemas](docs/workspace-schemas.md#study-guide-bundle-study-guide-bundle) |
+| Debrief | Capture Q&A feedback and sentiment from interviews or practice sessions. | [`debrief.md`](docs/playbooks/debrief.md) | [Workspace schemas](docs/workspace-schemas.md#feedbackjsonl) |
+| Tracker | Markdown + interactive HTML application tracker, generated from tracked roles. | — | [CLI workflow](docs/cli-workflow.md) |
+| Privacy & validation | Schema validation, evidence-backed claim audit, and privacy checks. | — | [Candidate workspace](docs/candidate-workspace.md) |
+
+## 🎓 Walk into interviews prepared
+
+Before an interview for a tracked role, one command gathers everything relevant — your profile,
+your evidence ledger, the resume you tailored for *this exact posting*, and the job posting
+itself — into a single context bundle:
+
+```bash
+npm run workspace:bundle -- --workspace candidate --company "Northwind Tools" --title "Senior Product Manager"
+```
+
+From that bundle, your agent writes an interview study guide that:
+
+- **Organizes by interview stage** — recruiter screen, team interviews, executive round — not a
+  generic list of tips.
+- **Grounds every talking point in evidence.** Each achievement links back to an
+  `evidence.jsonl` entry ID, so you can defend it under a follow-up question instead of
+  improvising.
+- **Prepares you for gaps honestly.** A dedicated "Addressing Gaps" section drafts a short,
+  honest response for skills the posting wants that your evidence doesn't yet cover — no getting
+  caught flat-footed.
+- **Gives you a day-of checklist** — confirm timing and format, note who you're meeting, bring a
+  physical copy of the resume you actually tailored for this role.
+
+No API key, no scraping the job board again — just the context you already built while
+tailoring the resume, organized for the interview. See
+[`docs/playbooks/study-guide.md`](docs/playbooks/study-guide.md) for the full playbook, or
+[`docs/e2e-showcase.md`](docs/e2e-showcase.md#4-study-guide--docsplaybooksstudy-guidemd) for a
+real bundle generated end to end against the fictional sample candidate.
 
 ## 🤔 Why use this
 
@@ -127,8 +177,9 @@ The markdown tracker (`npm run workspace:tracker`) is the same data as plain tex
 - Evidence-backed, schema-validated **DOCX resumes** tailored per job posting.
 - A markdown application tracker **and** an interactive HTML tracker.
 - A `leads.json` of vetted, link-verified prospective roles.
-- Interview study-guide context bundles for tracked roles.
-- Q&A debrief feedback for learning from interviews and practice sessions.
+- [Interview study-guide](docs/playbooks/study-guide.md) context bundles for tracked roles.
+- [Q&A debrief](docs/playbooks/debrief.md) feedback for learning from interviews and practice
+  sessions.
 - Follow-up questions and strategy notes when you use an agent.
 
 ## 🔒 Privacy promise
@@ -154,6 +205,20 @@ npm run check:privacy
 | Schema details | [Workspace schemas](docs/workspace-schemas.md) |
 | Claim safety | [Accuracy and claims](docs/accuracy-and-claims.md) |
 | Packaged agent instructions | [Playbooks](docs/playbooks/) |
+
+## 🗂️ Repository layout
+
+Every top-level folder has its own README explaining what it holds and how its subfolders are
+organized — useful whether you're a human browsing the repo or an agent navigating it:
+
+| Folder | What's there |
+| --- | --- |
+| [`docs/`](docs/) | Guides, ADRs, design plans, and images — everything linked from this page. |
+| [`src/`](src/) | The reusable engine: CLI commands, core logic, renderers, adapters. |
+| [`examples/`](examples/) | The fictional sample candidate workspace `npm start` runs against. |
+| [`scripts/`](scripts/) | Standalone scripts behind `npm run check:*` and `npm start`. |
+| [`templates/`](templates/) | Blank starter files scaffolded into a new candidate workspace. |
+| [`tests/`](tests/) | Test suite, mirroring `src/`'s folder layout. |
 
 ## ✅ Requirements
 

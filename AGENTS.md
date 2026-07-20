@@ -81,3 +81,20 @@ The command updates `roles.tracked.json` and rebuilds `outputs/tracker.md` and `
 5. Validate the result: `npm run workspace:validate -- --workspace candidate`
 
 The grill playbook is the source of truth. See the `.claude/skills/grill` skill for usage details.
+
+## 🎓 Study guide recipe
+
+**When to use:** Before an interview for a tracked role.
+
+1. Gather everything relevant — profile, evidence, the tailored resume config, and the job posting — into one context bundle:
+   ```bash
+   npm run workspace:bundle -- --workspace candidate --company "<Company Name>" --title "<Role Title>"
+   ```
+   This writes `outputs/study-guide-bundles/<role-id>.json`. See [`docs/workspace-schemas.md`](docs/workspace-schemas.md#study-guide-bundle-study-guide-bundle) for the exact bundle shape.
+2. Read the bundle and write the actual study guide to `outputs/study-guides/<company>/study-guide.md`, following [`docs/playbooks/study-guide.md`](docs/playbooks/study-guide.md) — organized by interview stage, with every talking point tied back to an `evidence.jsonl` entry ID.
+
+## 🗣️ Debrief recipe
+
+**When to use:** After any interview, practice session, or grill/tailor conversation the candidate wants to learn from.
+
+Follow [`docs/playbooks/debrief.md`](docs/playbooks/debrief.md) to run a one-question-at-a-time debrief and write structured Q&A feedback (question, answer, sentiment, proposed improvement) to `candidate/feedback.jsonl`. This never touches `profile.json` or `evidence.jsonl` directly — treat it as its own private ledger.
