@@ -168,6 +168,51 @@ test("add-contact: validates contact and throws error on invalid data", () => {
   }
 });
 
+test("add-contact: rejects an out-of-enum --relationship value", () => {
+  const { tmpDir } = createFixtureWorkspace();
+  try {
+    assert.throws(
+      () => {
+        run({
+          workspace: tmpDir,
+          name: "Nina Patel",
+          relationship: "friend",
+        });
+      },
+      /Invalid contact/,
+      "should throw error when relationship is not one of CONTACT_RELATIONSHIPS",
+    );
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
+// parseArgs (src/cli/args.js) hands a bare string to options.linkedRole when
+// --linked-role is passed exactly once (only repeated occurrences become an
+// array) — asArray must wrap that single value, not just pass through arrays.
+test("add-contact: supports --linked-role passed exactly once", () => {
+  const { tmpDir, paths } = createFixtureWorkspace();
+  try {
+    run({
+      workspace: tmpDir,
+      name: "Oscar Diaz",
+      company: "Solo Corp",
+      relationship: "referral",
+      linkedRole: "role_senior-engineer_abc1234567",
+    });
+
+    const contacts = readJson(paths.contacts, []);
+    const contact = contacts[0];
+    assert.deepStrictEqual(
+      contact.linkedRoleIds,
+      ["role_senior-engineer_abc1234567"],
+      "a single --linked-role value should be wrapped into a one-element array, not spread into characters",
+    );
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
 test("add-contact: makes company field optional", () => {
   const { tmpDir, paths } = createFixtureWorkspace();
   try {
