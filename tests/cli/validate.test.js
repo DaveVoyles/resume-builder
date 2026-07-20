@@ -446,3 +446,52 @@ test("validate fails when feedback.jsonl entry has an invalid schemaVersion", ()
     cleanupWorkspace(tmpDir);
   }
 });
+
+test("validate fails when feedback.jsonl has two entries with the same id", () => {
+  const tmpDir = createFixtureWorkspace({
+    resumeConfig: baseResumeConfig(["Sample bullet."]),
+    evidenceEntries: [],
+  });
+
+  const feedbackPath = path.join(tmpDir, "feedback.jsonl");
+  const entry = {
+    schemaVersion: "1.0",
+    id: "fb-001",
+    context: "interview",
+    question: "Question 1",
+    answer: "Answer 1",
+    sentiment: "confident",
+    proposedAnswer: "Better answer 1",
+    createdAt: "2026-07-20T14:30:00.000Z",
+  };
+  fs.writeFileSync(feedbackPath, `${JSON.stringify(entry)}\n${JSON.stringify(entry)}\n`);
+
+  try {
+    assert.throws(() => run({ workspace: tmpDir }), (error) => {
+      assert.match(error.message, /duplicate id fb-001/);
+      return true;
+    });
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
+test("validate fails when a feedback.jsonl line parses to a non-object value", () => {
+  const tmpDir = createFixtureWorkspace({
+    resumeConfig: baseResumeConfig(["Sample bullet."]),
+    evidenceEntries: [],
+  });
+
+  const feedbackPath = path.join(tmpDir, "feedback.jsonl");
+  fs.writeFileSync(feedbackPath, `${JSON.stringify("just a string")}\n`);
+
+  try {
+    assert.throws(() => run({ workspace: tmpDir }), (error) => {
+      assert.match(error.message, /feedback line 1/);
+      assert.match(error.message, /must be an object/);
+      return true;
+    });
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});

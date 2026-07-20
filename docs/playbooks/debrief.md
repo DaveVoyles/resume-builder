@@ -131,19 +131,10 @@ Before you start:
 After capturing all fields, write one JSON object to `candidate/feedback.jsonl` (JSON Lines format, one object per line):
 
 ```jsonl
-{
-  "schemaVersion": "1.0",
-  "id": "fb-001",
-  "context": "interview",
-  "relatedRoleId": "role-tracked-001",
-  "question": "Tell me about your experience with system design.",
-  "answer": "I talked about a project I led, but I didn't go deep enough into trade-offs.",
-  "sentiment": "neutral",
-  "sentimentNote": "Felt rushed. Interviewer seemed interested but I cut it short.",
-  "proposedAnswer": "I would start by asking clarifying questions about scale and constraints, then walk through the architecture decisions I'd make, explicitly naming trade-offs at each step.",
-  "createdAt": "2026-07-20T14:30:00.000Z"
-}
+{"schemaVersion":"1.0","id":"fb-001","context":"interview","relatedRoleId":"role-tracked-001","question":"Tell me about your experience with system design.","answer":"I talked about a project I led, but I didn't go deep enough into trade-offs.","sentiment":"neutral","sentimentNote":"Felt rushed. Interviewer seemed interested but I cut it short.","proposedAnswer":"I would start by asking clarifying questions about scale and constraints, then walk through the architecture decisions I'd make, explicitly naming trade-offs at each step.","createdAt":"2026-07-20T14:30:00.000Z"}
 ```
+
+Each entry is a single line — the file is JSON Lines, not pretty-printed JSON; a multi-line object breaks the line-by-line validator.
 
 **Important:** Debrief entries write only to `feedback.jsonl`. They do not update `profile.json`, `evidence.jsonl`, or tracked roles — that's a manual follow-up via the grill or tailor workflows. This is out of scope for the debrief playbook.
 
