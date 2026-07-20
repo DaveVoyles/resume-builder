@@ -110,7 +110,15 @@ function renderHtmlTracker(roles, options = {}) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${escapeHtml(title)}</title>
 <style>
-  :root { color-scheme: light dark; }
+  /* This stylesheet only ever defines light-mode hex colors — no dark-mode
+     alternates exist anywhere below. "light dark" told browsers this page
+     supports both and to apply dark-mode UA defaults to native controls
+     (search input, filter buttons) accordingly, which left their text
+     white-on-white (invisible) against the explicit white backgrounds set
+     below whenever the OS/browser prefers dark. Declaring "light" only
+     stops the browser from guessing a scheme this stylesheet never
+     actually implements. */
+  :root { color-scheme: light; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     margin: 0;
