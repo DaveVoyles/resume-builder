@@ -7,7 +7,7 @@ Review this guide before you create a candidate workspace for a friend.
 Use it to separate reusable engine work from private candidate data.
 ```
 
-This guide describes the modular workflow for reusable resume generation. The workspace CLI covers workspace setup, source ingestion, role intake, similar-role review, DOCX resume rendering, tailoring, status updates, study-guide bundling, tracker rendering, and validation. For the full lifecycle narrative (drop in docs → grill → find roles → tailor → track → study guide), see the [README](../README.md); this page describes the underlying architecture layers.
+This guide describes the modular workflow for reusable resume generation. The workspace CLI covers workspace setup, source ingestion, role intake, similar-role review, DOCX resume rendering, tailoring, status updates, study-guide bundling, tracker rendering, and validation. For the full lifecycle narrative (onboarding → grill → find roles → tailor → track → study guide), see the [README](../README.md); this page describes the underlying architecture layers.
 
 ---
 

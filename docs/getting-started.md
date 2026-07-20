@@ -3,10 +3,12 @@
 Try this with a terminal agent:
 
 ```text
-Download https://github.com/DaveVoyles/resume-builder and help me get started. Run the sample workflow first, then help me create a private workspace for my resume, notes, and job links. Ask clarifying questions before making resume claims.
+Download https://github.com/DaveVoyles/resume-builder and help me get started. Run the sample workflow first, then follow docs/playbooks/onboarding.md to create my private workspace, walk me through dropping my resume, notes, and job links into candidate/inputs/, and start my grill intake interview when I'm ready. Ask clarifying questions before making resume claims.
 ```
 
 Resume Builder is designed for an **agent-first workflow**. The easiest path is to let a terminal agent guide setup, ask clarifying questions, and keep resume claims tied to source evidence. The agent is the primary operator; the CLI is a deterministic toolbelt for validation and rendering. See [ADR 0001: Agent-operated CLI](../decisions/0001-agent-operated-cli.md) for the design rationale.
+
+New here? [`docs/playbooks/onboarding.md`](playbooks/onboarding.md) is the proactive, state-aware sequence an agent follows: it checks what you've already set up and picks up wherever you left off, instead of always starting from scratch.
 
 ---
 
@@ -47,10 +49,23 @@ This creates a local `candidate/` workspace with:
 
 - 📄 `inputs/resumes/` for source resumes.
 - 📝 `inputs/notes/intake.md` for background notes and follow-up answers.
+- 🔗 `inputs/links.md` for portfolio, GitHub, writing, or talk links (one per line).
 - 👤 `profile.json` for structured candidate facts.
 - 🧾 `evidence.jsonl` for source-backed facts.
 - 📌 `roles.seed.json` and `roles.tracked.json` for job search tracking.
 - 📊 `outputs/` for generated local outputs.
+
+Drop your material into `inputs/`, then ask your agent to ingest it:
+
+```bash
+npm run workspace:ingest -- --workspace candidate --resume <file> --notes <file> --links candidate/inputs/links.md
+```
+
+## 🎙️ Do the intake interview
+
+Once your material is ingested, your agent should walk you through **grill intake**: a one-question-at-a-time interview covering your work history, target roles, location, and compensation, written into `profile.json`, `preferences.json`, and `evidence.jsonl`. Follow [`docs/playbooks/grill.md`](playbooks/grill.md) — the onboarding playbook hands off to it automatically once you have real material ingested.
+
+The more you share here, the better the resumes your agent can generate and the more accurately it can match you to roles.
 
 ## 🧳 Before you begin
 
