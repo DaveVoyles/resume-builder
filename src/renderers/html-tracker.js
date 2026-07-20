@@ -110,29 +110,196 @@ function renderHtmlTracker(roles, options = {}) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${escapeHtml(title)}</title>
 <style>
-  :root { color-scheme: light dark; }
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 2rem; background: #f8fafc; color: #0f172a; }
-  h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
-  .subtitle { color: #64748b; margin: 0 0 1.5rem; font-size: 0.85rem; }
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
-  .stat-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 1rem 1.25rem; }
-  .stat-value { font-size: 1.5rem; font-weight: 700; }
-  .stat-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; }
-  .funnel { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e2e8f0; border-radius: 0.75rem; overflow: hidden; margin-bottom: 1.5rem; }
-  .funnel td { padding: 0.75rem 1rem; border-right: 1px solid #e2e8f0; text-align: center; }
-  .funnel td:last-child { border-right: none; }
-  .funnel-stage { font-weight: 600; color: #334155; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
-  .funnel-count { font-size: 1.25rem; font-weight: 700; color: #0284c7; }
-  .controls { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; align-items: center; }
-  .controls input { flex: 1; min-width: 200px; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; font-size: 0.9rem; }
-  .controls button { padding: 0.4rem 0.8rem; border: 1px solid #cbd5e1; background: #fff; border-radius: 0.5rem; cursor: pointer; font-size: 0.8rem; }
-  .controls button.active { background: #0284c7; color: #fff; border-color: #0284c7; }
-  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 0.75rem; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-  th, td { text-align: left; padding: 0.65rem 0.85rem; border-bottom: 1px solid #e2e8f0; font-size: 0.85rem; vertical-align: top; }
-  th { background: #f1f5f9; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; color: #475569; cursor: pointer; user-select: none; }
-  th:hover { background: #e2e8f0; }
-  tr:last-child td { border-bottom: none; }
-  .badge { display: inline-block; padding: 0.15rem 0.6rem; border-radius: 999px; font-size: 0.7rem; font-weight: 600; }
+  /* This stylesheet only ever defines light-mode hex colors — no dark-mode
+     alternates exist anywhere below. "light dark" told browsers this page
+     supports both and to apply dark-mode UA defaults to native controls
+     (search input, filter buttons) accordingly, which left their text
+     white-on-white (invisible) against the explicit white backgrounds set
+     below whenever the OS/browser prefers dark. Declaring "light" only
+     stops the browser from guessing a scheme this stylesheet never
+     actually implements. */
+  :root { color-scheme: light; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+    padding: 2.5rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    color: #0f172a;
+  }
+  h1 {
+    margin: 0 0 0.5rem;
+    font-size: 2.125rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #0f172a;
+  }
+  .subtitle {
+    color: #64748b;
+    margin: 0 0 2rem;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2.5rem;
+  }
+  .stat-card {
+    background: #fff;
+    border: none;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), 0 8px 16px rgba(0, 0, 0, 0.08);
+  }
+  .stat-value {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    color: #0284c7;
+  }
+  .stat-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    font-weight: 600;
+  }
+  .funnel {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 1rem;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    overflow: visible;
+    margin-bottom: 2.5rem;
+    padding: 0;
+  }
+  .funnel tr {
+    display: contents;
+  }
+  .funnel td {
+    padding: 0;
+    border: none;
+    background: #fff;
+    border-radius: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 1.5rem 1rem;
+    text-align: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .funnel td:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), 0 8px 16px rgba(0, 0, 0, 0.08);
+  }
+  .funnel-stage {
+    font-weight: 700;
+    color: #475569;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+    display: block;
+  }
+  .funnel-count {
+    font-size: 1.875rem;
+    font-weight: 800;
+    color: #0284c7;
+  }
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+    align-items: center;
+    padding: 1rem 0;
+  }
+  .controls input {
+    flex: 1;
+    min-width: 200px;
+    padding: 0.625rem 1rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.625rem;
+    font-size: 0.9rem;
+    background: #fff;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .controls input:focus {
+    outline: none;
+    border-color: #0284c7;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
+  }
+  .controls button {
+    padding: 0.5rem 1rem;
+    border: 1px solid #cbd5e1;
+    background: #fff;
+    border-radius: 0.625rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+  .controls button:hover {
+    border-color: #94a3b8;
+    background: #f8fafc;
+  }
+  .controls button.active {
+    background: #0284c7;
+    color: #fff;
+    border-color: #0284c7;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+  th, td {
+    text-align: left;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 0.875rem;
+    vertical-align: top;
+    line-height: 1.5;
+  }
+  th {
+    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #475569;
+    cursor: pointer;
+    user-select: none;
+    font-weight: 700;
+    transition: background-color 0.2s ease;
+  }
+  th:hover {
+    background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
+  }
+  tr:last-child td {
+    border-bottom: none;
+  }
+  tr:hover {
+    background-color: #f8fafc;
+  }
+  .badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
   .badge-applied { background: #dcfce7; color: #166534; }
   .badge-interview { background: #dbeafe; color: #1e40af; }
   .badge-offer { background: #ede9fe; color: #5b21b6; }
@@ -141,9 +308,34 @@ function renderHtmlTracker(roles, options = {}) {
   .badge-ghosted { background: #fed7aa; color: #92400e; }
   .badge-not-applied { background: #fef3c7; color: #92400e; }
   .badge-other { background: #e2e8f0; color: #334155; }
-  .stale-badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 0.375rem; background: #fcd34d; color: #92400e; font-size: 0.7rem; font-weight: 600; margin-right: 0.25rem; }
-  .empty-state { padding: 2rem; text-align: center; color: #64748b; }
-  a { color: #0284c7; }
+  .stale-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.5rem;
+    background: #fcd34d;
+    color: #92400e;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-right: 0.5rem;
+    letter-spacing: 0.02em;
+  }
+  .empty-state {
+    padding: 3rem 2rem;
+    text-align: center;
+    color: #64748b;
+    background: #fff;
+    border-radius: 1rem;
+    border: 1px solid #e2e8f0;
+  }
+  a {
+    color: #0284c7;
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+  a:hover {
+    color: #0369a1;
+    text-decoration: underline;
+  }
 </style>
 </head>
 <body>
