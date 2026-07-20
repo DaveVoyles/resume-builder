@@ -791,3 +791,30 @@ test("set-status: appliedAt handling is completely unaffected by new nextAction 
     cleanupWorkspace(tmpDir);
   }
 });
+
+test("set-status: a repeat call to the same status does not duplicate the follow-up note", async () => {
+  const tmpDir = createFixtureWorkspace();
+  try {
+    await run({
+      workspace: tmpDir,
+      company: "Acme Corp",
+      title: "Senior Engineer",
+      status: "applied",
+      date: "2026-06-01",
+    });
+    await run({
+      workspace: tmpDir,
+      company: "Acme Corp",
+      title: "Senior Engineer",
+      status: "applied",
+      date: "2026-06-01",
+    });
+
+    const roles = readJson(workspacePaths(tmpDir).rolesTracked);
+    const role = roles[0];
+    const occurrences = role.notes.filter((note) => note === "check in if no response").length;
+    assert.strictEqual(occurrences, 1, "repeat call to the same status must not push a duplicate note");
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});

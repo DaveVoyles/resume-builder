@@ -133,31 +133,29 @@ async function run(options) {
     role.application.appliedAt = options.date || getCurrentDate();
   }
 
-  // Auto-generate nextAction based on status transition, per the rule table
+  // Auto-generate nextAction based on status transition, per the rule table.
+  // "interested" has no entry in NEXT_ACTION_RULES, so nextAction is left
+  // completely untouched for it.
   const rule = NEXT_ACTION_RULES[options.status];
-  if (rule) {
-    if (options.status === "interested") {
-      // interested leaves nextAction untouched entirely
-      // (rule exists to document this, but takes no action)
-    } else if (options.status === "rejected" || options.status === "withdrawn") {
-      // Clear nextAction to close type
-      role.nextAction = { type: "close" };
-    } else {
-      // applied, interview, offer: set to follow-up with computed dueDate
-      const statusDate = options.date || getCurrentDate();
-      const dueDate = addDays(statusDate, rule.dueDateOffsetDays);
-      role.nextAction = {
-        type: rule.type,
-        owner: "candidate",
-        dueDate,
-      };
-      // Append note to notes array
-      if (!Array.isArray(role.notes)) {
-        role.notes = [];
-      }
-      if (rule.note) {
-        role.notes.push(rule.note);
-      }
+  if (rule && (options.status === "rejected" || options.status === "withdrawn")) {
+    role.nextAction = { type: rule.type };
+  } else if (rule) {
+    const statusDate = options.date || getCurrentDate();
+    const dueDate = addDays(statusDate, rule.dueDateOffsetDays);
+    role.nextAction = {
+      type: rule.type,
+      owner: "candidate",
+      dueDate,
+    };
+    if (!Array.isArray(role.notes)) {
+      role.notes = [];
+    }
+    // Guard against duplicate notes from a repeat call to the same status
+    // (e.g. an idempotent re-run) — a genuine later re-cycle (reapplying
+    // after rejection) still gets a fresh note since it won't be the
+    // immediately preceding entry.
+    if (rule.note && role.notes[role.notes.length - 1] !== rule.note) {
+      role.notes.push(rule.note);
     }
   }
 
