@@ -67,3 +67,16 @@ If the candidate has more than one tracked role with the same company + title (e
   ```
 
 The command updates `roles.tracked.json` and rebuilds `outputs/tracker.md` and `outputs/tracker.html` automatically.
+## 🎤 Intake interview (grill)
+
+**When to use:** After the candidate has set up their workspace, run the grill intake interview to capture their work history, target roles, location preferences, compensation, and constraints.
+
+**How to use:**
+
+1. Open the grill playbook: [`docs/playbooks/grill.md`](docs/playbooks/grill.md)
+2. Paste it into your terminal agent (Claude, ChatGPT, Copilot CLI, etc.)
+3. Follow the agent's guidance to answer questions one at a time
+4. The agent writes answers to `candidate/profile.json`, `candidate/preferences.json`, and `candidate/evidence.jsonl`
+5. Validate the result: `npm run workspace:validate -- --workspace candidate`
+
+The grill playbook is the source of truth. See the `.claude/skills/grill` skill for usage details.

@@ -437,6 +437,95 @@ The tracker renderer reads the structured v1 fields first:
 
 The renderer also accepts the earlier flat fields (`location`, `compensation`, `fit`, `applied`, and `output.resume`) so existing tracked-role files can be regenerated without migration.
 
+## `leads.json`
+
+`leads.json` stores prospective roles discovered during search, before promotion to tracked roles. Leads are agent-maintained via the find-roles playbook and promote into `roles.tracked.json` via the `add-role --tracked` command.
+
+### Required fields
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `schemaVersion` | string | Must be `"1.0"`. |
+| `leads` | array | Array of prospective role objects. |
+
+### Per-lead required fields
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | string | Unique lead ID, format `lead-NNN`. |
+| `company` | string | Company or organization name. |
+| `title` | string | Role title from the posting. |
+| `url` | string | Direct link to the posting. |
+| `source` | string | Where the lead was discovered (LinkedIn, Wellfound, company career page, etc.). |
+| `discoveredAt` | string | ISO 8601 date when the lead was found. |
+
+### Per-lead optional fields
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `fit` | object | Fit assessment with `level` and `rationale`. |
+| `fit.level` | string | One of `strong`, `moderate`, or `stretch`. |
+| `fit.rationale` | string | 1-2 sentence explanation of the fit. |
+| `notes` | string | Agent notes for candidate review (recruiter contact, tech stack, standout projects, application deadlines). |
+| `status` | string | Optional: `new`, `reviewed`, `accepted`, `rejected`, or `promoted`. |
+
+### Example
+
+```json
+{
+  "schemaVersion": "1.0",
+  "leads": [
+    {
+      "id": "lead-001",
+      "company": "Acme Corp",
+      "title": "Senior Software Engineer",
+      "url": "https://jobs.example.invalid/acme/senior-engineer",
+      "source": "LinkedIn",
+      "discoveredAt": "2026-07-19",
+      "fit": {
+        "level": "strong",
+        "rationale": "Matches target seniority, remote work, and developer tools focus."
+      },
+      "notes": "Contact: recruiting@acme.com. Active project: AI debugging tools. Stack: Go, React, Kubernetes."
+    },
+    {
+      "id": "lead-002",
+      "company": "Northstar Tools",
+      "title": "Product Manager, Developer Experience",
+      "url": "https://jobs.example.invalid/northstar/pm-devex",
+      "source": "Wellfound",
+      "discoveredAt": "2026-07-19",
+      "fit": {
+        "level": "moderate",
+        "rationale": "Good industry fit and fully remote, but early-stage startup vs. preferred growth-stage company."
+      },
+      "notes": "Series B funding. Open to contracting. Application deadline: 2026-08-02."
+    }
+  ]
+}
+```
+
+### Promoting a lead to tracked role
+
+Once the candidate reviews a lead and approves it, promote it using the `add-role` command with the `--tracked` flag:
+
+```bash
+npm run workspace:add-role -- --workspace <workspace> --url <posting-url> --tracked
+```
+
+This command:
+1. Adds the role to `roles.tracked.json` with an initial `interested` status
+2. Creates a corresponding entry in the tracker
+3. Prepares the role for resume tailoring and application tracking
+
+**Example:**
+
+```bash
+npm run workspace:add-role -- --workspace candidate --url "https://jobs.example.invalid/acme/senior-engineer" --tracked
+```
+
+After promotion, you can optionally remove or archive the lead from `leads.json`, or keep it as a historical record.
+
 ## Similar-role candidate files
 
 Similar-role discovery can score an optional local JSON array of manually researched roles. This file is an input to `find-similar`; it is not tracked by default, and it is not added to `roles.tracked.json` automatically.
