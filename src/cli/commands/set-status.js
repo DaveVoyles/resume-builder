@@ -1,6 +1,7 @@
 "use strict";
 
 const { renderTracker } = require("../../renderers/markdown-tracker");
+const { renderHtmlTracker } = require("../../renderers/html-tracker");
 const { readJson, resolveWorkspace, workspacePaths, writeJson, writeTextIfMissing } = require("../../core/workspace");
 
 const VALID_STATUSES = ["interested", "applied", "interview", "offer", "rejected", "withdrawn"];
@@ -63,14 +64,21 @@ async function run(options) {
   // Write updated roles
   writeJson(paths.rolesTracked, roles);
 
-  // Rebuild tracker
+  // Rebuild tracker (markdown + HTML, matching build-tracker's per-format behavior)
   const trackerContent = renderTracker(roles);
   writeTextIfMissing(paths.tracker, trackerContent, true);
+
+  const profile = readJson(paths.profile, {});
+  const candidateName = profile.candidate?.preferredName || profile.candidate?.name;
+  const htmlTitle = candidateName ? `${candidateName} - Application Tracker` : "Application Tracker";
+  const htmlTrackerContent = renderHtmlTracker(roles, { title: htmlTitle });
+  writeTextIfMissing(paths.htmlTracker, htmlTrackerContent, true);
 
   console.log(
     `Updated ${role.company} — ${role.title} to status: ${options.status} (${appliedDate})`
   );
   console.log(`Rebuilt tracker: ${paths.tracker}`);
+  console.log(`Rebuilt HTML tracker: ${paths.htmlTracker}`);
 }
 
 module.exports = { run, VALID_STATUSES };

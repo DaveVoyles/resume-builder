@@ -8,6 +8,7 @@ const os = require("os");
 const { run } = require("./set-status");
 const { workspacePaths, readJson, writeJson, ensureDir } = require("../../core/workspace");
 const { renderTracker } = require("../../renderers/markdown-tracker");
+const { renderHtmlTracker } = require("../../renderers/html-tracker");
 
 /**
  * Test helper: create a temporary fixture workspace with sample roles
@@ -155,6 +156,34 @@ test("set-status: rebuilds tracker after status change", async () => {
     const roles = readJson(paths.rolesTracked);
     const expectedTracker = renderTracker(roles);
     assert.strictEqual(afterTracker, expectedTracker, "Tracker should match rebuilt content");
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
+test("set-status: rebuilds HTML tracker after status change", async () => {
+  const tmpDir = createFixtureWorkspace();
+  try {
+    const paths = workspacePaths(tmpDir);
+    assert.strictEqual(fs.existsSync(paths.htmlTracker), false, "HTML tracker should not exist before any status change");
+
+    await run({
+      workspace: tmpDir,
+      company: "Acme Corp",
+      title: "Senior Engineer",
+      status: "rejected",
+      date: "2026-06-10",
+    });
+
+    assert.strictEqual(fs.existsSync(paths.htmlTracker), true, "HTML tracker should be created");
+    const htmlTracker = fs.readFileSync(paths.htmlTracker, "utf8");
+
+    const roles = readJson(paths.rolesTracked);
+    const profile = readJson(paths.profile, {});
+    const expectedHtml = renderHtmlTracker(roles, {
+      title: `${profile.candidate.preferredName} - Application Tracker`,
+    });
+    assert.strictEqual(htmlTracker, expectedHtml, "HTML tracker should match rebuilt content");
   } finally {
     cleanupWorkspace(tmpDir);
   }

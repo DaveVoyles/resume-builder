@@ -64,4 +64,4 @@ npm run workspace -- set-status \
   npm run workspace -- set-status --workspace candidate --company "TechCorp" --title "Product Manager" --status interview --date 2026-07-19
   ```
 
-The command updates `roles.tracked.json` and rebuilds `outputs/tracker.md` automatically.
+The command updates `roles.tracked.json` and rebuilds `outputs/tracker.md` and `outputs/tracker.html` automatically.
