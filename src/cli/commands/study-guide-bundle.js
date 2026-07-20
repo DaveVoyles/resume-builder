@@ -2,7 +2,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { readJson, readJsonLines, resolveWorkspace, workspacePaths, ensureDir } = require("../../core/workspace");
+const { readJson, readJsonLines, resolveWorkspace, workspacePaths, ensureDir, writeJson } = require("../../core/workspace");
 
 /**
  * Find a role in the tracked roles list.
@@ -43,9 +43,16 @@ function findRole(roles, options) {
 }
 
 /**
- * Find the role config file for a given role.
- * Looks for files in <workspace>/resume-configs/ matching the role's company and title.
- * Returns the full path to the config file, or throws if not found.
+ * Find the role config file for a given role by matching each candidate
+ * config's own `company` field (read from its content), not by guessing
+ * from the filename — a filename substring match can silently return the
+ * WRONG config (e.g. company "Ab" matching a file named "fabrikam-co.json"),
+ * bundling the wrong role's resume into a study guide with no error. There's
+ * no explicit link field between a tracked role and its config file in the
+ * schema yet, so this can't disambiguate two DIFFERENT roles at the SAME
+ * company that each have their own config — that case fails loud (ambiguous
+ * match) rather than silently guessing, which is the safe default until a
+ * schema-level link exists.
  */
 function findRoleConfigPath(workspace, role) {
   const configDir = path.join(workspace, "resume-configs");
@@ -54,35 +61,37 @@ function findRoleConfigPath(workspace, role) {
     throw new Error(`Resume configs directory not found: ${configDir}`);
   }
 
-  const files = fs.readdirSync(configDir);
-
-  // Look for a config file that matches the role ID or a slug-like match
-  // For now, accept any config file in the directory that exists
-  // The agent is responsible for providing the correct config
+  const files = fs.readdirSync(configDir).filter((file) => file.endsWith(".json"));
   if (files.length === 0) {
     throw new Error(
       `No resume configs found for ${role.company} — ${role.title}. Create a config in ${configDir}/<name>.json.`
     );
   }
 
-  // Try to find config by role ID (converted to kebab-case slug)
-  const roleSlug = role.id.replace(/_/g, "-");
-  const directMatch = files.find((f) => f.includes(roleSlug) || f.includes(role.id));
-  if (directMatch) {
-    return path.join(configDir, directMatch);
+  const companyLower = role.company.toLowerCase();
+  const matches = files
+    .map((file) => {
+      const fullPath = path.join(configDir, file);
+      try {
+        return { file, fullPath, config: readJson(fullPath) };
+      } catch (error) {
+        return null;
+      }
+    })
+    .filter((entry) => entry && typeof entry.config.company === "string" && entry.config.company.toLowerCase() === companyLower);
+
+  if (matches.length === 0) {
+    throw new Error(
+      `Resume config not found for ${role.company} — ${role.title}. No config in ${configDir}/ has a matching "company" field. Found files: ${files.join(", ")}.`
+    );
+  }
+  if (matches.length > 1) {
+    throw new Error(
+      `Ambiguous resume config: ${matches.length} configs in ${configDir}/ match company "${role.company}" (${matches.map((m) => m.file).join(", ")}). This tool can't yet distinguish multiple tracked roles at the same company by config alone — consolidate or remove the extra config.`
+    );
   }
 
-  // Try company slug match
-  const companySlug = role.company.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
-  const companyMatches = files.filter((f) => f.includes(companySlug));
-  if (companyMatches.length === 1) {
-    return path.join(configDir, companyMatches[0]);
-  }
-
-  // If multiple matches or no match, require explicit config specification
-  throw new Error(
-    `Resume config not found for ${role.company} — ${role.title}. Found configs: ${files.join(", ")}. Specify the config path or rename it to match the role.`
-  );
+  return matches[0].fullPath;
 }
 
 /**
@@ -139,7 +148,7 @@ async function run(options) {
   const bundleDir = path.join(paths.outputs, "study-guide-bundles");
   ensureDir(bundleDir);
   const bundlePath = path.join(bundleDir, `${role.id}.json`);
-  fs.writeFileSync(bundlePath, JSON.stringify(bundle, null, 2));
+  writeJson(bundlePath, bundle);
 
   console.log(`Created study guide bundle for ${role.company} — ${role.title}: ${bundlePath}`);
   return bundlePath;

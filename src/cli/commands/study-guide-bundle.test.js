@@ -209,3 +209,57 @@ test("study-guide-bundle: includes evidence references", async () => {
     cleanupWorkspace(tmpDir);
   }
 });
+
+test("study-guide-bundle: does not silently match a config for an unrelated company via filename substring coincidence", async () => {
+  const tmpDir = createFixtureWorkspace();
+  try {
+    // "Ab" is a substring of "test-company...json"'s neighbor below — the
+    // old filename-substring matcher would have silently paired this role
+    // with an unrelated company's config just because the slug happened to
+    // appear inside the filename. Add a role whose company is a substring
+    // of an existing filename fragment, but whose config's own `company`
+    // field does NOT match — this must fail loud, not silently succeed.
+    const paths = workspacePaths(tmpDir);
+    const roles = readJson(paths.rolesTracked);
+    roles.push({
+      id: "role-tracked-002",
+      company: "Comp",
+      title: "Other Role",
+      status: "tracked",
+      urls: {},
+      updatedAt: "2026-06-08",
+    });
+    writeJson(paths.rolesTracked, roles);
+
+    await assert.rejects(
+      () => run({ workspace: tmpDir, id: "role-tracked-002" }),
+      /Resume config not found/i,
+      "A company-name substring coincidence in the filename must not produce a silent wrong match"
+    );
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
+test("study-guide-bundle: fails loud (ambiguous) rather than guessing when two configs match the same company", async () => {
+  const tmpDir = createFixtureWorkspace();
+  try {
+    const configDir = path.join(tmpDir, "resume-configs");
+    writeJson(path.join(configDir, "test-company-second-config.json"), {
+      schemaVersion: "1.0",
+      company: "Test Company",
+      candidate: { name: "Test User", contact: [{ text: "test@example.invalid" }] },
+      summary: { text: "A second, different config for the same company." },
+      experienceSections: [{ heading: "Experience", jobs: [{ title: "X", company: "Y", dates: "Z", bullets: ["b"] }] }],
+      skills: [["A", "B"]],
+    });
+
+    await assert.rejects(
+      () => run({ workspace: tmpDir, id: "role-tracked-001" }),
+      /Ambiguous resume config/i,
+      "Two configs matching the same company must fail loud instead of silently picking one"
+    );
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
