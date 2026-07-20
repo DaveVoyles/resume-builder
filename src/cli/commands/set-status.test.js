@@ -90,6 +90,23 @@ test("set-status: matches role by company and title", async () => {
   }
 });
 
+test("set-status: matches company and title case-insensitively", async () => {
+  const tmpDir = createFixtureWorkspace();
+  try {
+    await run({
+      workspace: tmpDir,
+      company: "acme corp",
+      title: "SENIOR ENGINEER",
+      status: "applied",
+    });
+
+    const afterRoles = readJson(workspacePaths(tmpDir).rolesTracked);
+    assert.strictEqual(afterRoles[0].application.status, "applied");
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
 test("set-status: matches a role that uses `role` instead of `title` (documented schema alias)", async () => {
   const tmpDir = createFixtureWorkspace([
     {
