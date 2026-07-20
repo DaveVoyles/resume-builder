@@ -79,7 +79,7 @@ function formatNotes(role) {
 // Buckets a role's free-text "applied" status into a small, stable set of
 // statuses so renderers can filter/color consistently regardless of the
 // exact wording a candidate or agent used (e.g. "Applied 2026-06-08",
-// "Rejected", "not yet"). interview/offer/withdrawn are their own buckets
+// "Rejected", "not yet"). interview/offer/withdrawn/ghosted are their own buckets
 // (not "other") so set-status's whole point — deterministic, visible status
 // — actually shows up distinctly in the tracker UI, not lumped in with any
 // unrecognized/garbage status text.
@@ -87,6 +87,7 @@ function statusBucket(appliedText) {
   const status = String(appliedText || "").toLowerCase();
   if (status.includes("rejected") || status.includes("denied")) return "rejected";
   if (status.includes("withdrawn")) return "withdrawn";
+  if (status.includes("ghosted")) return "ghosted";
   if (status.includes("offer")) return "offer";
   if (status.includes("interview")) return "interview";
   if (status.includes("applied")) return "applied";
