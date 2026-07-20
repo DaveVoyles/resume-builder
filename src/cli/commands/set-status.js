@@ -1,8 +1,7 @@
 "use strict";
 
-const { renderTracker } = require("../../renderers/markdown-tracker");
-const { renderHtmlTracker } = require("../../renderers/html-tracker");
-const { readJson, resolveWorkspace, workspacePaths, writeJson, writeTextIfMissing } = require("../../core/workspace");
+const buildTracker = require("./build-tracker");
+const { readJson, resolveWorkspace, workspacePaths, writeJson } = require("../../core/workspace");
 
 const VALID_STATUSES = ["interested", "applied", "interview", "offer", "rejected", "withdrawn"];
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -88,34 +87,25 @@ async function run(options) {
   // formatApplied() reads and displays/buckets correctly.
   role.application = role.application || {};
   role.application.status = options.status;
-  // `appliedAt` marks when the candidate applied — set it the first time,
-  // or when this transition IS the apply event, or on an explicit --date
-  // override. Later transitions (interview, offer, ...) must not silently
-  // overwrite that historical date; `role.updatedAt` already tracks "last
-  // changed" generically.
-  if (options.status === "applied" || !role.application.appliedAt || options.date) {
+  // `appliedAt` marks the date the candidate actually applied — only set it
+  // on the transition that IS the apply event, or on an explicit --date
+  // override (trusts the caller's correction regardless of status). A role
+  // that skips straight from "interested" to "interview"/"rejected" never
+  // had an apply event, so appliedAt correctly stays unset; once set, later
+  // transitions must not silently overwrite that historical date.
+  if (options.status === "applied" || options.date) {
     role.application.appliedAt = options.date || getCurrentDate();
   }
   role.updatedAt = getCurrentDate();
 
-  // Write updated roles
+  // Write updated roles, then delegate the tracker rebuild to build-tracker
+  // (re-reads the roles we just wrote) so there's one place that knows how
+  // to render each format, instead of a second, drifting copy here.
   writeJson(paths.rolesTracked, roles);
+  buildTracker.run({ workspace: options.workspace, format: "md" });
+  buildTracker.run({ workspace: options.workspace, format: "html" });
 
-  // Rebuild tracker (markdown + HTML, matching build-tracker's per-format behavior)
-  const trackerContent = renderTracker(roles);
-  writeTextIfMissing(paths.tracker, trackerContent, true);
-
-  const profile = readJson(paths.profile, {});
-  const candidateName = profile.candidate?.preferredName || profile.candidate?.name;
-  const htmlTitle = candidateName ? `${candidateName} - Application Tracker` : "Application Tracker";
-  const htmlTrackerContent = renderHtmlTracker(roles, { title: htmlTitle });
-  writeTextIfMissing(paths.htmlTracker, htmlTrackerContent, true);
-
-  console.log(
-    `Updated ${role.company} — ${roleTitle(role)} to status: ${options.status} (${role.updatedAt})`
-  );
-  console.log(`Rebuilt tracker: ${paths.tracker}`);
-  console.log(`Rebuilt HTML tracker: ${paths.htmlTracker}`);
+  console.log(`Updated ${role.company} — ${roleTitle(role)} to status: ${options.status} (${role.updatedAt})`);
 }
 
 module.exports = { run, VALID_STATUSES };

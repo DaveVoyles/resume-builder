@@ -157,11 +157,33 @@ test("set-status: sets application.appliedAt when status changes", async () => {
   }
 });
 
-test("set-status: uses current date when date not provided", async () => {
+test("set-status: uses current date when date not provided and status is applied", async () => {
   const tmpDir = createFixtureWorkspace();
   try {
     const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
 
+    await run({
+      workspace: tmpDir,
+      company: "TechStart Inc",
+      title: "Product Manager",
+      status: "applied",
+    });
+
+    const afterRoles = readJson(workspacePaths(tmpDir).rolesTracked);
+    const role = afterRoles[1];
+    assert(role.application, "Role should have application object");
+    assert.strictEqual(role.application.appliedAt, today, "appliedAt should be today");
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
+test("set-status: leaves appliedAt unset when a role skips straight to a non-applied status", async () => {
+  const tmpDir = createFixtureWorkspace();
+  try {
+    // A referral-driven interview with no formal "applied" step ever
+    // recorded — appliedAt has no real value to report and must stay unset,
+    // not get stamped with today's date just because it was previously empty.
     await run({
       workspace: tmpDir,
       company: "TechStart Inc",
@@ -171,8 +193,8 @@ test("set-status: uses current date when date not provided", async () => {
 
     const afterRoles = readJson(workspacePaths(tmpDir).rolesTracked);
     const role = afterRoles[1];
-    assert(role.application, "Role should have application object");
-    assert.strictEqual(role.application.appliedAt, today, "appliedAt should be today");
+    assert.strictEqual(role.application.status, "interview");
+    assert.strictEqual(role.application.appliedAt, undefined, "appliedAt should stay unset without an actual apply event");
   } finally {
     cleanupWorkspace(tmpDir);
   }
