@@ -24,6 +24,7 @@ function renderTracker(roles) {
       link("Job", role.jobUrl),
       link("Apply", role.applyUrl),
       cell(role.resume),
+      cell(role.coverLetterStatus),
       cell(role.notes),
     ].join(" | "),
   );
@@ -33,8 +34,8 @@ function renderTracker(roles) {
     "",
     "Generated from `roles.tracked.json`. Rebuild with `node src/cli/index.js build-tracker --workspace <workspace>`.",
     "",
-    "| Company | Role | Location | Compensation | Fit | Applied | Job URL | Apply URL | Resume | Notes |",
-    "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+    "| Company | Role | Location | Compensation | Fit | Applied | Job URL | Apply URL | Resume | Cover Letter | Notes |",
+    "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ...rows.map((row) => `| ${row} |`),
     rows.length === 0 ? "\n_No tracked roles yet._" : "",
     "",

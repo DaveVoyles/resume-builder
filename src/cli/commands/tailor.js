@@ -2,6 +2,7 @@
 
 const path = require("path");
 const renderResume = require("./render-resume");
+const renderCoverLetter = require("./render-cover-letter");
 const addRole = require("./add-role");
 const setStatus = require("./set-status");
 const buildTracker = require("./build-tracker");
@@ -156,7 +157,32 @@ async function run(options) {
   role.resume.configPath = relativeToWorkspace(workspace, configPath);
   role.resume.outputPath = relativeToWorkspace(workspace, outputPath);
   role.resume.status = "review-needed";
+
+  // Persist the resume linkage now, before attempting the cover letter step
+  // below. The cover letter's independent claim audit can throw and abort
+  // this function — if that write waited until after Step 5b, a blocked
+  // cover letter would silently discard the resume linkage too, even though
+  // the resume itself already rendered successfully and add-role already
+  // tracked the role (issue caught in code review, PR #67).
   writeJson(paths.rolesTracked, trackedRoles);
+
+  // Step 5b: if a cover letter config is provided, render it and link it to
+  // the role. This runs D2's full validate+audit+render pass independently
+  // from the resume's audit — a separate, independent validation of the
+  // cover letter config's own claims. A second write below only happens if
+  // this succeeds, so a blocked cover letter never rolls back the resume
+  // linkage already persisted above.
+  if (options.coverLetter) {
+    const coverLetterOutputPath = await renderCoverLetter.run({
+      workspace: options.workspace,
+      config: options.coverLetter,
+    });
+    role.coverLetter = role.coverLetter || {};
+    role.coverLetter.configPath = relativeToWorkspace(workspace, path.resolve(process.cwd(), options.coverLetter));
+    role.coverLetter.outputPath = relativeToWorkspace(workspace, coverLetterOutputPath);
+    role.coverLetter.status = "review-needed";
+    writeJson(paths.rolesTracked, trackedRoles);
+  }
 
   // Step 6: land the role un-applied (plan 0001 Decision 8 / D4 acceptance
   // criteria — a human reviews the resume before anything is sent). Reuse
