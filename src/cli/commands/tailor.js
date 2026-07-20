@@ -8,6 +8,7 @@ const buildTracker = require("./build-tracker");
 const { createRole } = require("../../adapters/job-posting");
 const { validateResumeConfig } = require("../../core/resume-config");
 const { auditResumeConfig } = require("../../core/claim-audit");
+const { scoreKeywordCoverage } = require("../../core/keyword-coverage");
 const { readJson, readJsonLines, relativeToWorkspace, resolveWorkspace, workspacePaths, writeJson } = require("../../core/workspace");
 
 // The D7 enum value (src/cli/commands/set-status.js's VALID_STATUSES) that
@@ -90,6 +91,28 @@ async function run(options) {
     throw new Error(`Resume config failed the evidence-backed claim audit:\n${audit.errors.map((error) => `  - ${error}`).join("\n")}`);
   }
   audit.warnings.forEach((warning) => console.warn(`Warning: ${warning}`));
+
+  // Step 2b: keyword coverage advisory (D7, src/core/keyword-coverage.js) —
+  // runs only if --keywords is provided, prints a coverage report, but never
+  // blocks or affects the exit code. This is purely advisory feedback.
+  if (options.keywords) {
+    try {
+      const keywordsPath = path.resolve(process.cwd(), options.keywords);
+      const keywords = readJson(keywordsPath);
+      if (!Array.isArray(keywords)) {
+        throw new Error(`Keywords file must contain a JSON array (got: ${typeof keywords})`);
+      }
+      const result = scoreKeywordCoverage(keywords, config);
+      const presentList = result.present.length > 0 ? result.present.join(", ") : "(none)";
+      const missingList = result.missing.length > 0 ? result.missing.join(", ") : "(none)";
+      console.log(`Keyword coverage: ${result.percent}% (${result.present.length}/${result.present.length + result.missing.length})`);
+      console.log(`Present: ${presentList}`);
+      console.log(`Missing: ${missingList}`);
+    } catch (error) {
+      // Advisory-only: print the error but never throw or block
+      console.warn(`Warning: keyword coverage analysis failed: ${error.message}`);
+    }
+  }
 
   // A tailored resume belongs to exactly one company. If the caller passes
   // an explicit --company that disagrees with the config's own `company`

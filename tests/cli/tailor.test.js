@@ -290,6 +290,128 @@ test("tailor re-run finds the existing role by job URL even when --title has dri
   });
 });
 
+test("tailor with --keywords prints keyword coverage report (advisory-only D7 integration)", async () => {
+  await withWorkspace({ evidenceEntries: backedEvidence }, async ({ workspace, configPath, paths }) => {
+    const keywordsPath = path.join(workspace, "test-keywords.json");
+    const keywords = ["Platform strategy", "Developer experience", "Nonexistent tech"];
+    writeJson(keywordsPath, keywords);
+
+    const originalLog = console.log;
+    const logs = [];
+    console.log = (message) => logs.push(message);
+    try {
+      await command.run({
+        workspace,
+        config: configPath,
+        keywords: keywordsPath,
+        title: "Developer platform product manager",
+      });
+
+      // Coverage report should be printed.
+      assert.ok(logs.some((message) => /Keyword coverage:/.test(message)), "expected keyword coverage report line");
+      assert.ok(logs.some((message) => /Present:/.test(message)), "expected Present: line");
+      assert.ok(logs.some((message) => /Missing:/.test(message)), "expected Missing: line");
+      assert.ok(logs.some((message) => /Platform strategy/.test(message)), "expected a present keyword");
+      assert.ok(logs.some((message) => /Nonexistent tech/.test(message)), "expected a missing keyword");
+    } finally {
+      console.log = originalLog;
+    }
+
+    // Command must still succeed and produce artifacts (not blocked by keyword advisory).
+    assert.ok(fs.existsSync(path.join(workspace, "outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai.docx")));
+    const [role] = readJson(paths.rolesTracked);
+    assert.strictEqual(role.application.status, "interested");
+  });
+});
+
+test("tailor without --keywords does not print keyword coverage report", async () => {
+  await withWorkspace({ evidenceEntries: backedEvidence }, async ({ workspace, configPath, paths }) => {
+    const originalLog = console.log;
+    const logs = [];
+    console.log = (message) => logs.push(message);
+    try {
+      await command.run({
+        workspace,
+        config: configPath,
+        title: "Developer platform product manager",
+      });
+
+      // No keywords flag provided, so no coverage report should be printed.
+      assert.ok(!logs.some((message) => /Keyword coverage:/.test(message)), "no keyword coverage report should be printed without --keywords");
+    } finally {
+      console.log = originalLog;
+    }
+
+    // Command must still succeed normally.
+    assert.ok(fs.existsSync(path.join(workspace, "outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai.docx")));
+    const [role] = readJson(paths.rolesTracked);
+    assert.strictEqual(role.application.status, "interested");
+  });
+});
+
+test("tailor with --keywords never blocks, even with zero coverage", async () => {
+  await withWorkspace({ evidenceEntries: backedEvidence }, async ({ workspace, configPath, paths }) => {
+    const keywordsPath = path.join(workspace, "test-keywords-zero-coverage.json");
+    const keywords = ["Ruby", "Python", "Go", "Rust"];
+    writeJson(keywordsPath, keywords);
+
+    const originalLog = console.log;
+    const logs = [];
+    console.log = (message) => logs.push(message);
+    try {
+      // Critical test: tailor must succeed even with 0% keyword coverage.
+      await command.run({
+        workspace,
+        config: configPath,
+        keywords: keywordsPath,
+        title: "Developer platform product manager",
+      });
+
+      // Coverage report should show 0%.
+      assert.ok(logs.some((message) => /Keyword coverage: 0%/.test(message)), "expected 0% coverage report");
+      assert.ok(logs.some((message) => /Present: \(none\)/.test(message)), "expected no present keywords");
+    } finally {
+      console.log = originalLog;
+    }
+
+    // Command must STILL succeed and produce artifacts (keyword coverage never blocks).
+    assert.ok(fs.existsSync(path.join(workspace, "outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai.docx")));
+    const roles = readJson(paths.rolesTracked);
+    assert.strictEqual(roles.length, 1, "role must be tracked despite zero keyword coverage");
+    assert.strictEqual(roles[0].application.status, "interested");
+  });
+});
+
+test("tailor with invalid --keywords file path warns but does not block", async () => {
+  await withWorkspace({ evidenceEntries: backedEvidence }, async ({ workspace, configPath, paths }) => {
+    const originalWarn = console.warn;
+    const originalLog = console.log;
+    const warns = [];
+    const logs = [];
+    console.warn = (message) => warns.push(message);
+    console.log = (message) => logs.push(message);
+    try {
+      await command.run({
+        workspace,
+        config: configPath,
+        keywords: "nonexistent-keywords.json",
+        title: "Developer platform product manager",
+      });
+
+      // Should warn about the keywords failure but not block.
+      assert.ok(warns.some((message) => /keyword coverage analysis failed/.test(message)), "expected a warning about keyword analysis failure");
+    } finally {
+      console.warn = originalWarn;
+      console.log = originalLog;
+    }
+
+    // Command must still succeed (keyword errors never block).
+    assert.ok(fs.existsSync(path.join(workspace, "outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai.docx")));
+    const [role] = readJson(paths.rolesTracked);
+    assert.strictEqual(role.application.status, "interested");
+  });
+});
+
 // End-to-end run against the real fictional sample candidate (design plan
 // 0001, D4 acceptance criteria: "End-to-end run on the fictional sample
 // candidate documented and tested" — docs/playbooks/tailor.md's "Sample-
