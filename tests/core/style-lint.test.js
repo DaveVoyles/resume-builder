@@ -168,10 +168,9 @@ describe("checkBuzzwords", () => {
   test("counts multiple occurrences of same buzzword", () => {
     const text = "Leveraged our team synergies. I leveraged technologies to deliver synergies.";
     const findings = checkBuzzwords(text);
-    const leveraged = findings.find((f) => f.word === "leverage");
-    if (leveraged) {
-      assert.ok(leveraged.count >= 2, "Should count multiple occurrences");
-    }
+    const leveraged = findings.find((f) => f.word === "leveraged");
+    assert.ok(leveraged, "Should detect 'leveraged'");
+    assert.ok(leveraged.count >= 2, "Should count multiple occurrences");
   });
 });
 
