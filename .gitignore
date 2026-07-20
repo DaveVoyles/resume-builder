@@ -26,3 +26,17 @@ outputs/
 
 # Lavish Editor review scratch artifacts
 .lavish/
+
+# Agent-landing-floor tooling (scripts/enable-landing-floor.sh symlinks) --
+# machine-local, point at an absolute path on the operator's own machine, and
+# must never be committed (a checked-in symlink to a path that doesn't exist
+# on any other machine, including GitHub Actions runners, breaks `node --test`
+# there -- see docs/decisions/... in Chat-Agents, ADR 0030 addendum).
+/scripts/land-pr.sh
+/scripts/gatekeeper.sh
+/scripts/review-lens-route.sh
+/scripts/review-lens-fanout.sh
+/scripts/review-lens-synthesize.sh
+/scripts/review-lens-validate-findings.sh
+/scripts/review-lens-receipt.sh
+/scripts/board-seed.sh
