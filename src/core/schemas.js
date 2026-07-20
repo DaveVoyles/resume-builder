@@ -108,6 +108,9 @@ function validateFeedback(entries) {
       if (ids.has(entry.id)) errors.push(`${label}: duplicate id ${entry.id}`);
       ids.add(entry.id);
     }
+    if (requireString(entry.schemaVersion, `${label}.schemaVersion`, errors) && entry.schemaVersion !== "1.0") {
+      errors.push(`${label}.schemaVersion: must be "1.0"`);
+    }
     requireString(entry.question, `${label}.question`, errors);
     requireString(entry.answer, `${label}.answer`, errors);
     requireString(entry.proposedAnswer, `${label}.proposedAnswer`, errors);

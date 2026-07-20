@@ -416,3 +416,33 @@ test("validate fails when feedback.jsonl entry has invalid sentiment enum value"
     cleanupWorkspace(tmpDir);
   }
 });
+
+test("validate fails when feedback.jsonl entry has an invalid schemaVersion", () => {
+  const tmpDir = createFixtureWorkspace({
+    resumeConfig: baseResumeConfig(["Sample bullet."]),
+    evidenceEntries: [],
+  });
+
+  const feedbackPath = path.join(tmpDir, "feedback.jsonl");
+  const invalidEntry = {
+    schemaVersion: "2.0",
+    id: "fb-001",
+    context: "interview",
+    question: "Question 1",
+    answer: "Answer 1",
+    sentiment: "confident",
+    proposedAnswer: "Better answer 1",
+    createdAt: "2026-07-20T14:30:00.000Z",
+  };
+  fs.writeFileSync(feedbackPath, `${JSON.stringify(invalidEntry)}\n`);
+
+  try {
+    assert.throws(() => run({ workspace: tmpDir }), (error) => {
+      assert.match(error.message, /feedback line 1/);
+      assert.match(error.message, /schemaVersion/);
+      return true;
+    });
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
