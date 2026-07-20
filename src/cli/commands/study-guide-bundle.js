@@ -166,6 +166,7 @@ async function run(options) {
     profile,
     evidence,
     resumeConfig,
+    coverLetterOutputPath: role.coverLetter?.outputPath || null,
     jobPosting: {
       url: role.urls?.job || null,
       applyUrl: role.urls?.apply || null,

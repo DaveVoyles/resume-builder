@@ -83,6 +83,7 @@ function renderHtmlTracker(roles, options = {}) {
     jobUrl: role.jobUrl || "",
     applyUrl: role.applyUrl || "",
     resume: role.resume || "",
+    coverLetterStatus: role.coverLetterStatus || "",
     notes: notesHtml(sortedSourceRoles[index]),
   }));
 
@@ -147,7 +148,7 @@ function renderHtmlTracker(roles, options = {}) {
   <table id="rolesTable">
     <thead>
       <tr>
-        <th>Company</th><th>Role</th><th>Location</th><th>Compensation</th><th>Fit</th><th>Status</th><th>Links</th><th>Resume</th><th>Notes</th>
+        <th>Company</th><th>Role</th><th>Location</th><th>Compensation</th><th>Fit</th><th>Status</th><th>Links</th><th>Resume</th><th>Cover Letter</th><th>Notes</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -198,6 +199,7 @@ function renderHtmlTracker(roles, options = {}) {
             "<td><span class=\\"badge " + badgeClass + "\\">" + esc(label) + "</span><br><small>" + esc(role.applied || "—") + "</small></td>" +
             "<td>" + linkCell(role) + "</td>" +
             "<td>" + esc(role.resume || "—") + "</td>" +
+            "<td>" + esc(role.coverLetterStatus || "—") + "</td>" +
             "<td>" + (role.notes || "—") + "</td>" +
             "</tr>"
           );

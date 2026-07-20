@@ -86,6 +86,24 @@ const backedEvidence = [
   sourceBackedEntry("ev-003", "Presented developer-platform strategy at a quarterly engineering review."),
 ];
 
+function fictionalCoverLetterConfig(overrides = {}) {
+  return {
+    schemaVersion: "1.0",
+    company: "Fabrikam AI",
+    candidate: {
+      name: "Sample Candidate",
+      contact: [{ text: "Remote, US" }],
+    },
+    salutation: "Dear Hiring Manager,",
+    bodyParagraphs: [
+      "I am excited to apply for this role and believe my background is a strong fit.",
+      "I look forward to discussing how my experience in developer platforms can contribute to your team.",
+    ],
+    closing: "Sincerely,",
+    ...overrides,
+  };
+}
+
 test("tailor validates, renders, and registers a tracked role landing un-applied, in one pass", async () => {
   await withWorkspace({ evidenceEntries: backedEvidence }, async ({ workspace, configPath, paths }) => {
     const result = await command.run({
@@ -526,4 +544,62 @@ test("tailor end-to-end: tailors the real sample-candidate's Fabrikam AI seed ro
   } finally {
     fs.rmSync(workspace, { recursive: true, force: true });
   }
+});
+
+test("tailor with --cover-letter flag renders and links the cover letter to the role", async () => {
+  await withWorkspace({ evidenceEntries: backedEvidence }, async ({ workspace, configPath, paths }) => {
+    const coverLetterConfigPath = path.join(paths.resumeConfigs, "fabrikam-ai-cover-letter.json");
+    writeJson(coverLetterConfigPath, fictionalCoverLetterConfig());
+
+    const result = await command.run({
+      workspace,
+      config: configPath,
+      coverLetter: coverLetterConfigPath,
+      url: "https://jobs.example.invalid/fabrikam/developer-platform-pm",
+      title: "Developer platform product manager",
+    });
+
+    // Resume DOCX rendered at the expected path.
+    const expectedDocx = path.join(workspace, "outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai.docx");
+    assert.ok(fs.existsSync(expectedDocx), `expected rendered file at ${expectedDocx}`);
+
+    // Cover letter DOCX rendered at the expected path.
+    const expectedCoverLetter = path.join(
+      workspace,
+      "outputs",
+      "cover-letters",
+      "Fabrikam AI",
+      "sample-candidate-fabrikam-ai-cover-letter.docx"
+    );
+    assert.ok(fs.existsSync(expectedCoverLetter), `expected rendered cover letter at ${expectedCoverLetter}`);
+
+    // Tracked role has both resume and cover letter linked.
+    const [role] = readJson(paths.rolesTracked);
+    assert.strictEqual(role.company, "Fabrikam AI");
+    assert.strictEqual(role.resume.configPath, "resume-configs/fabrikam-ai.json");
+    assert.strictEqual(role.resume.outputPath, path.join("outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai.docx"));
+    assert.strictEqual(role.resume.status, "review-needed");
+
+    // Cover letter is linked with same shape as resume.
+    assert.strictEqual(role.coverLetter.configPath, "resume-configs/fabrikam-ai-cover-letter.json");
+    assert.strictEqual(
+      role.coverLetter.outputPath,
+      path.join("outputs", "cover-letters", "Fabrikam AI", "sample-candidate-fabrikam-ai-cover-letter.docx")
+    );
+    assert.strictEqual(role.coverLetter.status, "review-needed");
+  });
+});
+
+test("tailor without --cover-letter flag does not create a coverLetter entry on the role", async () => {
+  await withWorkspace({ evidenceEntries: backedEvidence }, async ({ workspace, configPath, paths }) => {
+    await command.run({
+      workspace,
+      config: configPath,
+      url: "https://jobs.example.invalid/fabrikam/developer-platform-pm",
+      title: "Developer platform product manager",
+    });
+
+    const [role] = readJson(paths.rolesTracked);
+    assert.strictEqual(role.coverLetter, undefined, "coverLetter should not be set when --cover-letter is not provided");
+  });
 });
