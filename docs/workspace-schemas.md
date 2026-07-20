@@ -749,6 +749,28 @@ npm run workspace:tailor -- --workspace <workspace> \
 4. Registers (or finds the existing) tracked role via `add-role`'s own command, then sets `resume.configPath` and `resume.outputPath` on it (relative to the workspace root) so the role carries an explicit link back to the exact config and DOCX it was tailored from — this is also what `study-guide-bundle` (D8) now prefers over its content-matching fallback, when the link is present.
 5. Sets `application.status` to `interested` — the D7 enum's not-yet-applied value (buckets to `not-applied` in the tracker) — via `set-status`, unless the role already has a real `application.status` (a re-run never reverts genuine progress), and rebuilds the tracker.
 
+## Study guide bundle (`study-guide-bundle`)
+
+`study-guide-bundle` gathers everything relevant to a tracked role into one context file so an agent can write an interview study guide from it, without re-reading four separate workspace files. See [`docs/playbooks/study-guide.md`](playbooks/study-guide.md) for the full agent workflow.
+
+```bash
+npm run workspace:bundle -- --workspace <workspace> --company "<name>" --title "<title>"
+# or: npm run workspace:bundle -- --workspace <workspace> --id <role-id>
+```
+
+It writes `outputs/study-guide-bundles/<role-id>.json` (`src/cli/commands/study-guide-bundle.js`) with this shape:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `role` | object | The full matched entry from `roles.tracked.json`. |
+| `profile` | object | The candidate's `profile.json`, verbatim. |
+| `evidence` | array | Every entry from `evidence.jsonl`, verbatim. |
+| `resumeConfig` | object | The resume render config tailored for this role — resolved via the role's `resume.configPath` link when `tailor` set one, falling back to a company-name content match against `resume-configs/` otherwise. |
+| `jobPosting` | object | `{ url, applyUrl }`, read from the role's `urls.job` / `urls.apply` (either may be `null`). |
+| `generatedAt` | string | ISO 8601 timestamp of when the bundle was written. |
+
+The command fails loud rather than guessing: no matching tracked role, no resume config for that role's company, or more than one config matching the same company name are all hard errors naming the ambiguity, not a silent best-effort bundle.
+
 ## `claim-policy.json`
 
 `claim-policy.json` stores candidate-specific claim rules. Use it to block sensitive claims, require review for low-confidence claims, and control wording.

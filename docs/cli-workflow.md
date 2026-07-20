@@ -20,7 +20,10 @@ The CLI can:
 - 🧾 Store source-backed facts in `evidence.jsonl`.
 - 📌 Create seed roles and tracked application records.
 - 📄 Render a schema-validated resume config to a finished DOCX resume, and audit its claims against `evidence.jsonl`.
+- 🎯 Validate, audit, render, and track a resume for one job posting in a single `tailor` pass.
 - 📊 Render a markdown application tracker.
+- 🔁 Record application status changes and auto-propose the next follow-up (`set-status`).
+- 🎓 Bundle profile, evidence, resume config, and job-posting context for interview prep (`study-guide-bundle`).
 - 🧭 Generate similar-role search briefs.
 - ⚖️ Score manually collected candidate roles against seed-role patterns.
 - 🔒 Validate workspace files, tracker freshness, evidence-backed claims, and privacy boundaries.
@@ -46,6 +49,8 @@ The CLI does not currently:
 | Render an interactive HTML tracker (searchable/filterable, stat cards) | `npm run workspace:tracker -- --workspace <dir> --format html` |
 | Render a schema-validated resume config to DOCX | `npm run workspace:render -- --workspace <dir> --config <resume-config.json>` |
 | Validate, render, and track a role for a job posting in one pass | `npm run workspace:tailor -- --workspace <dir> --config <resume-config.json> --url <url> --title <title>` |
+| Record an application status change and rebuild the tracker | `npm run workspace:set-status -- --workspace <dir> --company "<name>" --title "<name>" --status <status>` |
+| Bundle context for interview prep on a tracked role | `npm run workspace:bundle -- --workspace <dir> --company "<name>" --title "<name>"` |
 | Validate workspace files, the claim audit, and tracker freshness | `npm run workspace:validate -- --workspace <dir>` |
 | Check privacy before sharing | `npm run check:privacy` |
 
