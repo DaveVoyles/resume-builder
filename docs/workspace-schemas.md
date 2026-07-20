@@ -205,7 +205,7 @@ Use these conventions across all workspace files:
 | Field | Type | Description |
 | --- | --- | --- |
 | `id` | string | Unique evidence ID. |
-| `type` | string | Ingestion type, such as `resume`, `notes`, `source`, or `github_profile`. |
+| `type` | string | Ingestion type, such as `resume`, `notes`, `links`, `source`, or `github_profile`. |
 | `fact` | string | Concise fact that can support a claim. |
 | `summary` | string | Human-readable ingestion summary. |
 | `source` | object | Source descriptor. It must include `kind` and either `path` or `url`. |

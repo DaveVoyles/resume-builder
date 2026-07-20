@@ -17,6 +17,7 @@ function collectSources(options) {
   return [
     ...asArray(options.resume).map((file) => ({ file, kind: "resume" })),
     ...asArray(options.notes).map((file) => ({ file, kind: "notes" })),
+    ...asArray(options.links).map((file) => ({ file, kind: "links" })),
     ...asArray(options.input).map((file) => ({ file, kind: "source" })),
     ...asArray(options.source).map((file) => ({ file, kind: "source" })),
   ];
@@ -111,7 +112,7 @@ async function run(options) {
   writeJson(paths.profile, profile);
   const sourceCount = collectSources(options).length + (options.github ? 1 : 0);
   console.log(`Ingested ${sourceCount} source(s); appended ${local.appended + github.appended} evidence entr${local.appended + github.appended === 1 ? "y" : "ies"}.`);
-  if (sourceCount === 0) console.log("No sources provided. Use --resume, --notes, --input, or --github.");
+  if (sourceCount === 0) console.log("No sources provided. Use --resume, --notes, --links, --input, or --github.");
   if (profile.sources?.length) console.log(`Profile now references ${profile.sources.length} source(s). Latest snippet: ${snippet(profile.sources.at(-1).path || profile.sources.at(-1).url || "", 80)}`);
 }
 
