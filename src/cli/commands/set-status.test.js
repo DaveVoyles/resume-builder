@@ -8,12 +8,11 @@ const os = require("os");
 const { run } = require("./set-status");
 const { workspacePaths, readJson, writeJson, ensureDir } = require("../../core/workspace");
 const { renderTracker } = require("../../renderers/markdown-tracker");
-const { renderHtmlTracker } = require("../../renderers/html-tracker");
 
 /**
  * Test helper: create a temporary fixture workspace with sample roles
  */
-function createFixtureWorkspace() {
+function createFixtureWorkspace(extraRoles = []) {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "resume-builder-set-status-"));
   const paths = workspacePaths(tmpDir);
 
@@ -36,7 +35,7 @@ function createFixtureWorkspace() {
       id: "role-001",
       company: "Acme Corp",
       title: "Senior Engineer",
-      status: "interested",
+      status: "tracked",
       urls: { job: "", apply: "" },
       notes: [],
       followUpQuestions: [],
@@ -46,18 +45,18 @@ function createFixtureWorkspace() {
       id: "role-002",
       company: "TechStart Inc",
       title: "Product Manager",
-      status: "interested",
+      status: "tracked",
       urls: { job: "", apply: "" },
       notes: [],
       followUpQuestions: [],
       updatedAt: "2026-06-02",
     },
+    ...extraRoles,
   ];
   writeJson(paths.rolesTracked, roles);
 
-  // Create initial tracker
-  const trackerContent = renderTracker(roles);
-  writeJson(paths.tracker, trackerContent);
+  // Create initial tracker (real markdown text, not JSON-stringified)
+  fs.writeFileSync(paths.tracker, renderTracker(roles));
 
   return tmpDir;
 }
@@ -74,9 +73,6 @@ function cleanupWorkspace(tmpDir) {
 test("set-status: matches role by company and title", async () => {
   const tmpDir = createFixtureWorkspace();
   try {
-    const beforeRoles = readJson(workspacePaths(tmpDir).rolesTracked);
-    assert.strictEqual(beforeRoles[0].status, "interested", "Initial status should be interested");
-
     await run({
       workspace: tmpDir,
       company: "Acme Corp",
@@ -85,9 +81,39 @@ test("set-status: matches role by company and title", async () => {
     });
 
     const afterRoles = readJson(workspacePaths(tmpDir).rolesTracked);
-    assert.strictEqual(afterRoles[0].status, "applied", "Status should be updated to applied");
+    assert.strictEqual(afterRoles[0].application.status, "applied", "Status should be updated to applied");
+    assert.strictEqual(afterRoles[0].status, "tracked", "List-membership status field should be untouched");
     assert.strictEqual(afterRoles[0].company, "Acme Corp", "Company should remain unchanged");
     assert.strictEqual(afterRoles[0].title, "Senior Engineer", "Title should remain unchanged");
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
+test("set-status: matches a role that uses `role` instead of `title` (documented schema alias)", async () => {
+  const tmpDir = createFixtureWorkspace([
+    {
+      id: "role-003",
+      company: "AliasCo",
+      role: "Staff Engineer",
+      status: "tracked",
+      urls: { job: "", apply: "" },
+      notes: [],
+      followUpQuestions: [],
+      updatedAt: "2026-06-03",
+    },
+  ]);
+  try {
+    await run({
+      workspace: tmpDir,
+      company: "AliasCo",
+      title: "Staff Engineer",
+      status: "interview",
+    });
+
+    const afterRoles = readJson(workspacePaths(tmpDir).rolesTracked);
+    const role = afterRoles.find((candidate) => candidate.id === "role-003");
+    assert.strictEqual(role.application.status, "interview");
   } finally {
     cleanupWorkspace(tmpDir);
   }
@@ -135,6 +161,61 @@ test("set-status: uses current date when date not provided", async () => {
   }
 });
 
+test("set-status: preserves the original appliedAt across later status transitions", async () => {
+  const tmpDir = createFixtureWorkspace();
+  try {
+    await run({
+      workspace: tmpDir,
+      company: "Acme Corp",
+      title: "Senior Engineer",
+      status: "applied",
+      date: "2026-06-15",
+    });
+
+    // Move to interview later, with no --date — must NOT overwrite the
+    // original applied date, only the status.
+    await run({
+      workspace: tmpDir,
+      company: "Acme Corp",
+      title: "Senior Engineer",
+      status: "interview",
+    });
+
+    const afterRoles = readJson(workspacePaths(tmpDir).rolesTracked);
+    const role = afterRoles[0];
+    assert.strictEqual(role.application.status, "interview");
+    assert.strictEqual(role.application.appliedAt, "2026-06-15", "Original applied date must survive later transitions");
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
+test("set-status: an explicit --date on a later transition still overrides appliedAt", async () => {
+  const tmpDir = createFixtureWorkspace();
+  try {
+    await run({
+      workspace: tmpDir,
+      company: "Acme Corp",
+      title: "Senior Engineer",
+      status: "applied",
+      date: "2026-06-15",
+    });
+
+    await run({
+      workspace: tmpDir,
+      company: "Acme Corp",
+      title: "Senior Engineer",
+      status: "interview",
+      date: "2026-07-01",
+    });
+
+    const afterRoles = readJson(workspacePaths(tmpDir).rolesTracked);
+    assert.strictEqual(afterRoles[0].application.appliedAt, "2026-07-01");
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
 test("set-status: rebuilds tracker after status change", async () => {
   const tmpDir = createFixtureWorkspace();
   try {
@@ -156,6 +237,7 @@ test("set-status: rebuilds tracker after status change", async () => {
     const roles = readJson(paths.rolesTracked);
     const expectedTracker = renderTracker(roles);
     assert.strictEqual(afterTracker, expectedTracker, "Tracker should match rebuilt content");
+    assert.match(afterTracker, /Rejected 2026-06-10/, "Tracker text should show the actual status, not just a bare date");
   } finally {
     cleanupWorkspace(tmpDir);
   }
@@ -178,26 +260,23 @@ test("set-status: rebuilds HTML tracker after status change", async () => {
     assert.strictEqual(fs.existsSync(paths.htmlTracker), true, "HTML tracker should be created");
     const htmlTracker = fs.readFileSync(paths.htmlTracker, "utf8");
 
-    const roles = readJson(paths.rolesTracked);
-    const profile = readJson(paths.profile, {});
-    const expectedHtml = renderHtmlTracker(roles, {
-      title: `${profile.candidate.preferredName} - Application Tracker`,
-    });
-    assert.strictEqual(htmlTracker, expectedHtml, "HTML tracker should match rebuilt content");
+    // Avoid comparing against a second, independently-timestamped
+    // renderHtmlTracker() call (embeds `new Date().toISOString()` internally
+    // and was observed to flake on a millisecond-boundary mismatch) — assert
+    // on the content that actually matters instead.
+    assert.match(htmlTracker, /Rejected 2026-06-10/, "HTML tracker should show the status + date");
+    assert.match(htmlTracker, /badge-rejected/, "HTML tracker should bucket a rejected status into the rejected badge");
   } finally {
     cleanupWorkspace(tmpDir);
   }
 });
 
-test("set-status: supports all enum statuses", async () => {
-  const tmpDir = createFixtureWorkspace();
-  try {
-    const statuses = ["interested", "applied", "interview", "offer", "rejected", "withdrawn"];
+test("set-status: supports all enum statuses and each renders visibly (not silently dropped)", async () => {
+  const statuses = ["interested", "applied", "interview", "offer", "rejected", "withdrawn"];
 
-    for (let i = 0; i < statuses.length; i++) {
-      const workspace = createFixtureWorkspace();
-      const status = statuses[i];
-
+  for (const status of statuses) {
+    const workspace = createFixtureWorkspace();
+    try {
       await run({
         workspace,
         company: "Acme Corp",
@@ -206,11 +285,14 @@ test("set-status: supports all enum statuses", async () => {
       });
 
       const roles = readJson(workspacePaths(workspace).rolesTracked);
-      assert.strictEqual(roles[0].status, status, `Status should be set to ${status}`);
+      assert.strictEqual(roles[0].application.status, status, `Status should be set to ${status}`);
+
+      const tracker = fs.readFileSync(workspacePaths(workspace).tracker, "utf8");
+      const label = status.charAt(0).toUpperCase() + status.slice(1);
+      assert.ok(tracker.includes(label), `Tracker should visibly show "${label}" for status ${status}`);
+    } finally {
       cleanupWorkspace(workspace);
     }
-  } finally {
-    cleanupWorkspace(tmpDir);
   }
 });
 
@@ -249,6 +331,93 @@ test("set-status: throws error on invalid status", async () => {
       /invalid.*status|not.*valid/i,
       "Should throw error on invalid status"
     );
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
+test("set-status: throws error on malformed --date", async () => {
+  const tmpDir = createFixtureWorkspace();
+  try {
+    await assert.rejects(
+      async () => {
+        await run({
+          workspace: tmpDir,
+          company: "Acme Corp",
+          title: "Senior Engineer",
+          status: "applied",
+          date: "not-a-date",
+        });
+      },
+      /invalid.*date/i,
+      "Should throw error on malformed --date"
+    );
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
+test("set-status: throws an ambiguous-match error for duplicate company+title instead of silently picking one", async () => {
+  const tmpDir = createFixtureWorkspace([
+    {
+      id: "role-dup",
+      company: "Acme Corp",
+      title: "Senior Engineer",
+      status: "tracked",
+      urls: { job: "", apply: "" },
+      notes: [],
+      followUpQuestions: [],
+      updatedAt: "2026-06-05",
+      application: { status: "rejected", appliedAt: "2026-05-01" },
+    },
+  ]);
+  try {
+    await assert.rejects(
+      async () => {
+        await run({
+          workspace: tmpDir,
+          company: "Acme Corp",
+          title: "Senior Engineer",
+          status: "applied",
+        });
+      },
+      /ambiguous/i,
+      "Should throw an ambiguous-match error rather than silently updating one of the two"
+    );
+
+    // Confirm neither role was mutated by the rejected call.
+    const roles = readJson(workspacePaths(tmpDir).rolesTracked);
+    assert.strictEqual(roles[0].application, undefined, "role-001 must be untouched");
+    assert.strictEqual(roles.find((r) => r.id === "role-dup").application.status, "rejected", "role-dup must be untouched");
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
+test("set-status: --id disambiguates duplicate company+title matches", async () => {
+  const tmpDir = createFixtureWorkspace([
+    {
+      id: "role-dup",
+      company: "Acme Corp",
+      title: "Senior Engineer",
+      status: "tracked",
+      urls: { job: "", apply: "" },
+      notes: [],
+      followUpQuestions: [],
+      updatedAt: "2026-06-05",
+      application: { status: "rejected", appliedAt: "2026-05-01" },
+    },
+  ]);
+  try {
+    await run({
+      workspace: tmpDir,
+      id: "role-dup",
+      status: "withdrawn",
+    });
+
+    const roles = readJson(workspacePaths(tmpDir).rolesTracked);
+    assert.strictEqual(roles.find((r) => r.id === "role-dup").application.status, "withdrawn");
+    assert.strictEqual(roles[0].application, undefined, "role-001 must be untouched");
   } finally {
     cleanupWorkspace(tmpDir);
   }

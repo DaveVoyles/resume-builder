@@ -25,7 +25,7 @@ function help() {
     "  ingest --workspace <dir> [--resume <file> ...] [--notes <file> ...] [--input <file> ...] [--github <user>]",
     "  add-role --workspace <dir> (--url <url> | --title <title> --company <company>) [--tracked]",
     "  find-similar --workspace <dir> [--candidates <file>] [--max <count>]",
-    "  set-status --workspace <dir> --company <name> --title <name> --status <status> [--date <YYYY-MM-DD>]",
+    "  set-status --workspace <dir> (--id <role-id> | --company <name> --title <name>) --status <status> [--date <YYYY-MM-DD>]",
     "  build-tracker --workspace <dir> [--format md|html] [--output <file>] [--title <text>]",
     "  validate --workspace <dir>",
     "",

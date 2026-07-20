@@ -331,14 +331,15 @@ The validator flags evidence before output when:
 | `id` | string | Unique tracked role ID. |
 | `company` | string | Company or organization name. |
 | `title` | string | Role title. |
-| `status` | string | Application or tracking status. |
+| `status` | string | List membership: `seed` or `tracked` (set by `add-role`; not an application-progress field — see `application.status` below). |
 | `urls` | object | Posting and apply URLs, currently `job` and `apply`. |
 
 ### Useful enum values
 
 | Field | Values |
 | --- | --- |
-| `status` | `interested`, `ready-to-apply`, `applied`, `interviewing`, `offer`, `rejected`, `declined`, `closed`, `archived` |
+| `status` | `seed`, `tracked` |
+| `application.status` | `interested`, `applied`, `interview`, `offer`, `rejected`, `withdrawn` (set via the `set-status` CLI command; deterministic, replaces free-text status strings) |
 | `fit.level` | `strong`, `moderate`, `stretch`, `poor`, `unknown` |
 | `resume.status` | `not-started`, `drafting`, `review-needed`, `ready`, `submitted`, `archived` |
 | `nextAction.type` | `research`, `tailor-resume`, `candidate-review`, `apply`, `follow-up`, `close` |
@@ -349,7 +350,7 @@ The validator flags evidence before output when:
 | --- | --- | --- |
 | `sourceSeedId` | string | Seed role ID that promoted this tracked role. |
 | `posting` | object | Captured title, location, compensation, and posting date. |
-| `application` | object | Applied date, referral contact label, and notes. |
+| `application` | object | `status` (enum above, set by `set-status`), `appliedAt` (date the candidate applied — preserved across later status transitions unless explicitly overridden), referral contact label, and notes. |
 | `fit` | object | Fit level, rationale, matched evidence, and gaps. |
 | `resume` | object | Output path, status, and tailored emphasis. |
 | `evidenceMap` | array | Role requirements mapped to evidence IDs. |

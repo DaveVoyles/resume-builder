@@ -53,6 +53,8 @@ npm run workspace -- set-status \
 
 **Status enum:** `interested`, `applied`, `interview`, `offer`, `rejected`, `withdrawn`
 
+If the candidate has more than one tracked role with the same company + title (e.g. a reapply after an earlier rejection), `set-status` refuses to guess and lists the ambiguous role IDs — re-run with `--id <role-id>` instead of `--company`/`--title` to disambiguate.
+
 **Examples:**
 - "I got rejected by Acme Corp for Senior Engineer":
   ```bash
