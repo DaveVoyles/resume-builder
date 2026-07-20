@@ -37,3 +37,31 @@ Use this repo to help a candidate run an evidence-backed resume workflow. Assume
 - Keep first steps short.
 - Explain what command to run and what result to expect.
 - Ask one focused question at a time when user input is needed.
+
+## 📊 Status update recipe
+
+When a candidate reports a status change ("I was denied for X", "I have an interview at Y", etc.), use the `set-status` command to record it deterministically:
+
+```bash
+npm run workspace -- set-status \
+  --workspace candidate \
+  --company "<Company Name>" \
+  --title "<Role Title>" \
+  --status <status> \
+  [--date YYYY-MM-DD]
+```
+
+**Status enum:** `interested`, `applied`, `interview`, `offer`, `rejected`, `withdrawn`
+
+**Examples:**
+- "I got rejected by Acme Corp for Senior Engineer":
+  ```bash
+  npm run workspace -- set-status --workspace candidate --company "Acme Corp" --title "Senior Engineer" --status rejected
+  ```
+
+- "I interviewed at TechCorp for the PM role yesterday":
+  ```bash
+  npm run workspace -- set-status --workspace candidate --company "TechCorp" --title "Product Manager" --status interview --date 2026-07-19
+  ```
+
+The command updates `roles.tracked.json` and rebuilds `outputs/tracker.md` automatically.
