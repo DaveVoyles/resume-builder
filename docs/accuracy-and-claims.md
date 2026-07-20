@@ -18,6 +18,18 @@ Run workspace validation before generating output. The evidence ledger must conn
 
 Treat `metadata-only` evidence as a source inventory record, not as claim support. If a metadata-only entry states a fact that differs from its ingestion summary, the validator flags it as unsupported so you can capture source text or ask the candidate for confirmation before output.
 
+## Evidence-backed claim audit (blocking)
+
+`validate` enforces the evidence-backed promise mechanically, not just as writing guidance. If a workspace has a `resume-configs/` directory (see [Candidate workspace schemas](workspace-schemas.md#resume-render-config-render-resume)), `validate` scans every resume config's `summary.text`, job `bullets`, and `skills` values for metric claims — percentages, multipliers ("3x"), money amounts, scaled counts ("50 million users"), plain counts with a resume-typical noun ("200 customers"), team sizes ("team of 12"), and years of experience ("8+ years") — and cross-checks each one against the workspace's `evidence.jsonl` ledger (`src/core/claim-audit.js`).
+
+- **Unsupported claim → blocking failure.** If no evidence entry's `fact`, `snippet`, or `quote` states the same figure (in the same category — a `40%` claim is never satisfied by an unrelated `40 employees` entry), `validate` fails with a per-claim error naming the exact field (e.g. `experienceSections[0].jobs[0].bullets[1]`), the claim text, and the surrounding snippet, so an agent can fix the config without guessing which claim is unsupported. As with the ledger checks above, `metadata-only` evidence never counts as support.
+- **Thin ledger → non-blocking warning.** Even when every claim currently checks out, `validate` prints a warning (not a failure) when a resume config's workspace has fewer than three source-backed evidence entries — a nudge to ingest more source material before treating the config's claims as fully vetted, since a thin ledger makes it easy for a later edit to introduce an unsupported figure unnoticed.
+- A workspace without a `resume-configs/` directory validates exactly as before; the claim audit only runs against resume configs that exist.
+
+**Known limitation:** claim detection is regex-based against a closed set of metric patterns and a closed noun whitelist (`src/core/claim-audit.js`'s `CLAIM_PATTERNS`), by deliberate design — a narrow, deterministic pattern set avoids both false-positiving on incidental numbers in prose and needing an LLM in the loop (ADR 0001's agent-operated-CLI posture). A metric phrased with a noun outside the whitelist (e.g. "50 stakeholders") is not detected and so is not audited. This mechanical check is a backstop, not a substitute for the human/agent claim-safety judgment described in the rest of this page — apply both.
+
+This closes the loop described by the core claim-safety rules above: "tie every claim to source evidence" is enforced by `validate`, not just requested in prose.
+
 ## Candidate confirmation rules
 
 Ask the candidate before you use:
