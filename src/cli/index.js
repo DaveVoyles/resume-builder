@@ -11,6 +11,7 @@ const COMMANDS = {
   "find-similar": () => require("./commands/find-similar"),
   "render-resume": () => require("./commands/render-resume"),
   "set-status": () => require("./commands/set-status"),
+  "study-guide-bundle": () => require("./commands/study-guide-bundle"),
   validate: () => require("./commands/validate"),
 };
 
@@ -29,6 +30,7 @@ function help() {
     "  set-status --workspace <dir> (--id <role-id> | --company <name> --title <name>) --status <status> [--date <YYYY-MM-DD>]",
     "  build-tracker --workspace <dir> [--format md|html] [--output <file>] [--title <text>]",
     "  render-resume --workspace <dir> --config <resume-config.json>",
+    "  study-guide-bundle --workspace <dir> (--id <role-id> | --company <name> --title <name>)",
     "  validate --workspace <dir>",
     "",
     "Common options:",
