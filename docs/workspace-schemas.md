@@ -331,14 +331,15 @@ The validator flags evidence before output when:
 | `id` | string | Unique tracked role ID. |
 | `company` | string | Company or organization name. |
 | `title` | string | Role title. |
-| `status` | string | Application or tracking status. |
+| `status` | string | List membership: `seed` or `tracked` (set by `add-role`; not an application-progress field — see `application.status` below). |
 | `urls` | object | Posting and apply URLs, currently `job` and `apply`. |
 
 ### Useful enum values
 
 | Field | Values |
 | --- | --- |
-| `status` | `interested`, `ready-to-apply`, `applied`, `interviewing`, `offer`, `rejected`, `declined`, `closed`, `archived` |
+| `status` | `seed`, `tracked` |
+| `application.status` | `interested`, `applied`, `interview`, `offer`, `rejected`, `withdrawn` (set via the `set-status` CLI command; deterministic, replaces free-text status strings) |
 | `fit.level` | `strong`, `moderate`, `stretch`, `poor`, `unknown` |
 | `resume.status` | `not-started`, `drafting`, `review-needed`, `ready`, `submitted`, `archived` |
 | `nextAction.type` | `research`, `tailor-resume`, `candidate-review`, `apply`, `follow-up`, `close` |
@@ -349,7 +350,7 @@ The validator flags evidence before output when:
 | --- | --- | --- |
 | `sourceSeedId` | string | Seed role ID that promoted this tracked role. |
 | `posting` | object | Captured title, location, compensation, and posting date. |
-| `application` | object | Applied date, referral contact label, and notes. |
+| `application` | object | `status` (enum above, set by `set-status`), `appliedAt` (date the candidate applied — preserved across later status transitions unless explicitly overridden), referral contact label, and notes. |
 | `fit` | object | Fit level, rationale, matched evidence, and gaps. |
 | `resume` | object | Output path, status, and tailored emphasis. |
 | `evidenceMap` | array | Role requirements mapped to evidence IDs. |
@@ -435,6 +436,95 @@ The tracker renderer reads the structured v1 fields first:
 - `notes[]` and `followUpQuestions[]`
 
 The renderer also accepts the earlier flat fields (`location`, `compensation`, `fit`, `applied`, and `output.resume`) so existing tracked-role files can be regenerated without migration.
+
+## `leads.json`
+
+`leads.json` stores prospective roles discovered during search, before promotion to tracked roles. Leads are agent-maintained via the find-roles playbook and promote into `roles.tracked.json` via the `add-role --tracked` command.
+
+### Required fields
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `schemaVersion` | string | Must be `"1.0"`. |
+| `leads` | array | Array of prospective role objects. |
+
+### Per-lead required fields
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | string | Unique lead ID, format `lead-NNN`. |
+| `company` | string | Company or organization name. |
+| `title` | string | Role title from the posting. |
+| `url` | string | Direct link to the posting. |
+| `source` | string | Where the lead was discovered (LinkedIn, Wellfound, company career page, etc.). |
+| `discoveredAt` | string | ISO 8601 date when the lead was found. |
+
+### Per-lead optional fields
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `fit` | object | Fit assessment with `level` and `rationale`. |
+| `fit.level` | string | One of `strong`, `moderate`, or `stretch`. |
+| `fit.rationale` | string | 1-2 sentence explanation of the fit. |
+| `notes` | string | Agent notes for candidate review (recruiter contact, tech stack, standout projects, application deadlines). |
+| `status` | string | Optional: `new`, `reviewed`, `accepted`, `rejected`, or `promoted`. |
+
+### Example
+
+```json
+{
+  "schemaVersion": "1.0",
+  "leads": [
+    {
+      "id": "lead-001",
+      "company": "Acme Corp",
+      "title": "Senior Software Engineer",
+      "url": "https://jobs.example.invalid/acme/senior-engineer",
+      "source": "LinkedIn",
+      "discoveredAt": "2026-07-19",
+      "fit": {
+        "level": "strong",
+        "rationale": "Matches target seniority, remote work, and developer tools focus."
+      },
+      "notes": "Contact: recruiting@acme.com. Active project: AI debugging tools. Stack: Go, React, Kubernetes."
+    },
+    {
+      "id": "lead-002",
+      "company": "Northstar Tools",
+      "title": "Product Manager, Developer Experience",
+      "url": "https://jobs.example.invalid/northstar/pm-devex",
+      "source": "Wellfound",
+      "discoveredAt": "2026-07-19",
+      "fit": {
+        "level": "moderate",
+        "rationale": "Good industry fit and fully remote, but early-stage startup vs. preferred growth-stage company."
+      },
+      "notes": "Series B funding. Open to contracting. Application deadline: 2026-08-02."
+    }
+  ]
+}
+```
+
+### Promoting a lead to tracked role
+
+Once the candidate reviews a lead and approves it, promote it using the `add-role` command with the `--tracked` flag:
+
+```bash
+npm run workspace:add-role -- --workspace <workspace> --url <posting-url> --tracked
+```
+
+This command:
+1. Adds the role to `roles.tracked.json` with an initial `interested` status
+2. Creates a corresponding entry in the tracker
+3. Prepares the role for resume tailoring and application tracking
+
+**Example:**
+
+```bash
+npm run workspace:add-role -- --workspace candidate --url "https://jobs.example.invalid/acme/senior-engineer" --tracked
+```
+
+After promotion, you can optionally remove or archive the lead from `leads.json`, or keep it as a historical record.
 
 ## Similar-role candidate files
 

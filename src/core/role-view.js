@@ -44,10 +44,19 @@ function formatFit(role) {
 }
 
 function formatApplied(role) {
+  // An explicit application.status (set by the `set-status` command) is the
+  // deterministic source of truth once present — combine it with the date so
+  // statusBucket()'s keyword match (below) still classifies it correctly,
+  // instead of letting a bare appliedAt date shadow the status entirely.
+  const status = role.application?.status;
+  if (status) {
+    const date = firstNonEmpty(role.application?.appliedAt, role.application?.appliedDate);
+    const label = status.charAt(0).toUpperCase() + status.slice(1);
+    return date ? `${label} ${date}` : label;
+  }
   return firstNonEmpty(
     role.application?.appliedAt,
     role.application?.appliedDate,
-    role.application?.status,
     role.applied,
     !["seed", "tracked"].includes(role.status) ? role.status : "",
   );
