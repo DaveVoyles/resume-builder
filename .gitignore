@@ -18,6 +18,7 @@ candidate/evidence.jsonl
 candidate/roles.seed.json
 candidate/roles.tracked.json
 candidate/claim-policy.json
+candidate/resume-configs/
 candidate/outputs/
 
 # Modular workflow generated outputs

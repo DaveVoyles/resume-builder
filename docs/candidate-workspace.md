@@ -27,6 +27,7 @@ candidate/
   roles.seed.json
   roles.tracked.json
   claim-policy.json
+  resume-configs/
   outputs/
     resumes/
     tracker.md
@@ -50,7 +51,8 @@ The v1 CLI creates the core JSON files, `inputs/`, `outputs/`, `outputs/tracker.
 | `candidate/roles.seed.json` | Seed roles the candidate provides. | No |
 | `candidate/roles.tracked.json` | Accepted roles and application status. | No |
 | `candidate/claim-policy.json` | Candidate-specific wording rules and claims to avoid. | No |
-| `candidate/outputs/resumes/` | Planned tailored DOCX resumes. | No |
+| `candidate/resume-configs/` | Schema-validated per-role DOCX render configs, rendered with `render-resume`. See [Candidate workspace schemas](workspace-schemas.md). | No |
+| `candidate/outputs/resumes/` | Rendered per-company DOCX resumes (`outputs/resumes/<Company>/<file>.docx`). | No |
 | `candidate/outputs/tracker.md` | Generated application tracker. | No |
 | `candidate/outputs/tracker.html` | Optional interactive HTML tracker (searchable/filterable, stat cards). | No |
 | `candidate/outputs/similar-roles.md` | Recommended similar roles for review. | No |
@@ -116,6 +118,16 @@ Do not turn low-confidence facts into final resume bullets without candidate rev
 Seed roles start as research inputs. A role becomes tracked only after duplicate checks, evidence mapping, and candidate review.
 
 The tracker should be generated from structured role data. Do not manually edit generated tracker rows unless the workflow explicitly marks the file as user-editable.
+
+## Resume rendering
+
+Once an agent (or human) has drafted a schema-validated resume render config under `resume-configs/`, render it to DOCX:
+
+```bash
+npm run workspace:render -- --workspace <workspace> --config <workspace>/resume-configs/<role-slug>.json
+```
+
+This writes `outputs/resumes/<Company>/<file>.docx`. See [Candidate workspace schemas](workspace-schemas.md) for the full resume render config schema and a fictional example.
 
 ## Similar-role recommendations
 

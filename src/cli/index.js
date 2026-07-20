@@ -9,6 +9,7 @@ const COMMANDS = {
   "add-role": () => require("./commands/add-role"),
   "build-tracker": () => require("./commands/build-tracker"),
   "find-similar": () => require("./commands/find-similar"),
+  "render-resume": () => require("./commands/render-resume"),
   "set-status": () => require("./commands/set-status"),
   validate: () => require("./commands/validate"),
 };
@@ -27,6 +28,7 @@ function help() {
     "  find-similar --workspace <dir> [--candidates <file>] [--max <count>]",
     "  set-status --workspace <dir> (--id <role-id> | --company <name> --title <name>) --status <status> [--date <YYYY-MM-DD>]",
     "  build-tracker --workspace <dir> [--format md|html] [--output <file>] [--title <text>]",
+    "  render-resume --workspace <dir> --config <resume-config.json>",
     "  validate --workspace <dir>",
     "",
     "Common options:",

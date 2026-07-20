@@ -25,11 +25,14 @@
     "workspace:similar": "node src/cli/index.js find-similar",
     "workspace:tracker": "node src/cli/index.js build-tracker",
     "workspace:tracker:html": "node src/cli/index.js build-tracker --format html",
+    "workspace:render": "node src/cli/index.js render-resume",
     "workspace:validate": "node src/cli/index.js validate",
-    "sample:quickstart": "npm run workspace:tracker -- --workspace examples/sample-candidate && npm run workspace:similar -- --workspace examples/sample-candidate --candidates examples/sample-candidate/roles.similar.candidates.json && npm run workspace:validate -- --workspace examples/sample-candidate",
+    "sample:quickstart": "npm run workspace:tracker -- --workspace examples/sample-candidate && npm run workspace:similar -- --workspace examples/sample-candidate --candidates examples/sample-candidate/roles.similar.candidates.json && npm run workspace:render -- --workspace examples/sample-candidate --config examples/sample-candidate/resume-configs/northwind-tools-senior-pm.json && npm run workspace:validate -- --workspace examples/sample-candidate",
+    "test": "node --test",
     "check:privacy": "node scripts/check-privacy.js",
     "check:workspace": "node scripts/check-workspace.js --workspace examples/sample-candidate",
     "check": "npm run check:workspace && npm run check:privacy",
+    "validate": "npm test && npm run sample:quickstart && npm run check:privacy"
     "test": "node --test",
     "validate": "npm run test && npm run sample:quickstart && npm run check:privacy"
   },

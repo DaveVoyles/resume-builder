@@ -588,6 +588,82 @@ npm run workspace:similar -- --workspace <workspace> --candidates <candidate-rol
 
 After approval, add the role to `roles.tracked.json` with `add-role --tracked` and rebuild `outputs/tracker.md`.
 
+## Resume render config (`render-resume`)
+
+A resume render config is a schema-validated JSON file an agent (or human) authors per role and passes to `render-resume`. It is fully self-contained — candidate name, contact, education, publications, and speaking are all config fields, not engine constants — so the DOCX rendering engine (`src/renderers/docx-resume.js`, `src/renderers/docx-helpers.js`) carries no candidate-specific data of its own. Validated by `src/core/resume-config.js`.
+
+Store per-role render configs under `<workspace>/resume-configs/<role-slug>.json`. Keep real candidate render configs private by default (see Privacy defaults in [candidate workspace](candidate-workspace.md)); only fictional sample configs are committed.
+
+### Required fields
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `schemaVersion` | string | Must be `"1.0"`. |
+| `company` | string | Company or organization name. Becomes the literal directory name under `outputs/resumes/<Company>/`. |
+| `candidate` | object | Candidate identity used for the rendered header. |
+| `candidate.name` | string | Full name printed at the top of the résumé. |
+| `candidate.contact` | array | Non-empty array of `{ text, link? }` entries rendered as the contact line. |
+| `summary` | object | `{ text: string, fitOverride?: string\|null }`. |
+| `experienceSections` | array | Non-empty array of `{ heading, jobs }`; each job requires non-empty `title`, `company`, `dates`, and a non-empty `bullets` array of strings. `subHeader` is optional. |
+| `skills` | array | Non-empty array of `[label, value]` string pairs. |
+
+### Optional fields
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `outputFileName` | string | File name written under `outputs/resumes/<Company>/`. Defaults to `<slug(candidate.name)>-<slug(company)>.docx`. |
+| `summary.fitOverride` | string\|null | Replaces the summary's trailing "Strong/Exceptional fit for..." sentence with role-specific wording, or appends it if none is found. |
+| `education` | array | `{ degree, institution, dates, details? }` entries. Only rendered when `includeEducation` is not `false` and this array is non-empty. |
+| `publications` | array | `{ title, publisher, dates, details? }` entries. |
+| `speaking` | array | `{ heading, organizations, dates, details? }` entries. |
+| `includeEducation` | boolean | Default `true`. |
+| `includePublicationsSpeaking` | boolean | Default `true`. |
+| `publicationsSpeakingLayout` | string | `combined` (default), `speaking-then-publications`, `combined-speaking-only`, or `publications-only` — mirrors the ported engine's layout options for the "Publications & Speaking" heading when both arrays are present. |
+
+### Example (fictional)
+
+```json
+{
+  "schemaVersion": "1.0",
+  "company": "Northwind Tools",
+  "outputFileName": "alex-rivera-northwind-ai-workflows.docx",
+  "candidate": {
+    "name": "Alex Rivera",
+    "contact": [
+      { "text": "Raleigh, NC" },
+      { "text": "alex.rivera@example.invalid", "link": "mailto:alex.rivera@example.invalid" }
+    ]
+  },
+  "summary": {
+    "text": "Fictional product and program leader focused on developer platforms and AI-assisted workflows.",
+    "fitOverride": "Exceptional fit for Northwind Tools' developer-experience roadmap."
+  },
+  "experienceSections": [
+    {
+      "heading": "Experience",
+      "jobs": [
+        {
+          "title": "Senior Platform Program Manager",
+          "company": "Contoso Labs",
+          "dates": "2022 - Present",
+          "bullets": ["Led launch coordination for an internal developer platform used by multiple product teams."]
+        }
+      ]
+    }
+  ],
+  "skills": [["Developer platforms", "Platform strategy, internal tooling, developer experience"]],
+  "includePublicationsSpeaking": false
+}
+```
+
+Render it with:
+
+```bash
+npm run workspace:render -- --workspace <workspace> --config <workspace>/resume-configs/<role-slug>.json
+```
+
+This writes `outputs/resumes/<Company>/<file>.docx` and throws a validation error (no file written) if the config fails schema validation. The full fictional sample lives at `examples/sample-candidate/resume-configs/northwind-tools-senior-pm.json` and renders as part of `npm run sample:quickstart`.
+
 ## `claim-policy.json`
 
 `claim-policy.json` stores candidate-specific claim rules. Use it to block sensitive claims, require review for low-confidence claims, and control wording.
