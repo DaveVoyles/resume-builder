@@ -1,9 +1,20 @@
 "use strict";
 
+// Agent-drafted gap text is untrusted content embedded inline in markdown
+// (headings, bold labels) rather than a table cell, so the risk is a value
+// that opens with heading/list markers or embeds a blank line, corrupting
+// the report's structure rather than just misaligning a column. Collapse
+// embedded newlines to a space and neutralize leading structural markers.
+function inline(value) {
+  const text = String(value ?? "").replace(/\r?\n/gu, " ").trim();
+  return text.replace(/^([#>*+-]|\d+\.)/u, "\\$1") || "—";
+}
+
 function renderGapReport(gaps, roleTitle = "Target Role") {
+  const safeRoleTitle = inline(roleTitle);
   if (!gaps || gaps.length === 0) {
     return [
-      `# Gap Report: ${roleTitle}`,
+      `# Gap Report: ${safeRoleTitle}`,
       "",
       "Gap classifications for resume tailoring.",
       "",
@@ -13,7 +24,7 @@ function renderGapReport(gaps, roleTitle = "Target Role") {
   }
 
   const lines = [
-    `# Gap Report: ${roleTitle}`,
+    `# Gap Report: ${safeRoleTitle}`,
     "",
     "Gap classifications for resume tailoring.",
     "",
@@ -22,13 +33,13 @@ function renderGapReport(gaps, roleTitle = "Target Role") {
   ];
 
   gaps.forEach((gap, index) => {
-    lines.push(`### ${index + 1}. ${gap.keyword}`);
+    lines.push(`### ${index + 1}. ${inline(gap.keyword)}`);
     lines.push("");
-    lines.push(`**Type:** ${gap.type}`);
+    lines.push(`**Type:** ${inline(gap.type)}`);
     lines.push("");
-    lines.push(`**Rationale:** ${gap.rationale}`);
+    lines.push(`**Rationale:** ${inline(gap.rationale)}`);
     lines.push("");
-    lines.push(`**Recommended Action:** ${gap.recommendedAction}`);
+    lines.push(`**Recommended Action:** ${inline(gap.recommendedAction)}`);
     lines.push("");
   });
 

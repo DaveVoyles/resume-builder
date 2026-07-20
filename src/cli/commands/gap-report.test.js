@@ -63,6 +63,74 @@ test("gap-report command: processes valid gap classifications", async () => {
   });
 });
 
+test("gap-report command: rejects a --roleId that does not match any tracked role", async () => {
+  const gaps = [
+    {
+      keyword: "Kubernetes",
+      type: "WeakEvidence",
+      rationale: "Limited production experience",
+      recommendedAction: "Add deployment story",
+    },
+  ];
+
+  await withWorkspace(gaps, async ({ workspace, inputPath }) => {
+    await assert.rejects(
+      () => run({ workspace, input: inputPath, roleId: "no-such-role" }),
+      /does not match any tracked role/,
+    );
+  });
+});
+
+test("gap-report command: sanitizes a path-traversal --roleId into a literal directory name, never escaping outputs/roles/", async () => {
+  const gaps = [
+    {
+      keyword: "Kubernetes",
+      type: "WeakEvidence",
+      rationale: "Limited production experience",
+      recommendedAction: "Add deployment story",
+    },
+  ];
+
+  await withWorkspace(gaps, async ({ workspace, inputPath }) => {
+    const roleId = "../../evil";
+    const rolesPath = path.join(workspace, "roles.tracked.json");
+    fs.writeFileSync(rolesPath, JSON.stringify([{ id: roleId, title: "X", company: "Y", status: "applied" }]));
+
+    const result = await run({ workspace, input: inputPath, roleId });
+
+    // The sanitized output must land inside workspace/outputs/roles/ — never
+    // escape it — and the resolved path must not point outside outputs/roles/.
+    const rolesDir = path.join(workspace, "outputs", "roles");
+    assert.ok(
+      path.resolve(result.outputPath).startsWith(path.resolve(rolesDir) + path.sep),
+      `Expected sanitized output to stay under ${rolesDir}, got ${result.outputPath}`,
+    );
+    assert.ok(!fs.existsSync(path.resolve(workspace, "..", "..", "evil")));
+  });
+});
+
+test("gap-report command: rejects a --roleId that sanitizes to nothing (e.g. all dots/separators)", async () => {
+  const gaps = [
+    {
+      keyword: "Kubernetes",
+      type: "WeakEvidence",
+      rationale: "Limited production experience",
+      recommendedAction: "Add deployment story",
+    },
+  ];
+
+  await withWorkspace(gaps, async ({ workspace, inputPath }) => {
+    const roleId = "..";
+    const rolesPath = path.join(workspace, "roles.tracked.json");
+    fs.writeFileSync(rolesPath, JSON.stringify([{ id: roleId, title: "X", company: "Y", status: "applied" }]));
+
+    await assert.rejects(
+      () => run({ workspace, input: inputPath, roleId }),
+      /non-separator, non-leading-dot character/,
+    );
+  });
+});
+
 test("gap-report command: outputs markdown to role's output folder", async () => {
   const gaps = [
     {
