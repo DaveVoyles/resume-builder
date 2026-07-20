@@ -3,7 +3,7 @@
 const fs = require("fs");
 const path = require("path");
 const { renderTracker } = require("../../renderers/markdown-tracker");
-const { validateEvidence, validateProfile, validateRoles } = require("../../core/schemas");
+const { validateEvidence, validateProfile, validateRoles, validateFeedback } = require("../../core/schemas");
 const { validateResumeConfig } = require("../../core/resume-config");
 const { auditResumeConfig } = require("../../core/claim-audit");
 const { readJson, readJsonLines, resolveWorkspace, workspacePaths } = require("../../core/workspace");
@@ -70,11 +70,13 @@ function run(options) {
   const seedRoles = readJson(paths.rolesSeed);
   const trackedRoles = readJson(paths.rolesTracked);
   const evidence = readJsonLines(paths.evidence);
+  const feedback = fs.existsSync(paths.feedback) ? readJsonLines(paths.feedback) : [];
 
   errors.push(...validateProfile(profile));
   errors.push(...validateRoles(seedRoles, "roles.seed.json"));
   errors.push(...validateRoles(trackedRoles, "roles.tracked.json"));
   errors.push(...validateEvidence(evidence));
+  if (feedback.length > 0) errors.push(...validateFeedback(feedback));
 
   const expectedTracker = renderTracker(trackedRoles);
   const actualTracker = fs.readFileSync(paths.tracker, "utf8");

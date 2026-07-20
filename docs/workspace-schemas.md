@@ -256,6 +256,53 @@ The validator flags evidence before output when:
 - Source-backed evidence has no `snippet` or `quote`.
 - `metadata-only` evidence tries to state a separate fact instead of matching `summary`.
 
+## `feedback.jsonl`
+
+`feedback.jsonl` is a JSON Lines ledger. Each non-empty line must be a standalone JSON object. The debrief playbook writes `schemaVersion`, `id`, `context`, `question`, `answer`, `sentiment`, `sentimentNote`, `proposedAnswer`, and `createdAt`. This ledger is private by default and stays separate from the evidence ledger.
+
+### Required fields
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `schemaVersion` | string | Must be `"1.0"`. |
+| `id` | string | Unique feedback ID. |
+| `context` | string | Where this Q&A occurred: `grill`, `interview`, `study-guide`, or `tailor`. |
+| `question` | string | The question asked, exact or reconstructed. |
+| `answer` | string | The answer given, exact or reconstructed. |
+| `sentiment` | string | How the candidate felt about the answer. |
+| `proposedAnswer` | string | An improved answer for next time. |
+| `createdAt` | string | Creation timestamp. |
+
+### Useful enum values
+
+| Field | Values |
+| --- | --- |
+| `context` | `grill`, `interview`, `study-guide`, `tailor` |
+| `sentiment` | `confident`, `neutral`, `unsure`, `poor` |
+
+### Optional fields
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `relatedRoleId` | string | Links to a `roles.tracked.json` role id for context. |
+| `sentimentNote` | string | Free-text note about why the candidate felt a certain way. |
+
+### Example
+
+```jsonl
+{"schemaVersion":"1.0","id":"fb-001","context":"interview","relatedRoleId":"role-tracked-001","question":"Tell me about your experience with system design.","answer":"I talked about a project I led, but I didn't go deep enough into trade-offs.","sentiment":"neutral","sentimentNote":"Felt rushed. Interviewer seemed interested but I cut it short.","proposedAnswer":"I would start by asking clarifying questions about scale and constraints, then walk through the architecture decisions I'd make, explicitly naming trade-offs at each step.","createdAt":"2026-07-20T14:30:00.000Z"}
+```
+
+### Validation rules
+
+The validator flags feedback before output when:
+
+- The entry is not an object.
+- Any required field is missing or blank.
+- A duplicate `id` appears.
+- `context` is not one of the allowed enum values.
+- `sentiment` is not one of the allowed enum values.
+
 ## `roles.seed.json`
 
 `roles.seed.json` stores roles the candidate provides as examples or possible targets. The current CLI expects an array where every role has non-empty `id`, `company`, `title`, and `status` strings plus a `urls` object.

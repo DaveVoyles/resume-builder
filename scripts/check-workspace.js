@@ -2,7 +2,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { validateEvidence } = require("../src/core/schemas");
+const { validateEvidence, validateFeedback } = require("../src/core/schemas");
 const { renderTracker } = require("../src/renderers/markdown-tracker");
 
 function usage() {
@@ -63,6 +63,22 @@ function validateEvidenceJsonl(file, errors) {
   if (parseErrors.length === 0) errors.push(...validateEvidence(entries));
 }
 
+function validateFeedbackJsonl(file, errors) {
+  if (!fs.existsSync(file)) return;
+  const lines = fs.readFileSync(file, "utf8").split(/\r?\n/u).filter(Boolean);
+  const entries = [];
+  const parseErrors = [];
+  lines.forEach((line, index) => {
+    try {
+      entries.push(JSON.parse(line));
+    } catch (error) {
+      parseErrors.push(`feedback.jsonl line ${index + 1}: invalid JSON\n  ${error.message}`);
+    }
+  });
+  errors.push(...parseErrors);
+  if (parseErrors.length === 0) errors.push(...validateFeedback(entries));
+}
+
 function validateRoles(roles, label, errors) {
   if (!Array.isArray(roles)) return;
   const seen = new Set();
@@ -119,6 +135,7 @@ function main() {
   validateRoles(seedRoles, "roles.seed.json", errors);
   validateRoles(trackedRoles, "roles.tracked.json", errors);
   validateEvidenceJsonl(path.join(workspace, "evidence.jsonl"), errors);
+  validateFeedbackJsonl(path.join(workspace, "feedback.jsonl"), errors);
 
   const trackerFile = path.join(workspace, "outputs", "tracker.md");
   if (fs.existsSync(trackerFile) && Array.isArray(trackedRoles)) {

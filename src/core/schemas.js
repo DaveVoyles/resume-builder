@@ -95,4 +95,40 @@ function validateRoles(roles, label) {
   return errors;
 }
 
-module.exports = { validateEvidence, validateProfile, validateRoles };
+function validateFeedback(entries) {
+  const errors = [];
+  if (!requireArray(entries, "feedback", errors)) return errors;
+  const ids = new Set();
+  const validContexts = new Set(["grill", "interview", "study-guide", "tailor"]);
+  const validSentiments = new Set(["confident", "neutral", "unsure", "poor"]);
+  entries.forEach((entry, index) => {
+    const label = `feedback line ${index + 1}`;
+    if (!requireObject(entry, label, errors)) return;
+    if (requireString(entry.id, `${label}.id`, errors)) {
+      if (ids.has(entry.id)) errors.push(`${label}: duplicate id ${entry.id}`);
+      ids.add(entry.id);
+    }
+    if (requireString(entry.schemaVersion, `${label}.schemaVersion`, errors) && entry.schemaVersion !== "1.0") {
+      errors.push(`${label}.schemaVersion: must be "1.0"`);
+    }
+    requireString(entry.question, `${label}.question`, errors);
+    requireString(entry.answer, `${label}.answer`, errors);
+    requireString(entry.proposedAnswer, `${label}.proposedAnswer`, errors);
+    requireString(entry.createdAt, `${label}.createdAt`, errors);
+
+    if (requireString(entry.context, `${label}.context`, errors)) {
+      if (!validContexts.has(entry.context)) {
+        errors.push(`${label}.context: invalid value "${entry.context}" (must be grill, interview, study-guide, or tailor)`);
+      }
+    }
+
+    if (requireString(entry.sentiment, `${label}.sentiment`, errors)) {
+      if (!validSentiments.has(entry.sentiment)) {
+        errors.push(`${label}.sentiment: invalid value "${entry.sentiment}" (must be confident, neutral, unsure, or poor)`);
+      }
+    }
+  });
+  return errors;
+}
+
+module.exports = { validateEvidence, validateProfile, validateRoles, validateFeedback };
