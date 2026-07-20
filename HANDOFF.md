@@ -1,5 +1,24 @@
 # Handoff
 
+## Design plan 0005 — selective lucidRESUME adoption: approved, exported, awaiting orchestrator
+
+Plan 0005 (ghosted + stale pipeline tracking, gap taxonomy, de-AI lint + semantic compression,
+HTML dashboard funnel/refresh, lucidRESUME attribution — details in
+[`docs/design/0005-lucidresume-adoption.md`](docs/design/0005-lucidresume-adoption.md), companion
+[ADR 0002](docs/decisions/0002-static-generated-html-only-ui-surface.md)) is approved (Lavish
+review 2026-07-20), persisted via [PR #68](https://github.com/DaveVoyles/resume-builder/pull/68),
+and exported: issues [#69–#77](https://github.com/DaveVoyles/resume-builder/issues?q=is%3Aissue+state%3Aopen+label%3Aplan%3A0005)
+(label `plan:0005`, native blocking edges, seeded to the
+[Agent Work board](https://github.com/users/DaveVoyles/projects/2)). Concepts adapted from
+[scottgal/lucidRESUME](https://github.com/scottgal/lucidRESUME) (Unlicense) — attribution is a
+deliberate deliverable (D9/#72). **Next step: a fresh orchestrator session claims the plan-0005
+frontier** (hand-off chip posted in the planning session). Planner stopped at doc per ADR 0003
+(Chat-Agents).
+
+Note for step 2 below: `land-pr.sh` autonomous merge is now **confirmed working** on this repo —
+PR #68 was App-approved and rebase-merged fully autonomously (receipt posted by
+`review-lens-receipt.sh`, zero manual steps).
+
 ## Design plan 0004 — landing floor fixed, orchestrator running the frontier
 
 Plan 0004 (cover letters, ATS keyword scoring, networking/referral tracking — full details in
