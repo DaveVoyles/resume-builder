@@ -61,7 +61,10 @@ function collectSearchText(config) {
  *          missing: Keywords that were not found
  */
 function scoreKeywordCoverage(keywords, resumeConfig) {
-  if (!Array.isArray(keywords) || !resumeConfig || typeof resumeConfig !== "object") {
+  if (!Array.isArray(keywords)) {
+    return { percent: 0, present: [], missing: [] };
+  }
+  if (!resumeConfig || typeof resumeConfig !== "object") {
     return { percent: 0, present: [], missing: [...keywords] };
   }
 

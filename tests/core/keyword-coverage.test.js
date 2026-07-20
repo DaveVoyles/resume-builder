@@ -177,6 +177,20 @@ describe("scoreKeywordCoverage", () => {
       assert.deepEqual(result.missing, ["React", "Node.js"]);
     });
 
+    test("handles null/undefined keywords without throwing", () => {
+      const config = { summary: { text: "React developer" } };
+
+      const nullResult = scoreKeywordCoverage(null, config);
+      assert.equal(nullResult.percent, 0);
+      assert.deepEqual(nullResult.present, []);
+      assert.deepEqual(nullResult.missing, []);
+
+      const undefinedResult = scoreKeywordCoverage(undefined, config);
+      assert.equal(undefinedResult.percent, 0);
+      assert.deepEqual(undefinedResult.present, []);
+      assert.deepEqual(undefinedResult.missing, []);
+    });
+
     test("filters out empty strings in keywords array from percentage calculation", () => {
       const config = resumeConfig();
       const result = scoreKeywordCoverage(["React", "", "Node.js"], config);
