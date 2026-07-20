@@ -2,7 +2,7 @@
 
 const path = require("path");
 const { scoreKeywordCoverage } = require("../../core/keyword-coverage");
-const { readJson, resolveWorkspace } = require("../../core/workspace");
+const { readJson } = require("../../core/workspace");
 
 async function run(options) {
   if (!options.config) {
@@ -12,7 +12,6 @@ async function run(options) {
     throw new Error("score-keywords requires --keywords <path-to-keywords.json>");
   }
 
-  const workspace = resolveWorkspace(options.workspace);
   const configPath = path.resolve(process.cwd(), options.config);
   const keywordsPath = path.resolve(process.cwd(), options.keywords);
 
