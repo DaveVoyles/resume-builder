@@ -128,6 +128,16 @@ Fix the config — either add the missing evidence (if the candidate can confirm
 - [ ] Confirm every claim still reads as accurate and comfortable to defend in an interview.
 - [ ] Check the tracker row (`outputs/tracker.md` or `.html`) shows the role with status "interested" and the resume linked.
 
+### Optional: Analyze keyword gaps
+
+If you want to understand what this job posting is asking for that the resume doesn't yet emphasize, you can run a gap analysis:
+
+1. Extract or collect the job posting's required and preferred keywords.
+2. Follow the [gap-analysis playbook](gap-analysis.md) to classify each missing keyword (PresentationGap, WeakEvidence, AdjacentSkill, or TrueGap).
+3. Run `gap-report` to render an actionable report of what the candidate could address.
+
+This gives the candidate a roadmap for the next resume revision without waiting for interview feedback. See [gap-analysis playbook](gap-analysis.md) for the full workflow.
+
 **Once the candidate is ready to apply**, use the `set-status` command to move the role forward:
 
 ```bash

@@ -886,6 +886,72 @@ The validator is intentionally lightweight today. These low-risk v1 checks would
 6. Confirm evidence references from profile, tracked roles, and claim policy exceptions point to existing evidence IDs.
 7. Warn when examples under `examples/sample-candidate/` use non-fictional domains outside `example.invalid`, `example.com`, `example.org`, or `example.net`.
 
+## Gap-classification input (`gap-report`)
+
+A gap-classification file is a JSON array used as input to the `gap-report` command. It organizes missing keywords from a job posting into four gap types, each with a rationale and recommended action. The `gap-report` command renders this classification into a markdown report.
+
+### Required fields
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `keyword` | string | The missing keyword or skill from the job posting. |
+| `type` | string | Classification type: one of `PresentationGap`, `WeakEvidence`, `AdjacentSkill`, `TrueGap`. |
+| `rationale` | string | One-line explanation of the classification. Reference evidence IDs or resume sections where relevant. |
+| `recommendedAction` | string | What the candidate should do about this gap (e.g., update resume, deepen evidence, learn the skill). |
+
+### Field descriptions
+
+**Gap types:**
+
+- `PresentationGap`: The skill exists in the candidate's resume or evidence but isn't phrased or positioned to match the posting's keyword. Recommended action: rephrase in the next resume revision.
+- `WeakEvidence`: The skill is mentioned lightly in the resume or evidence (one brief mention, no depth). Recommended action: deepen with a real project, or remove the skill to avoid follow-up questions.
+- `AdjacentSkill`: A related or transferable skill exists, but not the exact keyword. Recommended action: highlight the related skill and prepare to explain the transfer.
+- `TrueGap`: The skill is genuinely absent with no related experience. Recommended action: learn the skill before applying, or skip the role if it's a blocker.
+
+### Example
+
+```json
+[
+  {
+    "keyword": "Kubernetes",
+    "type": "AdjacentSkill",
+    "rationale": "Candidate has deep Docker and container orchestration experience (ev-002) but has never used Kubernetes specifically. Skills transfer.",
+    "recommendedAction": "Highlight Docker expertise in resume; prepare to explain the learning curve for Kubernetes."
+  },
+  {
+    "keyword": "Cross-functional leadership",
+    "type": "PresentationGap",
+    "rationale": "Resume describes 'Led roadmap planning with product and engineering teams' (ev-001), which is cross-functional leadership, but uses different wording.",
+    "recommendedAction": "Rephrase bullet to use 'cross-functional leadership' explicitly in the next resume revision."
+  },
+  {
+    "keyword": "A/B testing",
+    "type": "WeakEvidence",
+    "rationale": "Evidence mentions A/B testing once in a product launch context (ev-003), but no detail or depth.",
+    "recommendedAction": "Decide: if the candidate did more A/B testing, deepen the evidence. Otherwise, remove from resume to avoid follow-up questions."
+  },
+  {
+    "keyword": "SQL",
+    "type": "TrueGap",
+    "rationale": "No mention in resume or evidence. Candidate has only used ORMs and query builders, not SQL directly.",
+    "recommendedAction": "If SQL is a blocker for this role, consider a short learning project before applying. Otherwise, skip this role."
+  }
+]
+```
+
+### Validation rules
+
+The `gap-report` command validates input and rejects files that:
+
+- Do not contain a JSON array.
+- Contain objects missing any of the four required fields.
+- Contain a `type` value other than the four allowed types.
+- Contain empty or whitespace-only strings for `keyword`, `rationale`, or `recommendedAction`.
+
+Invalid classifications fail with an itemized error message before `gap-report` renders anything.
+
+---
+
 ## Related pages
 
 - [Candidate workspace](candidate-workspace.md)
