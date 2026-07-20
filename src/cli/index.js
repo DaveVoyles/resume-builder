@@ -38,7 +38,7 @@ function help() {
     "  render-cover-letter --workspace <dir> --config <cover-letter-config.json>",
     "  score-keywords --config <resume-config.json> --keywords <keywords.json> [--json]",
     "  study-guide-bundle --workspace <dir> (--id <role-id> | --company <name> --title <name>)",
-    "  tailor --workspace <dir> --config <resume-config.json> (--url <url> | --title <title> [--company <name>]) [--applyUrl <url>] [--location <text>] [--compensation <text>] [--fit <text>] [--notes <text>]",
+    "  tailor --workspace <dir> --config <resume-config.json> (--url <url> | --title <title> [--company <name>]) [--applyUrl <url>] [--location <text>] [--compensation <text>] [--fit <text>] [--notes <text>] [--keywords <keywords.json>]",
     "  validate --workspace <dir>",
     "",
     "Common options:",
