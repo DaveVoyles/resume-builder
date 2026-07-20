@@ -1,31 +1,34 @@
 # Handoff
 
-## Docs review + per-folder READMEs — Complete
+## Design plan 0004 — grilled, reviewed, PR open
 
-Two PRs, both merged 2026-07-20, CI green on `main`:
+Dave asked for further resume-builder improvements; ran a `/grilling` session to scope three
+job-search-workflow gaps, in build order: **cover letter generation → ATS keyword-match scoring →
+networking/referral tracking**. Full decisions, a 13-deliverable table (all XS/S/M, build-ready),
+testing decisions, and out-of-scope items are in
+[`docs/design/0004-cover-letters-ats-scoring-networking.md`](docs/design/0004-cover-letters-ats-scoring-networking.md).
+Reviewed via a Lavish artifact and approved in-chat. Also added `contact`, `keyword coverage`, and
+`nextAction` to `CONTEXT.md` (the project glossary, via the `domain-model` skill — first time this
+file gained new entries).
 
-- [PR #41](https://github.com/DaveVoyles/resume-builder/pull/41) — doc-sync gaps left by plans
-  0002/0003 (playbooks index missing `debrief.md`, `cli-workflow.md` missing `set-status`/
-  `study-guide-bundle`, `workspace-schemas.md` missing the study-guide-bundle output shape,
-  `AGENTS.md` missing study-guide/debrief recipes) + a highlighted study-guide section on the
-  README + a README added to every top-level folder (`docs/`, `examples/`, `scripts/`, `src/`,
-  `templates/`, `tests/`).
-- [PR #40](https://github.com/DaveVoyles/resume-builder/pull/40) — spun off mid-review as a
-  background task: added debrief's real run-through to `docs/e2e-showcase.md` (it predated the
-  debrief playbook and wasn't covered).
+**PR open, awaiting merge:** [PR #42](https://github.com/DaveVoyles/resume-builder/pull/42) — plan
+doc + glossary update + `.gitignore` (ignore `.lavish/` review scratch artifacts). Docs-only diff;
+self-review hand-assembled (no `scripts/review-lens-*.sh` in this repo) — verdict Ready to Merge,
+no findings.
 
-Both branches' remote refs were already auto-deleted at merge; local branch/worktree pruned for
-`claude/add-debrief-showcase` via `git-prune-merged-branch.sh`.
-
-**Known gap, unresolved (carried over from prior sessions):** this repo still has no
+**Known gap, still unresolved (carried over from prior sessions):** this repo still has no
 `scripts/review-lens-receipt.sh`, so PR merges keep requiring Dave by hand rather than the
-autonomous `land-pr.sh` path.
+autonomous `land-pr.sh` path — true for PR #42 too.
 
-**Left behind:** this session's own worktree (`.claude/worktrees/cranky-almeida-71388d`,
-branch `claude/docs-review-updates-76f807`) is still on disk — its own active cwd, so it wasn't
-safe to remove mid-session. Merged and remote-pruned already; only the local worktree +
-`git branch -d claude/docs-review-updates-76f807` remain, once this session ends.
+## Next steps
 
-## Next step
-
-No open items. Next work in this repo starts from a fresh request or design plan.
+1. Dave merges [PR #42](https://github.com/DaveVoyles/resume-builder/pull/42).
+2. Run `plan-to-issues` on the merged plan to export the 13 deliverables as GitHub issues (labeled
+   `plan:0004`), seed them onto the Agent Work board, and write the plan doc's Execution Tracking
+   section.
+3. A fresh `orchestrate` session works the frontier in dependency order (D1 → D2 → D3 → D4 for
+   cover letters; D5 → D6 → D7 → D8 for ATS scoring; D9 → D10 → D11 → D12 → D13 for networking).
+4. This session's own worktree (`.claude/worktrees/resume-builder-improvements-9dd600`, branch
+   `claude/resume-builder-improvements-9dd600`) is still on disk — its own active cwd, so it wasn't
+   safe to remove mid-session. Prune it (and the branch, once PR #42 merges) via
+   `scripts/git-prune-merged-branch.sh` once this session ends.

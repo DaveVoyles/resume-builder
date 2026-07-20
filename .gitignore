@@ -23,3 +23,6 @@ candidate/outputs/
 
 # Modular workflow generated outputs
 outputs/
+
+# Lavish Editor review scratch artifacts
+.lavish/
