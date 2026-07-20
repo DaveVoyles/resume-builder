@@ -28,6 +28,7 @@
     "workspace:tracker:html": "node src/cli/index.js build-tracker --format html",
     "workspace:render": "node src/cli/index.js render-resume",
     "workspace:score-keywords": "node src/cli/index.js score-keywords",
+    "workspace:gap-report": "node src/cli/index.js gap-report",
     "workspace:bundle": "node src/cli/index.js study-guide-bundle",
     "workspace:tailor": "node src/cli/index.js tailor",
     "workspace:set-status": "node src/cli/index.js set-status",
