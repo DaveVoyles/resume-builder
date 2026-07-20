@@ -20,7 +20,8 @@ Playbooks are vendor-neutral markdown instruction docs for terminal LLM agents. 
 
 ## Current playbooks
 
-- (more playbooks will be added as plan 0001 progresses)
+- `grill.md`: Intake interview capturing work history, target roles, location, compensation, and constraints.
+- `find-roles.md`: Search and vet prospective roles against preferences, maintain leads, and promote accepted leads to tracked roles.
 
 ## Why this design?
 
