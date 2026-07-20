@@ -6,6 +6,7 @@ const { renderTracker } = require("../../renderers/markdown-tracker");
 const { validateEvidence, validateProfile, validateRoles, validateFeedback } = require("../../core/schemas");
 const { validateResumeConfig } = require("../../core/resume-config");
 const { auditResumeConfig } = require("../../core/claim-audit");
+const { lintConfig } = require("../../core/style-lint");
 const { readJson, readJsonLines, resolveWorkspace, workspacePaths } = require("../../core/workspace");
 
 function assertExists(file, errors) {
@@ -54,6 +55,18 @@ function auditResumeConfigs(paths, evidence, errors, warnings) {
     const audit = auditResumeConfig(config, evidence);
     errors.push(...prefixed(label, audit.errors));
     warnings.push(...prefixed(label, audit.warnings));
+
+    // De-AI style lint advisory (D7, src/core/style-lint.js) — detects
+    // AI-generated writing patterns and adds them as warnings (never blocking).
+    const styleLint = lintConfig(config, "resume");
+    styleLint.findings.forEach((finding) => {
+      warnings.push(
+        ...prefixed(
+          label,
+          [`Style: [${finding.sourceLabel}] ${finding.description}`],
+        ),
+      );
+    });
   });
 }
 
