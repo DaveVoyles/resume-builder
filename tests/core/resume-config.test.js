@@ -119,3 +119,71 @@ test("validateResumeConfig rejects an invalid publicationsSpeakingLayout", () =>
   assert.equal(valid, false);
   assert.ok(errors.some((error) => error.includes("publicationsSpeakingLayout")));
 });
+
+test("validateResumeConfig rejects an unsupported schemaVersion", () => {
+  const config = validConfig();
+  config.schemaVersion = "2.0";
+  const { valid, errors } = validateResumeConfig(config);
+  assert.equal(valid, false);
+  assert.ok(errors.some((error) => error.includes("schemaVersion")));
+});
+
+test("validateResumeConfig rejects a non-object candidate", () => {
+  const config = validConfig();
+  config.candidate = "Sample Candidate";
+  const { valid, errors } = validateResumeConfig(config);
+  assert.equal(valid, false);
+  assert.ok(errors.some((error) => error.includes("candidate")));
+});
+
+test("validateResumeConfig rejects a non-object summary", () => {
+  const config = validConfig();
+  config.summary = "just a string";
+  const { valid, errors } = validateResumeConfig(config);
+  assert.equal(valid, false);
+  assert.ok(errors.some((error) => error.includes("summary")));
+});
+
+test("validateResumeConfig rejects malformed education entries", () => {
+  const config = validConfig();
+  config.education = [{ degree: "B.S. Fictional Studies" }]; // missing institution, dates
+  const { valid, errors } = validateResumeConfig(config);
+  assert.equal(valid, false);
+  assert.ok(errors.some((error) => error.includes("education[0].institution")));
+  assert.ok(errors.some((error) => error.includes("education[0].dates")));
+});
+
+test("validateResumeConfig rejects malformed publications entries", () => {
+  const config = validConfig();
+  config.publications = ["not an object"];
+  const { valid, errors } = validateResumeConfig(config);
+  assert.equal(valid, false);
+  assert.ok(errors.some((error) => error.includes("publications[0]")));
+});
+
+test("validateResumeConfig rejects malformed speaking entries", () => {
+  const config = validConfig();
+  config.speaking = [{ heading: "Fictional Conference Talks" }]; // missing organizations, dates
+  const { valid, errors } = validateResumeConfig(config);
+  assert.equal(valid, false);
+  assert.ok(errors.some((error) => error.includes("speaking[0].organizations")));
+  assert.ok(errors.some((error) => error.includes("speaking[0].dates")));
+});
+
+test("validateResumeConfig rejects non-boolean includeEducation/includePublicationsSpeaking", () => {
+  const config = validConfig();
+  config.includeEducation = "yes";
+  config.includePublicationsSpeaking = "no";
+  const { valid, errors } = validateResumeConfig(config);
+  assert.equal(valid, false);
+  assert.ok(errors.some((error) => error.includes("includeEducation")));
+  assert.ok(errors.some((error) => error.includes("includePublicationsSpeaking")));
+});
+
+test("validateResumeConfig rejects a non-string subHeader", () => {
+  const config = validConfig();
+  config.experienceSections[0].jobs[0].subHeader = 42;
+  const { valid, errors } = validateResumeConfig(config);
+  assert.equal(valid, false);
+  assert.ok(errors.some((error) => error.includes("subHeader")));
+});

@@ -130,14 +130,18 @@ function collectFindings(paths, state) {
     .filter(Boolean);
 }
 
-function uniqueFindings(findings) {
+function dedupeBy(findings, keyFn) {
   const seen = new Set();
   return findings.filter((finding) => {
-    const key = `${finding.state}:${finding.path}`;
+    const key = keyFn(finding);
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
+}
+
+function uniqueFindings(findings) {
+  return dedupeBy(findings, (finding) => `${finding.state}:${finding.path}`);
 }
 
 function isBinaryPath(filePath) {
@@ -146,10 +150,14 @@ function isBinaryPath(filePath) {
   return BINARY_EXTENSIONS.has(filePath.slice(dot).toLowerCase());
 }
 
-function readWorkingTreeText(filePath) {
-  const fs = require("fs");
+// Reads a file's content from the Git index (the staging area), not the working
+// tree: `git ls-files --cached` and `git diff --cached` both describe the index,
+// so scanning working-tree bytes instead would miss a leak that's staged (or
+// already committed) but has since been edited or reverted on disk without
+// re-staging — the content grep must see exactly what `git commit` would commit.
+function readIndexText(filePath) {
   try {
-    return fs.readFileSync(filePath, "utf8");
+    return git(["show", `:${filePath}`]);
   } catch (error) {
     return null;
   }
@@ -162,9 +170,18 @@ function collectTermFindings(paths, state) {
   );
 
   for (const filePath of uniquePaths) {
-    const content = readWorkingTreeText(filePath);
+    const content = readIndexText(filePath);
     if (content === null) continue;
 
+    // Case-sensitive on purpose (tried case-insensitive, reverted): this repo's
+    // own GitHub org/repo references are "DaveVoyles" (capitalized, e.g.
+    // package.json's repository URL and README links), while the private
+    // repo's hardcoded personal handles are lowercase ("davevoyles",
+    // "dave-voyles"). Case-insensitive matching collapsed that distinction and
+    // false-positived on this repo's own legitimate, already-tracked content
+    // (README.md, package.json, docs/generator-refactor-plan.md, and others).
+    // A casing-obfuscated leak is a much smaller realistic risk than breaking
+    // the check on the repo's own URLs.
     for (const { term, reason } of DENY_TERMS) {
       if (content.includes(term)) {
         findings.push({ path: filePath, state, term, reason });
@@ -176,13 +193,7 @@ function collectTermFindings(paths, state) {
 }
 
 function uniqueTermFindings(findings) {
-  const seen = new Set();
-  return findings.filter((finding) => {
-    const key = `${finding.state}:${finding.path}:${finding.term}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  return dedupeBy(findings, (finding) => `${finding.state}:${finding.path}:${finding.term}`);
 }
 
 function main() {

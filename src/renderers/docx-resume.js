@@ -22,7 +22,14 @@ const {
   entryBlock,
   docFrom,
 } = require("./docx-helpers");
-const { validateResumeConfig } = require("../core/resume-config");
+const { validateResumeConfig, LAYOUTS } = require("../core/resume-config");
+
+// Named for readability below instead of re-typing the layout strings —
+// LAYOUTS (src/core/resume-config.js) is the single source of truth for
+// valid publicationsSpeakingLayout values; this destructure keeps this
+// file's branches from drifting out of sync with the schema's enum order:
+// ["combined", "speaking-then-publications", "combined-speaking-only", "publications-only"].
+const [, LAYOUT_SPEAKING_THEN_PUBLICATIONS, LAYOUT_COMBINED_SPEAKING_ONLY, LAYOUT_PUBLICATIONS_ONLY] = LAYOUTS;
 
 function buildEducationSection(entries) {
   return entries.flatMap((entry) => entryBlock(entry.degree, entry.institution, entry.dates, entry.details));
@@ -68,13 +75,13 @@ function renderResumeConfig(config) {
   const hasSpeaking = Array.isArray(config.speaking) && config.speaking.length > 0;
   const includePublicationsSpeaking = (config.includePublicationsSpeaking ?? true) && (hasPublications || hasSpeaking);
   if (includePublicationsSpeaking) {
-    const layout = config.publicationsSpeakingLayout || "combined";
-    if (layout === "speaking-then-publications") {
+    const layout = config.publicationsSpeakingLayout || LAYOUTS[0];
+    if (layout === LAYOUT_SPEAKING_THEN_PUBLICATIONS) {
       if (hasSpeaking) children.push(rule(), sectionHeading("Speaking"), ...buildSpeakingSection(config.speaking));
       if (hasPublications) children.push(rule(), sectionHeading("Publications"), ...buildPublicationsSection(config.publications));
-    } else if (layout === "combined-speaking-only") {
+    } else if (layout === LAYOUT_COMBINED_SPEAKING_ONLY) {
       if (hasSpeaking) children.push(rule(), sectionHeading("Publications & Speaking"), ...buildSpeakingSection(config.speaking));
-    } else if (layout === "publications-only") {
+    } else if (layout === LAYOUT_PUBLICATIONS_ONLY) {
       if (hasPublications) children.push(rule(), sectionHeading("Publications"), ...buildPublicationsSection(config.publications));
     } else if (hasPublications && hasSpeaking) {
       children.push(rule(), sectionHeading("Publications & Speaking"), ...buildPublicationsSection(config.publications), ...buildSpeakingSection(config.speaking));

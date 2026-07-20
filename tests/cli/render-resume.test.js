@@ -6,6 +6,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { readDocxText } = require("../helpers/read-docx-text");
+const command = require("../../src/cli/commands/render-resume");
 
 function fictionalConfig(overrides = {}) {
   return {
@@ -34,59 +35,85 @@ function fictionalConfig(overrides = {}) {
   };
 }
 
-function makeWorkspace() {
+function makeWorkspace(config = fictionalConfig()) {
   const workspace = fs.mkdtempSync(path.join(os.tmpdir(), "render-resume-workspace-"));
   const configPath = path.join(workspace, "resume-config.json");
-  fs.writeFileSync(configPath, JSON.stringify(fictionalConfig(), null, 2));
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
   return { workspace, configPath };
 }
 
+async function withWorkspace(config, fn) {
+  const { workspace, configPath } = makeWorkspace(config);
+  try {
+    await fn({ workspace, configPath });
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+}
+
 test("render-resume command writes a docx to outputs/resumes/<Company>/<file>.docx (golden render seam)", async () => {
-  const { workspace, configPath } = makeWorkspace();
-  const command = require("../../src/cli/commands/render-resume");
+  await withWorkspace(fictionalConfig(), async ({ workspace, configPath }) => {
+    await command.run({ workspace, config: configPath });
 
-  await command.run({ workspace, config: configPath });
+    const expectedPath = path.join(workspace, "outputs", "resumes", "Acme Corp", "sample-candidate-acme-corp.docx");
+    assert.ok(fs.existsSync(expectedPath), `expected rendered file at ${expectedPath}`);
 
-  const expectedPath = path.join(workspace, "outputs", "resumes", "Acme Corp", "sample-candidate-acme-corp.docx");
-  assert.ok(fs.existsSync(expectedPath), `expected rendered file at ${expectedPath}`);
-
-  const text = readDocxText(expectedPath);
-  assert.match(text, /Sample Candidate/);
-  assert.match(text, /Fictional summary for the render-resume CLI test\./);
-  assert.match(text, /Senior Fictional Engineer/);
-
-  fs.rmSync(workspace, { recursive: true, force: true });
+    const text = readDocxText(expectedPath);
+    assert.match(text, /Sample Candidate/);
+    assert.match(text, /Fictional summary for the render-resume CLI test\./);
+    assert.match(text, /Senior Fictional Engineer/);
+  });
 });
 
 test("render-resume command honors an explicit outputFileName", async () => {
-  const workspace = fs.mkdtempSync(path.join(os.tmpdir(), "render-resume-workspace-"));
-  const configPath = path.join(workspace, "resume-config.json");
-  fs.writeFileSync(configPath, JSON.stringify(fictionalConfig({ outputFileName: "custom-name.docx" }), null, 2));
-  const command = require("../../src/cli/commands/render-resume");
+  await withWorkspace(fictionalConfig({ outputFileName: "custom-name.docx" }), async ({ workspace, configPath }) => {
+    await command.run({ workspace, config: configPath });
 
-  await command.run({ workspace, config: configPath });
-
-  const expectedPath = path.join(workspace, "outputs", "resumes", "Acme Corp", "custom-name.docx");
-  assert.ok(fs.existsSync(expectedPath));
-
-  fs.rmSync(workspace, { recursive: true, force: true });
+    const expectedPath = path.join(workspace, "outputs", "resumes", "Acme Corp", "custom-name.docx");
+    assert.ok(fs.existsSync(expectedPath));
+  });
 });
 
 test("render-resume command throws a clear error for an invalid config", async () => {
-  const { workspace, configPath } = makeWorkspace();
-  fs.writeFileSync(configPath, JSON.stringify({ company: "Acme Corp" }));
-  const command = require("../../src/cli/commands/render-resume");
-
-  await assert.rejects(() => command.run({ workspace, config: configPath }), /Invalid resume config/);
-
-  fs.rmSync(workspace, { recursive: true, force: true });
+  await withWorkspace({ company: "Acme Corp" }, async ({ workspace, configPath }) => {
+    await assert.rejects(() => command.run({ workspace, config: configPath }), /Invalid resume config/);
+  });
 });
 
 test("render-resume command requires --config", async () => {
-  const { workspace } = makeWorkspace();
-  const command = require("../../src/cli/commands/render-resume");
+  await withWorkspace(fictionalConfig(), async ({ workspace }) => {
+    await assert.rejects(() => command.run({ workspace }), /--config/);
+  });
+});
 
-  await assert.rejects(() => command.run({ workspace }), /--config/);
+test("render-resume command rejects a path-traversal-attempt company value instead of writing outside outputs/resumes/", async () => {
+  await withWorkspace(fictionalConfig({ company: "../../../../tmp/escaped" }), async ({ workspace, configPath }) => {
+    await command.run({ workspace, config: configPath });
 
-  fs.rmSync(workspace, { recursive: true, force: true });
+    // The traversal attempt must not escape outputs/resumes/: every entry
+    // written stays under that directory, and nothing lands outside the tmp
+    // workspace root.
+    const outputResumesDir = path.join(workspace, "outputs", "resumes");
+    const entries = fs.readdirSync(outputResumesDir);
+    entries.forEach((entry) => {
+      const fullPath = path.resolve(outputResumesDir, entry);
+      assert.ok(
+        fullPath === outputResumesDir || fullPath.startsWith(outputResumesDir + path.sep),
+        `expected ${fullPath} to stay under ${outputResumesDir}`,
+      );
+    });
+    assert.ok(!fs.existsSync("/tmp/escaped"), "traversal attempt must not create /tmp/escaped");
+  });
+});
+
+test("render-resume command rejects an all-dot company value instead of silently writing to the parent directory", async () => {
+  await withWorkspace(fictionalConfig({ company: ".." }), async ({ workspace, configPath }) => {
+    await assert.rejects(() => command.run({ workspace, config: configPath }), /company/);
+  });
+});
+
+test("render-resume command rejects an all-dot outputFileName value", async () => {
+  await withWorkspace(fictionalConfig({ outputFileName: ".." }), async ({ workspace, configPath }) => {
+    await assert.rejects(() => command.run({ workspace, config: configPath }), /outputFileName/);
+  });
 });

@@ -176,4 +176,4 @@ function validateResumeConfig(config) {
   return { valid: errors.length === 0, errors };
 }
 
-module.exports = { validateResumeConfig };
+module.exports = { validateResumeConfig, LAYOUTS };
