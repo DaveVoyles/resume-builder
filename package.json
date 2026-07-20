@@ -27,6 +27,7 @@
     "workspace:tracker:html": "node src/cli/index.js build-tracker --format html",
     "workspace:render": "node src/cli/index.js render-resume",
     "workspace:bundle": "node src/cli/index.js study-guide-bundle",
+    "workspace:tailor": "node src/cli/index.js tailor",
     "workspace:validate": "node src/cli/index.js validate",
     "sample:quickstart": "npm run workspace:tracker -- --workspace examples/sample-candidate && npm run workspace:similar -- --workspace examples/sample-candidate --candidates examples/sample-candidate/roles.similar.candidates.json && npm run workspace:render -- --workspace examples/sample-candidate --config examples/sample-candidate/resume-configs/northwind-tools-senior-pm.json && npm run workspace:validate -- --workspace examples/sample-candidate",
     "test": "node --test",

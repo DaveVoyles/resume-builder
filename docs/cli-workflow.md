@@ -19,14 +19,14 @@ The CLI can:
 - 📥 Ingest resumes, notes, text files, and optional public GitHub metadata.
 - 🧾 Store source-backed facts in `evidence.jsonl`.
 - 📌 Create seed roles and tracked application records.
+- 📄 Render a schema-validated resume config to a finished DOCX resume, and audit its claims against `evidence.jsonl`.
 - 📊 Render a markdown application tracker.
 - 🧭 Generate similar-role search briefs.
 - ⚖️ Score manually collected candidate roles against seed-role patterns.
-- 🔒 Validate workspace files, tracker freshness, and privacy boundaries.
+- 🔒 Validate workspace files, tracker freshness, evidence-backed claims, and privacy boundaries.
 
 The CLI does not currently:
 
-- 📄 Write finished DOCX resumes.
 - 🕸️ Automatically scrape job boards.
 - 🎯 Automatically decide which jobs you should apply to.
 - 🙋 Interview the candidate for missing details.
@@ -44,7 +44,9 @@ The CLI does not currently:
 | Build similar-role review output | `npm run workspace:similar -- --workspace <dir> [--candidates <file>]` |
 | Render the application tracker | `npm run workspace:tracker -- --workspace <dir>` |
 | Render an interactive HTML tracker (searchable/filterable, stat cards) | `npm run workspace:tracker -- --workspace <dir> --format html` |
-| Validate workspace files and tracker freshness | `npm run workspace:validate -- --workspace <dir>` |
+| Render a schema-validated resume config to DOCX | `npm run workspace:render -- --workspace <dir> --config <resume-config.json>` |
+| Validate, render, and track a role for a job posting in one pass | `npm run workspace:tailor -- --workspace <dir> --config <resume-config.json> --url <url> --title <title>` |
+| Validate workspace files, the claim audit, and tracker freshness | `npm run workspace:validate -- --workspace <dir>` |
 | Check privacy before sharing | `npm run check:privacy` |
 
 ## 🧭 CLI-only path

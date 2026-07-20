@@ -43,6 +43,32 @@ function findRole(roles, options) {
 }
 
 /**
+ * A role registered via `tailor` (design plan 0001, D4) carries an explicit
+ * `resume.configPath` link back to the exact config it rendered, relative to
+ * the workspace root — see src/cli/commands/tailor.js. Prefer it when
+ * present and the file still exists: it's an exact, unambiguous reference,
+ * not a content-based guess, and it resolves the same-company/two-configs
+ * ambiguity findRoleConfigPath below has to fail loud on. Falls through to
+ * the content-match scan for roles registered before this link existed
+ * (e.g. via plain `add-role`), so no schema migration is required.
+ *
+ * `role.resume.configPath` is normally written by `tailor` itself (always a
+ * clean workspace-relative path), but roles.tracked.json is a plain,
+ * hand-editable JSON file — a `../`-laden or absolute value there must not
+ * be trusted to escape the workspace. Treat an escaping path the same as a
+ * missing one (fall through to the content-match scan below) rather than
+ * reading it.
+ */
+function findLinkedConfigPath(workspace, role) {
+  const configPath = role.resume?.configPath;
+  if (!configPath) return null;
+  const workspaceRoot = path.resolve(workspace);
+  const fullPath = path.resolve(workspaceRoot, configPath);
+  if (fullPath !== workspaceRoot && !fullPath.startsWith(workspaceRoot + path.sep)) return null;
+  return fs.existsSync(fullPath) ? fullPath : null;
+}
+
+/**
  * Find the role config file for a given role by matching each candidate
  * config's own `company` field (read from its content), not by guessing
  * from the filename — a filename substring match can silently return the
@@ -55,6 +81,9 @@ function findRole(roles, options) {
  * schema-level link exists.
  */
 function findRoleConfigPath(workspace, role) {
+  const linked = findLinkedConfigPath(workspace, role);
+  if (linked) return linked;
+
   const configDir = path.join(workspace, "resume-configs");
 
   if (!fs.existsSync(configDir)) {

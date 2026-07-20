@@ -10,7 +10,7 @@ Playbooks are vendor-neutral markdown instruction docs for terminal LLM agents. 
 
 ## Using playbooks
 
-**Pick a playbook** matching your next step (e.g., `grill.md` for intake, `tailor.md` to build a resume for a job posting).
+**Pick a playbook** matching your next step (e.g., `grill.md` for intake, `tailor.md` to build a resume for a job posting, `study-guide.md` to prepare for an interview).
 
 **Share it with your terminal agent.** Paste the playbook into Claude, ChatGPT, Copilot CLI, or any other LLM agent you already use. No API key or vendor lock-in needed.
 
@@ -22,6 +22,8 @@ Playbooks are vendor-neutral markdown instruction docs for terminal LLM agents. 
 
 - `grill.md`: Intake interview capturing work history, target roles, location, compensation, and constraints.
 - `find-roles.md`: Search and vet prospective roles against preferences, maintain leads, and promote accepted leads to tracked roles.
+- `tailor.md`: Draft a schema-conformant resume config for a job posting, then validate, render, and track it in one pass with the `tailor` command.
+- `study-guide.md`: Gather a tracked role's context into a bundle and write an interview study guide.
 
 ## Why this design?
 

@@ -12,6 +12,7 @@ const COMMANDS = {
   "render-resume": () => require("./commands/render-resume"),
   "set-status": () => require("./commands/set-status"),
   "study-guide-bundle": () => require("./commands/study-guide-bundle"),
+  tailor: () => require("./commands/tailor"),
   validate: () => require("./commands/validate"),
 };
 
@@ -31,6 +32,7 @@ function help() {
     "  build-tracker --workspace <dir> [--format md|html] [--output <file>] [--title <text>]",
     "  render-resume --workspace <dir> --config <resume-config.json>",
     "  study-guide-bundle --workspace <dir> (--id <role-id> | --company <name> --title <name>)",
+    "  tailor --workspace <dir> --config <resume-config.json> (--url <url> | --title <title> [--company <name>]) [--applyUrl <url>] [--location <text>] [--compensation <text>] [--fit <text>] [--notes <text>]",
     "  validate --workspace <dir>",
     "",
     "Common options:",
