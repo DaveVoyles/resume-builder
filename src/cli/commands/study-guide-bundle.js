@@ -2,7 +2,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { readJson, resolveWorkspace, workspacePaths, ensureDir } = require("../../core/workspace");
+const { readJson, readJsonLines, resolveWorkspace, workspacePaths, ensureDir } = require("../../core/workspace");
 
 /**
  * Find a role in the tracked roles list.
@@ -86,25 +86,6 @@ function findRoleConfigPath(workspace, role) {
 }
 
 /**
- * Read all evidence from the evidence.jsonl file.
- */
-function readEvidence(evidencePath) {
-  if (!fs.existsSync(evidencePath)) {
-    return [];
-  }
-
-  const content = fs.readFileSync(evidencePath, "utf-8");
-  const lines = content.split("\n").filter((line) => line.trim());
-  return lines.map((line) => {
-    try {
-      return JSON.parse(line);
-    } catch (err) {
-      throw new Error(`Failed to parse evidence line: ${line}`);
-    }
-  });
-}
-
-/**
  * Create a study guide bundle for a tracked role.
  * Gathers:
  * - candidate profile
@@ -129,7 +110,7 @@ async function run(options) {
   const profile = readJson(paths.profile);
 
   // Load evidence
-  const evidence = readEvidence(paths.evidence);
+  const evidence = readJsonLines(paths.evidence);
 
   // Load tracked roles
   const rolesTracked = readJson(paths.rolesTracked, []);
