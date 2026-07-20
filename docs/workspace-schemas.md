@@ -408,6 +408,21 @@ The validator flags evidence before output when:
 ]
 ```
 
+### Auto-generating `nextAction` on status transitions
+
+The `set-status` CLI command automatically sets `nextAction` when a role's application status transitions, following this rule table:
+
+| New `application.status` | `nextAction.type` | `nextAction.dueDate` | `notes` entry appended |
+|---|---|---|---|
+| `applied` | `follow-up` | Due in 7 days (from the status transition date) | "check in if no response" |
+| `interview` | `follow-up` | Due in 1 day | "send thank-you" |
+| `offer` | `follow-up` | Due in 2 days | "respond to offer" |
+| `rejected` | `close` | — (no dueDate for close) | — (no note) |
+| `withdrawn` | `close` | — (no dueDate for close) | — (no note) |
+| `interested` | (unchanged) | — (leave `nextAction` untouched) | — (no note) |
+
+Each status transition always **overwrites** any existing `nextAction` (except when transitioning to `interested`, which leaves `nextAction` completely untouched). The `dueDate` is computed as an ISO 8601 date relative to the date the status was set (using the `--date` override if provided, or today's date otherwise). The `owner` is always set to `"candidate"` for auto-generated follow-ups.
+
 ### Tracker generation
 
 `outputs/tracker.md` is generated from `roles.tracked.json`; do not hand-edit tracker rows. Rebuild it with:

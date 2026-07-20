@@ -6,8 +6,42 @@ const { readJson, resolveWorkspace, workspacePaths, writeJson } = require("../..
 const VALID_STATUSES = ["interested", "applied", "interview", "offer", "rejected", "withdrawn"];
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
+// Rule table for auto-generating nextAction on status transitions
+const NEXT_ACTION_RULES = {
+  applied: {
+    type: "follow-up",
+    dueDateOffsetDays: 7,
+    note: "check in if no response",
+  },
+  interview: {
+    type: "follow-up",
+    dueDateOffsetDays: 1,
+    note: "send thank-you",
+  },
+  offer: {
+    type: "follow-up",
+    dueDateOffsetDays: 2,
+    note: "respond to offer",
+  },
+  rejected: {
+    type: "close",
+    // no dueDate, no note
+  },
+  withdrawn: {
+    type: "close",
+    // no dueDate, no note
+  },
+  // interested: untouched entirely
+};
+
 function getCurrentDate() {
   return new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+}
+
+function addDays(dateStr, days) {
+  const date = new Date(dateStr + "T00:00:00Z");
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().split("T")[0];
 }
 
 function validateStatus(status) {
@@ -98,6 +132,35 @@ async function run(options) {
   if ((options.status === "applied" && !role.application.appliedAt) || options.date) {
     role.application.appliedAt = options.date || getCurrentDate();
   }
+
+  // Auto-generate nextAction based on status transition, per the rule table
+  const rule = NEXT_ACTION_RULES[options.status];
+  if (rule) {
+    if (options.status === "interested") {
+      // interested leaves nextAction untouched entirely
+      // (rule exists to document this, but takes no action)
+    } else if (options.status === "rejected" || options.status === "withdrawn") {
+      // Clear nextAction to close type
+      role.nextAction = { type: "close" };
+    } else {
+      // applied, interview, offer: set to follow-up with computed dueDate
+      const statusDate = options.date || getCurrentDate();
+      const dueDate = addDays(statusDate, rule.dueDateOffsetDays);
+      role.nextAction = {
+        type: rule.type,
+        owner: "candidate",
+        dueDate,
+      };
+      // Append note to notes array
+      if (!Array.isArray(role.notes)) {
+        role.notes = [];
+      }
+      if (rule.note) {
+        role.notes.push(rule.note);
+      }
+    }
+  }
+
   role.updatedAt = getCurrentDate();
 
   // Write updated roles, then delegate the tracker rebuild to build-tracker
