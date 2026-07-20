@@ -78,20 +78,18 @@ function validateContact(contact) {
     errors.push("contact.contactMethod: must be a non-empty string when present");
   }
 
-  // linkedRoleIds must be a non-empty array of strings
+  // linkedRoleIds must be an array of strings (empty allowed — a contact may
+  // not be linked to any tracked role yet)
   if (!Array.isArray(contact.linkedRoleIds)) {
     errors.push("contact.linkedRoleIds: required array");
-  } else if (contact.linkedRoleIds.length === 0) {
-    errors.push("contact.linkedRoleIds: required non-empty array");
   } else if (!contact.linkedRoleIds.every(isNonEmptyString)) {
     errors.push("contact.linkedRoleIds: every entry must be a non-empty string");
   }
 
-  // notes must be a non-empty array of strings
+  // notes must be an array of strings (empty allowed — a freshly identified
+  // contact may not have any notes yet)
   if (!Array.isArray(contact.notes)) {
     errors.push("contact.notes: required array");
-  } else if (contact.notes.length === 0) {
-    errors.push("contact.notes: required non-empty array");
   } else if (!contact.notes.every(isNonEmptyString)) {
     errors.push("contact.notes: every entry must be a non-empty string");
   }

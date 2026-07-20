@@ -129,12 +129,12 @@ test("validateContact rejects empty string contactMethod when present", () => {
   assert.ok(errors.some((error) => error.includes("contactMethod")));
 });
 
-test("validateContact requires linkedRoleIds to be a non-empty array", () => {
+test("validateContact allows linkedRoleIds to be an empty array", () => {
   const contact = validContact();
   contact.linkedRoleIds = [];
   const { valid, errors } = validateContact(contact);
-  assert.equal(valid, false);
-  assert.ok(errors.some((error) => error.includes("linkedRoleIds")));
+  assert.equal(valid, true);
+  assert.deepEqual(errors, []);
 });
 
 test("validateContact rejects non-array linkedRoleIds", () => {
@@ -153,12 +153,12 @@ test("validateContact rejects linkedRoleIds with empty strings", () => {
   assert.ok(errors.some((error) => error.includes("linkedRoleIds")));
 });
 
-test("validateContact requires notes to be a non-empty array", () => {
+test("validateContact allows notes to be an empty array", () => {
   const contact = validContact();
   contact.notes = [];
   const { valid, errors } = validateContact(contact);
-  assert.equal(valid, false);
-  assert.ok(errors.some((error) => error.includes("notes")));
+  assert.equal(valid, true);
+  assert.deepEqual(errors, []);
 });
 
 test("validateContact rejects non-array notes", () => {
