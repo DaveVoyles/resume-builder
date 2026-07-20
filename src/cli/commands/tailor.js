@@ -10,6 +10,7 @@ const { createRole } = require("../../adapters/job-posting");
 const { validateResumeConfig } = require("../../core/resume-config");
 const { auditResumeConfig } = require("../../core/claim-audit");
 const { scoreKeywordCoverage } = require("../../core/keyword-coverage");
+const { lintConfig } = require("../../core/style-lint");
 const { readJson, readJsonLines, relativeToWorkspace, resolveWorkspace, workspacePaths, writeJson } = require("../../core/workspace");
 
 // The D7 enum value (src/cli/commands/set-status.js's VALID_STATUSES) that
@@ -115,6 +116,18 @@ async function run(options) {
     }
   }
 
+  // Step 2c: de-AI style lint advisory (D7, src/core/style-lint.js) — detects
+  // AI-generated writing patterns (buzzwords, sentence uniformity, repetition)
+  // and prints advisory warnings. Never blocks or affects the exit code.
+  const styleLintResult = lintConfig(config, "resume");
+  if (styleLintResult.findings.length > 0) {
+    console.warn(`\nStyle advisory: ${styleLintResult.summary}`);
+    styleLintResult.findings.forEach((finding) => {
+      console.warn(`  • [${finding.sourceLabel}] ${finding.description}`);
+    });
+    console.warn("");
+  }
+
   // A tailored resume belongs to exactly one company. If the caller passes
   // an explicit --company that disagrees with the config's own `company`
   // field, fail loud instead of silently tracking the role under one name
@@ -173,12 +186,25 @@ async function run(options) {
   // this succeeds, so a blocked cover letter never rolls back the resume
   // linkage already persisted above.
   if (options.coverLetter) {
+    const coverLetterConfigPath = path.resolve(process.cwd(), options.coverLetter);
+    const coverLetterConfig = readJson(coverLetterConfigPath);
+
+    // De-AI style lint advisory for cover letter (D7)
+    const coverLetterStyleLintResult = lintConfig(coverLetterConfig, "cover-letter");
+    if (coverLetterStyleLintResult.findings.length > 0) {
+      console.warn(`\nCover letter style advisory: ${coverLetterStyleLintResult.summary}`);
+      coverLetterStyleLintResult.findings.forEach((finding) => {
+        console.warn(`  • [${finding.sourceLabel}] ${finding.description}`);
+      });
+      console.warn("");
+    }
+
     const coverLetterOutputPath = await renderCoverLetter.run({
       workspace: options.workspace,
       config: options.coverLetter,
     });
     role.coverLetter = role.coverLetter || {};
-    role.coverLetter.configPath = relativeToWorkspace(workspace, path.resolve(process.cwd(), options.coverLetter));
+    role.coverLetter.configPath = relativeToWorkspace(workspace, coverLetterConfigPath);
     role.coverLetter.outputPath = relativeToWorkspace(workspace, coverLetterOutputPath);
     role.coverLetter.status = "review-needed";
     writeJson(paths.rolesTracked, trackedRoles);
