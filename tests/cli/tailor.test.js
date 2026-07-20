@@ -146,6 +146,14 @@ test("tailor rejects an explicit --company that disagrees with the resume config
   });
 });
 
+test("tailor accepts an explicit --company that matches the config's company case/whitespace-insensitively", async () => {
+  await withWorkspace({ evidenceEntries: backedEvidence }, async ({ workspace, configPath, paths }) => {
+    await command.run({ workspace, config: configPath, company: "  fabrikam ai  ", title: "PM" });
+    const [role] = readJson(paths.rolesTracked);
+    assert.strictEqual(role.company, "  fabrikam ai  ", "the caller's own --company text is preserved verbatim, only the comparison is lenient");
+  });
+});
+
 test("tailor requires --config", async () => {
   await withWorkspace({ evidenceEntries: backedEvidence }, async ({ workspace }) => {
     await assert.rejects(() => command.run({ workspace, title: "PM", company: "Fabrikam AI" }), /--config/);
@@ -195,8 +203,8 @@ test("tailor blocks on an unsupported claim (D3 claim audit) before rendering or
   );
 });
 
-test("tailor prints (does not block on) a thin-ledger warning", async () => {
-  await withWorkspace({ evidenceEntries: [backedEvidence[0]] }, async ({ workspace, configPath }) => {
+test("tailor prints (does not block on) a thin-ledger warning, and still renders + tracks", async () => {
+  await withWorkspace({ evidenceEntries: [backedEvidence[0]] }, async ({ workspace, configPath, paths }) => {
     const originalWarn = console.warn;
     const warnings = [];
     console.warn = (message) => warnings.push(message);
@@ -206,6 +214,12 @@ test("tailor prints (does not block on) a thin-ledger warning", async () => {
     } finally {
       console.warn = originalWarn;
     }
+    // A thin-ledger warning is non-blocking: the DOCX and tracked role must
+    // still land, not be silently skipped alongside the warning.
+    assert.ok(fs.existsSync(path.join(workspace, "outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai.docx")));
+    const [role] = readJson(paths.rolesTracked);
+    assert.strictEqual(role.company, "Fabrikam AI");
+    assert.strictEqual(role.application.status, "interested");
   });
 });
 
@@ -237,5 +251,126 @@ test("tailor is safe to re-run: does not duplicate the tracked role or reset an 
     assert.strictEqual(roles[0].application.status, "applied", "an in-progress application status must survive a tailor re-run");
     assert.strictEqual(roles[0].application.appliedAt, "2026-07-01");
     assert.strictEqual(roles[0].resume.status, "review-needed", "resume metadata still refreshes on re-run");
+    assert.strictEqual(roles[0].resume.configPath, "resume-configs/fabrikam-ai.json", "resume.configPath must still be correct after a re-run");
+    assert.strictEqual(
+      roles[0].resume.outputPath,
+      path.join("outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai.docx"),
+      "resume.outputPath must still be correct after a re-run",
+    );
   });
+});
+
+test("tailor re-run finds the existing role by job URL even when --title has drifted (not a stale-id crash)", async () => {
+  // Regression: an earlier version recomputed the role id from THIS call's
+  // own --title/--company after add-role's own (URL-based) dedup had
+  // already recognized the role as a duplicate, so a re-run with the same
+  // job URL but a reworded --title threw "could not find the tracked role
+  // it just registered" instead of finding and updating the existing role
+  // — a realistic flow, since an agent may reword a title between two
+  // tailor passes over the same posting.
+  await withWorkspace({ evidenceEntries: backedEvidence }, async ({ workspace, configPath, paths }) => {
+    await command.run({
+      workspace,
+      config: configPath,
+      url: "https://jobs.example.invalid/fabrikam/developer-platform-pm",
+      title: "Developer platform product manager",
+    });
+
+    await command.run({
+      workspace,
+      config: configPath,
+      url: "https://jobs.example.invalid/fabrikam/developer-platform-pm",
+      title: "Developer Platform Product Manager", // reworded casing, same posting
+    });
+
+    const roles = readJson(paths.rolesTracked);
+    assert.strictEqual(roles.length, 1, "the reworded-title re-run must update the existing role, not create a second one");
+    assert.strictEqual(roles[0].resume.status, "review-needed");
+    assert.strictEqual(roles[0].application.status, "interested");
+  });
+});
+
+// End-to-end run against the real fictional sample candidate (design plan
+// 0001, D4 acceptance criteria: "End-to-end run on the fictional sample
+// candidate documented and tested" — docs/playbooks/tailor.md's "Sample-
+// candidate walkthrough" documents this exact scenario). Copies
+// examples/sample-candidate into a scratch tmpdir first — the committed
+// sample workspace itself must stay untouched (it's checked into git; see
+// examples/sample-candidate/README.md's privacy rules) — and tailors the
+// existing Fabrikam AI seed role (roles.seed.json's role-seed-001) using the
+// sample candidate's actual profile/evidence.jsonl, not synthetic fixtures.
+const SAMPLE_CANDIDATE_DIR = path.join(__dirname, "..", "..", "examples", "sample-candidate");
+
+test("tailor end-to-end: tailors the real sample-candidate's Fabrikam AI seed role using its actual evidence", async () => {
+  const workspace = fs.mkdtempSync(path.join(os.tmpdir(), "tailor-e2e-sample-candidate-"));
+  try {
+    fs.cpSync(SAMPLE_CANDIDATE_DIR, workspace, { recursive: true });
+    const paths = workspacePaths(workspace);
+
+    const rolesBefore = readJson(paths.rolesTracked);
+    assert.strictEqual(rolesBefore.length, 1, "sanity check: the committed sample starts with exactly the Northwind Tools role");
+
+    // Mirrors docs/playbooks/tailor.md's documented walkthrough: draft a
+    // config for the Fabrikam AI seed role using only claims the sample
+    // candidate's real evidence.jsonl (ev-001, ev-002) actually backs.
+    const configPath = path.join(paths.resumeConfigs, "fabrikam-ai-developer-platform-pm.json");
+    writeJson(configPath, {
+      schemaVersion: "1.0",
+      company: "Fabrikam AI",
+      outputFileName: "alex-rivera-fabrikam-ai.docx",
+      candidate: {
+        name: "Alex Rivera",
+        contact: [{ text: "Raleigh, NC" }],
+      },
+      summary: {
+        text: "Fictional product and program leader focused on developer platforms, AI-assisted workflows, and launch readiness.",
+      },
+      experienceSections: [
+        {
+          heading: "Experience",
+          jobs: [
+            {
+              title: "Senior Platform Program Manager",
+              company: "Contoso Labs",
+              dates: "2022 - Present",
+              bullets: [
+                "Led launch coordination for an internal developer platform used by multiple product teams.",
+                "Created a demo project for documenting AI-assisted developer workflow experiments.",
+              ],
+            },
+          ],
+        },
+      ],
+      skills: [["Developer platforms", "Platform strategy, internal tooling, developer experience"]],
+      includePublicationsSpeaking: false,
+    });
+
+    const result = await command.run({
+      workspace,
+      config: configPath,
+      url: "https://jobs.example.invalid/fabrikam/developer-platform-product-manager",
+      title: "Developer platform product manager",
+    });
+
+    const expectedDocx = path.join(workspace, "outputs", "resumes", "Fabrikam AI", "alex-rivera-fabrikam-ai.docx");
+    assert.strictEqual(result.outputPath, expectedDocx);
+    assert.ok(fs.existsSync(expectedDocx));
+
+    const rolesAfter = readJson(paths.rolesTracked);
+    assert.strictEqual(rolesAfter.length, 2, "tailoring adds a new tracked role alongside the existing sample role");
+    assert.deepStrictEqual(rolesAfter[0], rolesBefore[0], "the pre-existing Northwind Tools sample role must be untouched");
+
+    const fabrikamRole = rolesAfter.find((role) => role.company === "Fabrikam AI");
+    assert.ok(fabrikamRole, "expected a Fabrikam AI tracked role");
+    assert.strictEqual(fabrikamRole.status, "tracked");
+    assert.strictEqual(fabrikamRole.application.status, "interested", "lands not-yet-applied");
+    assert.strictEqual(fabrikamRole.resume.configPath, "resume-configs/fabrikam-ai-developer-platform-pm.json");
+    assert.strictEqual(fabrikamRole.resume.outputPath, path.join("outputs", "resumes", "Fabrikam AI", "alex-rivera-fabrikam-ai.docx"));
+
+    const tracker = fs.readFileSync(paths.tracker, "utf8");
+    assert.match(tracker, /Fabrikam AI/);
+    assert.match(tracker, /Interested/);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
 });

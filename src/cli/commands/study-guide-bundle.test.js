@@ -275,6 +275,29 @@ test("study-guide-bundle: prefers role.resume.configPath (set by tailor, D4) ove
   }
 });
 
+test("study-guide-bundle: falls back to content-matching instead of following a path-traversal resume.configPath", async () => {
+  const tmpDir = createFixtureWorkspace();
+  try {
+    // roles.tracked.json is a plain, hand-editable JSON file — a
+    // `../`-laden resume.configPath must not be trusted to escape the
+    // workspace. Point it at this test file itself (a real file outside
+    // the workspace) to prove an escaping path is never read, not just that
+    // a missing one falls back.
+    const paths = workspacePaths(tmpDir);
+    const roles = readJson(paths.rolesTracked);
+    roles[0].resume = { configPath: "../../../study-guide-bundle.test.js" };
+    writeJson(paths.rolesTracked, roles);
+
+    await run({ workspace: tmpDir, id: "role-tracked-001" });
+
+    const bundlePath = path.join(tmpDir, "outputs", "study-guide-bundles", "role-tracked-001.json");
+    const bundle = readJson(bundlePath);
+    assert.equal(bundle.resumeConfig.company, "Test Company", "must fall back to the content-matched config, not read the traversal target");
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
 test("study-guide-bundle: falls back to content-matching when resume.configPath points to a missing file", async () => {
   const tmpDir = createFixtureWorkspace();
   try {

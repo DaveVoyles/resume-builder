@@ -17,6 +17,37 @@ const { readJson, readJsonLines, relativeToWorkspace, resolveWorkspace, workspac
 // entries always land with a not-yet-applied status").
 const NOT_YET_APPLIED_STATUS = "interested";
 
+function rebuildTrackers(workspaceOption) {
+  buildTracker.run({ workspace: workspaceOption, format: "md" });
+  buildTracker.run({ workspace: workspaceOption, format: "html" });
+}
+
+/**
+ * Locates the tracked role add-role.run just wrote (or deduped against).
+ *
+ * add-role.js's own dedup (isDuplicate) always appends a genuinely new role
+ * to the END of roles.tracked.json, so if the list just grew, the new role
+ * is simply the last entry — no need to re-derive its id. If the list did
+ * NOT grow, add-role matched an existing role by id or job URL; matching by
+ * job URL here (when one was given) mirrors that same dedup rule without
+ * assuming the id add-role's createRole would compute for *this* call's
+ * options still matches the id stored on a prior run — it wouldn't if, say,
+ * an agent re-runs `tailor` for the same posting with a slightly reworded
+ * --title between passes. Falling back to id only applies when there's no
+ * URL to match on, matching add-role's own dedup precedence.
+ */
+function findRegisteredRole(trackedRolesBefore, trackedRolesAfter, roleOptions) {
+  if (trackedRolesAfter.length > trackedRolesBefore.length) {
+    return trackedRolesAfter[trackedRolesAfter.length - 1];
+  }
+  const expected = createRole(roleOptions);
+  if (expected.urls.job) {
+    const byUrl = trackedRolesAfter.find((candidate) => candidate.urls?.job === expected.urls.job);
+    if (byUrl) return byUrl;
+  }
+  return trackedRolesAfter.find((candidate) => candidate.id === expected.id);
+}
+
 /**
  * Tailor workflow (design plan 0001, D4): validates a drafted resume config
  * (D2 schema + D3 claim audit), renders it to DOCX (D2), and registers the
@@ -82,19 +113,15 @@ async function run(options) {
   // to the resume config's own company so the caller doesn't have to repeat
   // it.
   const roleOptions = { ...options, tracked: true, company: options.company || config.company };
+  const trackedRolesBefore = readJson(paths.rolesTracked, []);
   addRole.run(roleOptions);
 
-  // createRole is a pure function of roleOptions (src/adapters/job-posting.js)
-  // — calling it again here just recomputes the same deterministic id
-  // add-role.run derived above, so this locates the role we (or a prior,
-  // deduped tailor/add-role call) just wrote without reimplementing any of
-  // add-role's creation, dedup, or write logic.
-  const { id: roleId } = createRole(roleOptions);
   const trackedRoles = readJson(paths.rolesTracked, []);
-  const role = trackedRoles.find((candidate) => candidate.id === roleId);
+  const role = findRegisteredRole(trackedRolesBefore, trackedRoles, roleOptions);
   if (!role) {
-    throw new Error(`tailor could not find the tracked role it just registered (id: ${roleId}).`);
+    throw new Error("tailor could not find the tracked role it just registered.");
   }
+  const roleId = role.id;
 
   // Step 5: link the role to the resume artifacts just produced.
   // `role.status` stays "tracked" (list membership, set by add-role above);
@@ -119,8 +146,7 @@ async function run(options) {
     await setStatus.run({ workspace: options.workspace, id: roleId, status: NOT_YET_APPLIED_STATUS });
   } else {
     console.log(`Role already has application status "${role.application.status}"; leaving it unchanged.`);
-    buildTracker.run({ workspace: options.workspace, format: "md" });
-    buildTracker.run({ workspace: options.workspace, format: "html" });
+    rebuildTrackers(options.workspace);
   }
 
   console.log(`Tailored resume for ${role.company} — ${role.title}: ${outputPath}`);

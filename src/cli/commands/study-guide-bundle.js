@@ -51,11 +51,20 @@ function findRole(roles, options) {
  * ambiguity findRoleConfigPath below has to fail loud on. Falls through to
  * the content-match scan for roles registered before this link existed
  * (e.g. via plain `add-role`), so no schema migration is required.
+ *
+ * `role.resume.configPath` is normally written by `tailor` itself (always a
+ * clean workspace-relative path), but roles.tracked.json is a plain,
+ * hand-editable JSON file — a `../`-laden or absolute value there must not
+ * be trusted to escape the workspace. Treat an escaping path the same as a
+ * missing one (fall through to the content-match scan below) rather than
+ * reading it.
  */
 function findLinkedConfigPath(workspace, role) {
   const configPath = role.resume?.configPath;
   if (!configPath) return null;
-  const fullPath = path.resolve(workspace, configPath);
+  const workspaceRoot = path.resolve(workspace);
+  const fullPath = path.resolve(workspaceRoot, configPath);
+  if (fullPath !== workspaceRoot && !fullPath.startsWith(workspaceRoot + path.sep)) return null;
   return fs.existsSync(fullPath) ? fullPath : null;
 }
 
