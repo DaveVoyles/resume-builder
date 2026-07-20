@@ -22,6 +22,7 @@ function workspacePaths(workspace) {
     profile: path.join(workspace, "profile.json"),
     preferences: path.join(workspace, "preferences.json"),
     evidence: path.join(workspace, "evidence.jsonl"),
+    feedback: path.join(workspace, "feedback.jsonl"),
     rolesSeed: path.join(workspace, "roles.seed.json"),
     rolesTracked: path.join(workspace, "roles.tracked.json"),
     claimPolicy: path.join(workspace, "claim-policy.json"),

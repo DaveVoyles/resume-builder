@@ -24,6 +24,7 @@ candidate/
   profile.json
   preferences.json
   evidence.jsonl
+  feedback.jsonl
   roles.seed.json
   roles.tracked.json
   claim-policy.json
@@ -48,6 +49,7 @@ The v1 CLI creates the core JSON files, `inputs/`, `outputs/`, `outputs/tracker.
 | `candidate/profile.json` | Normalized candidate facts extracted from inputs. | No |
 | `candidate/preferences.json` | Location, compensation, role, industry, and work-style preferences. | No |
 | `candidate/evidence.jsonl` | Claim-level evidence with source references and confidence. | No |
+| `candidate/feedback.jsonl` | Q&A feedback entries with sentiment and proposed improvements from debrief sessions. | No |
 | `candidate/roles.seed.json` | Seed roles the candidate provides. | No |
 | `candidate/roles.tracked.json` | Accepted roles and application status. | No |
 | `candidate/claim-policy.json` | Candidate-specific wording rules and claims to avoid. | No |

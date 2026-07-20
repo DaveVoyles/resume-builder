@@ -127,6 +127,7 @@ The markdown tracker (`npm run workspace:tracker`) is the same data as plain tex
 - A markdown application tracker **and** an interactive HTML tracker.
 - A `leads.json` of vetted, link-verified prospective roles.
 - Interview study-guide context bundles for tracked roles.
+- Q&A debrief feedback for learning from interviews and practice sessions.
 - Follow-up questions and strategy notes when you use an agent.
 
 ## 🔒 Privacy promise
