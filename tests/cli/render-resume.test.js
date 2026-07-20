@@ -117,3 +117,29 @@ test("render-resume command rejects an all-dot outputFileName value", async () =
     await assert.rejects(() => command.run({ workspace, config: configPath }), /outputFileName/);
   });
 });
+
+test("render-resume command rejects a whitespace-padded \"..\" company value (leading-dot strip must not be defeated by trim order)", async () => {
+  await withWorkspace(fictionalConfig({ company: " .. " }), async ({ workspace, configPath }) => {
+    await assert.rejects(() => command.run({ workspace, config: configPath }), /company/);
+  });
+});
+
+test("render-resume command rejects a whitespace-padded \"..\" outputFileName value with a clean error, not a raw EISDIR crash", async () => {
+  await withWorkspace(fictionalConfig({ outputFileName: " .. " }), async ({ workspace, configPath }) => {
+    await assert.rejects(() => command.run({ workspace, config: configPath }), /outputFileName/);
+  });
+});
+
+test("render-resume command strips null bytes from company/outputFileName instead of passing them to the filesystem", async () => {
+  await withWorkspace(fictionalConfig({ company: "Acme\0Corp" }), async ({ workspace, configPath }) => {
+    await command.run({ workspace, config: configPath });
+    const expectedPath = path.join(workspace, "outputs", "resumes", "AcmeCorp", "sample-candidate-acme-corp.docx");
+    assert.ok(fs.existsSync(expectedPath), `expected rendered file at ${expectedPath}`);
+  });
+});
+
+test("render-resume command rejects an excessively long company value with a clean error, not a raw ENAMETOOLONG crash", async () => {
+  await withWorkspace(fictionalConfig({ company: "A".repeat(500) }), async ({ workspace, configPath }) => {
+    await assert.rejects(() => command.run({ workspace, config: configPath }), /company must be \d+ characters or fewer/);
+  });
+});

@@ -11,10 +11,24 @@ const { slug } = require("../../core/ids");
 // outputs/resumes/ (issue #6: "outputs/resumes/<Company>/<file>.docx").
 // Strip path separators and leading dots so an untrusted config can't escape
 // the workspace (e.g. "../../evil" or ".." collapsing into a parent dir).
+//
+// Trim FIRST, before stripping leading dots: a value like " .. " doesn't
+// start with a dot character (it starts with whitespace), so stripping
+// leading dots first is a no-op, and a later .trim() then reveals a bare
+// ".." untouched — escaping outputs/resumes/ by one directory level. Trim
+// first so no whitespace can hide a dot from the leading-dot strip. The
+// explicit "." / ".." rejection below is defense-in-depth in case a future
+// edit to the regex above stops fully consuming an all-dot segment.
+const MAX_SEGMENT_LENGTH = 200;
+
 function sanitizeSegment(value, label) {
-  const sanitized = String(value).replace(/[/\\]+/gu, "-").replace(/^\.+/u, "").trim();
-  if (!sanitized) {
+  const withoutNulls = String(value).replace(/\0/gu, "");
+  const sanitized = withoutNulls.trim().replace(/[/\\]+/gu, "-").replace(/^\.+/u, "").trim();
+  if (!sanitized || sanitized === "." || sanitized === "..") {
     throw new Error(`${label} must contain at least one non-separator, non-leading-dot character (got: ${JSON.stringify(value)})`);
+  }
+  if (sanitized.length > MAX_SEGMENT_LENGTH) {
+    throw new Error(`${label} must be ${MAX_SEGMENT_LENGTH} characters or fewer (got ${sanitized.length}).`);
   }
   return sanitized;
 }
