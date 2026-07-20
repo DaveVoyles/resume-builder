@@ -6,13 +6,15 @@ Try this with a terminal agent:
 Download https://github.com/DaveVoyles/resume-builder and help me get started. Run the sample workflow first, then help me create a private workspace for my resume, notes, and job links. Ask clarifying questions before making resume claims.
 ```
 
-Resume Builder is designed for an **agent-first workflow**. The easiest path is to let a terminal agent guide setup, ask clarifying questions, and keep resume claims tied to source evidence.
+Resume Builder is designed for an **agent-first workflow**. The easiest path is to let a terminal agent guide setup, ask clarifying questions, and keep resume claims tied to source evidence. The agent is the primary operator; the CLI is a deterministic toolbelt for validation and rendering. See [ADR 0001: Agent-operated CLI](../decisions/0001-agent-operated-cli.md) for the design rationale.
 
 ---
 
 ## 🤖 Recommended path: use an agent
 
 Use this path if you want the simplest experience. Ask a terminal agent to download the repo, run the sample, create your workspace, and interview you before drafting anything.
+
+An agent can help you by following packaged **playbooks** from [`docs/playbooks/`](playbooks/) — vendor-neutral markdown instructions for intake interviews, workspace validation, and resume tailoring. The agent does the semantic work (asking clarifying questions, drafting strategy); the CLI validates the output.
 
 An agent can help you:
 
@@ -77,6 +79,8 @@ You can still use the CLI yourself, but it is more hands-on. Start with [CLI wor
 
 ## 📚 Related pages
 
+- [Playbooks](playbooks/) — packaged agent instructions for intake, validation, and tailoring.
 - [Agent workflow](agent-workflow.md)
 - [CLI workflow](cli-workflow.md)
 - [Candidate workspace](candidate-workspace.md)
+- [ADR 0001: Agent-operated CLI](../decisions/0001-agent-operated-cli.md)
