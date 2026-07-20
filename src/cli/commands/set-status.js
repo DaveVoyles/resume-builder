@@ -88,12 +88,14 @@ async function run(options) {
   role.application = role.application || {};
   role.application.status = options.status;
   // `appliedAt` marks the date the candidate actually applied — only set it
-  // on the transition that IS the apply event, or on an explicit --date
+  // the first time the status becomes "applied", or on an explicit --date
   // override (trusts the caller's correction regardless of status). A role
   // that skips straight from "interested" to "interview"/"rejected" never
-  // had an apply event, so appliedAt correctly stays unset; once set, later
-  // transitions must not silently overwrite that historical date.
-  if (options.status === "applied" || options.date) {
+  // had an apply event, so appliedAt correctly stays unset; once set — by
+  // that first "applied" call OR a later transition, e.g. a re-apply after
+  // rejection — neither a later transition nor an idempotent repeat call to
+  // "applied" may silently overwrite that historical date.
+  if ((options.status === "applied" && !role.application.appliedAt) || options.date) {
     role.application.appliedAt = options.date || getCurrentDate();
   }
   role.updatedAt = getCurrentDate();
