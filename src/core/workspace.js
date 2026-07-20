@@ -13,6 +13,7 @@ function workspacePaths(workspace) {
     inputs: path.join(workspace, "inputs"),
     resumes: path.join(workspace, "inputs", "resumes"),
     notes: path.join(workspace, "inputs", "notes"),
+    links: path.join(workspace, "inputs", "links.md"),
     outputs: path.join(workspace, "outputs"),
     outputResumes: path.join(workspace, "outputs", "resumes"),
     resumeConfigs: path.join(workspace, "resume-configs"),

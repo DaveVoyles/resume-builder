@@ -34,11 +34,22 @@ function defaultClaimPolicy() {
   };
 }
 
+function linksTemplate() {
+  return [
+    "# Public source links",
+    "#",
+    "# One link per line — GitHub, portfolio, personal site, published writing, talks, etc.",
+    "# Lines starting with # are ignored.",
+    "",
+  ].join("\n");
+}
+
 function gitignoreText() {
   return [
     "# Raw candidate source material can contain personal data.",
     "inputs/resumes/*",
     "inputs/notes/*",
+    "inputs/links.md",
     "!inputs/resumes/.gitkeep",
     "!inputs/notes/.gitkeep",
     "",
@@ -69,6 +80,7 @@ function run(options) {
   writeJsonIfMissing(paths.claimPolicy, defaultClaimPolicy(), force);
   writeTextIfMissing(paths.evidence, "", force);
   writeTextIfMissing(path.join(paths.notes, "intake.md"), intakeText, force);
+  writeTextIfMissing(paths.links, linksTemplate(), force);
   writeTextIfMissing(paths.tracker, renderTracker([]), force);
   writeTextIfMissing(paths.similarRoles, renderSimilarRoles({ searchBriefs: [], recommendations: [], duplicateCandidates: [] }), force);
   writeTextIfMissing(paths.gitignore, gitignoreText(), force);

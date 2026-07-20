@@ -37,7 +37,7 @@ candidate/
     follow-up-questions.md
 ```
 
-The v1 CLI creates the core JSON files, `inputs/`, `outputs/`, `outputs/tracker.md`, and `outputs/similar-roles.md`. The `outputs/follow-up-questions.md` file is an optional handoff file for unresolved candidate questions. `outputs/tracker.html` is an optional interactive companion to `tracker.md`, generated on demand with `build-tracker --format html`.
+The v1 CLI creates the core JSON files, `inputs/`, `outputs/`, `outputs/tracker.md`, and `outputs/similar-roles.md`. The `outputs/follow-up-questions.md` file is an optional handoff file for unresolved candidate questions. `outputs/tracker.html` is an optional interactive companion to `tracker.md`, generated on demand with `build-tracker --format html`. The `inputs/links.md` file is scaffolded automatically by `init` and ingested via `ingest --links <file>`, following the same pattern as `--notes` and `--resume`.
 
 ## What each area stores
 
