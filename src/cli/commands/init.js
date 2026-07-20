@@ -49,6 +49,7 @@ function gitignoreText() {
     "# Raw candidate source material can contain personal data.",
     "inputs/resumes/*",
     "inputs/notes/*",
+    "inputs/links.md",
     "!inputs/resumes/.gitkeep",
     "!inputs/notes/.gitkeep",
     "",
