@@ -532,3 +532,289 @@ test("set-status: preserves other role fields", async () => {
     cleanupWorkspace(tmpDir);
   }
 });
+
+test("set-status: status='applied' sets nextAction to follow-up with 7-day dueDate and appends note", async () => {
+  const tmpDir = createFixtureWorkspace();
+  try {
+    await run({
+      workspace: tmpDir,
+      company: "Acme Corp",
+      title: "Senior Engineer",
+      status: "applied",
+      date: "2026-06-15",
+    });
+
+    const afterRoles = readJson(workspacePaths(tmpDir).rolesTracked);
+    const role = afterRoles[0];
+
+    assert.strictEqual(role.nextAction.type, "follow-up", "nextAction.type should be follow-up");
+    assert.strictEqual(role.nextAction.owner, "candidate", "nextAction.owner should be candidate");
+    assert.strictEqual(role.nextAction.dueDate, "2026-06-22", "nextAction.dueDate should be 7 days after 2026-06-15");
+    assert.ok(
+      role.notes.includes("check in if no response"),
+      "Note 'check in if no response' should be appended to role.notes"
+    );
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
+test("set-status: status='interview' sets nextAction to follow-up with 1-day dueDate and appends note", async () => {
+  const tmpDir = createFixtureWorkspace();
+  try {
+    await run({
+      workspace: tmpDir,
+      company: "Acme Corp",
+      title: "Senior Engineer",
+      status: "interview",
+      date: "2026-06-15",
+    });
+
+    const afterRoles = readJson(workspacePaths(tmpDir).rolesTracked);
+    const role = afterRoles[0];
+
+    assert.strictEqual(role.nextAction.type, "follow-up", "nextAction.type should be follow-up");
+    assert.strictEqual(role.nextAction.owner, "candidate", "nextAction.owner should be candidate");
+    assert.strictEqual(role.nextAction.dueDate, "2026-06-16", "nextAction.dueDate should be 1 day after 2026-06-15");
+    assert.ok(
+      role.notes.includes("send thank-you"),
+      "Note 'send thank-you' should be appended to role.notes"
+    );
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
+test("set-status: status='offer' sets nextAction to follow-up with 2-day dueDate and appends note", async () => {
+  const tmpDir = createFixtureWorkspace();
+  try {
+    await run({
+      workspace: tmpDir,
+      company: "Acme Corp",
+      title: "Senior Engineer",
+      status: "offer",
+      date: "2026-06-15",
+    });
+
+    const afterRoles = readJson(workspacePaths(tmpDir).rolesTracked);
+    const role = afterRoles[0];
+
+    assert.strictEqual(role.nextAction.type, "follow-up", "nextAction.type should be follow-up");
+    assert.strictEqual(role.nextAction.owner, "candidate", "nextAction.owner should be candidate");
+    assert.strictEqual(role.nextAction.dueDate, "2026-06-17", "nextAction.dueDate should be 2 days after 2026-06-15");
+    assert.ok(
+      role.notes.includes("respond to offer"),
+      "Note 'respond to offer' should be appended to role.notes"
+    );
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
+test("set-status: status='rejected' clears nextAction to close type with no dueDate and no note appended", async () => {
+  const tmpDir = createFixtureWorkspace();
+  try {
+    await run({
+      workspace: tmpDir,
+      company: "Acme Corp",
+      title: "Senior Engineer",
+      status: "rejected",
+      date: "2026-06-15",
+    });
+
+    const afterRoles = readJson(workspacePaths(tmpDir).rolesTracked);
+    const role = afterRoles[0];
+
+    assert.deepStrictEqual(
+      role.nextAction,
+      { type: "close" },
+      "nextAction should be cleared to { type: 'close' } with no dueDate"
+    );
+    assert.strictEqual(
+      role.notes.length,
+      0,
+      "No note should be appended for rejected status"
+    );
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
+test("set-status: status='withdrawn' clears nextAction to close type with no dueDate and no note appended", async () => {
+  const tmpDir = createFixtureWorkspace();
+  try {
+    await run({
+      workspace: tmpDir,
+      company: "Acme Corp",
+      title: "Senior Engineer",
+      status: "withdrawn",
+      date: "2026-06-15",
+    });
+
+    const afterRoles = readJson(workspacePaths(tmpDir).rolesTracked);
+    const role = afterRoles[0];
+
+    assert.deepStrictEqual(
+      role.nextAction,
+      { type: "close" },
+      "nextAction should be cleared to { type: 'close' } with no dueDate"
+    );
+    assert.strictEqual(
+      role.notes.length,
+      0,
+      "No note should be appended for withdrawn status"
+    );
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
+test("set-status: status='interested' leaves nextAction untouched entirely", async () => {
+  const tmpDir = createFixtureWorkspace([
+    {
+      id: "role-with-action",
+      company: "PreExisting Inc",
+      title: "Engineer",
+      status: "tracked",
+      urls: { job: "", apply: "" },
+      notes: [],
+      followUpQuestions: [],
+      updatedAt: "2026-06-01",
+      nextAction: {
+        type: "research",
+        owner: "agent",
+        dueDate: "2020-01-01",
+      },
+    },
+  ]);
+  try {
+    await run({
+      workspace: tmpDir,
+      company: "PreExisting Inc",
+      title: "Engineer",
+      status: "interested",
+    });
+
+    const afterRoles = readJson(workspacePaths(tmpDir).rolesTracked);
+    const role = afterRoles.find((r) => r.id === "role-with-action");
+
+    assert.deepStrictEqual(
+      role.nextAction,
+      { type: "research", owner: "agent", dueDate: "2020-01-01" },
+      "nextAction should remain completely untouched when transitioning to interested"
+    );
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
+test("set-status: status transition overwrites pre-existing custom nextAction (except interested)", async () => {
+  const tmpDir = createFixtureWorkspace([
+    {
+      id: "role-custom-action",
+      company: "CustomAction Inc",
+      title: "Engineer",
+      status: "tracked",
+      urls: { job: "", apply: "" },
+      notes: [],
+      followUpQuestions: [],
+      updatedAt: "2026-06-01",
+      nextAction: {
+        type: "research",
+        owner: "agent",
+        dueDate: "2020-01-01",
+      },
+    },
+  ]);
+  try {
+    await run({
+      workspace: tmpDir,
+      company: "CustomAction Inc",
+      title: "Engineer",
+      status: "applied",
+      date: "2026-06-15",
+    });
+
+    const afterRoles = readJson(workspacePaths(tmpDir).rolesTracked);
+    const role = afterRoles.find((r) => r.id === "role-custom-action");
+
+    assert.strictEqual(
+      role.nextAction.type,
+      "follow-up",
+      "Pre-existing custom nextAction.type should be overwritten"
+    );
+    assert.strictEqual(
+      role.nextAction.dueDate,
+      "2026-06-22",
+      "Pre-existing custom nextAction.dueDate should be overwritten"
+    );
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
+test("set-status: appliedAt handling is completely unaffected by new nextAction logic", async () => {
+  const tmpDir = createFixtureWorkspace();
+  try {
+    // First transition to applied with a date
+    await run({
+      workspace: tmpDir,
+      company: "Acme Corp",
+      title: "Senior Engineer",
+      status: "applied",
+      date: "2026-06-01",
+    });
+
+    // Verify appliedAt is set and nextAction is set
+    let roles = readJson(workspacePaths(tmpDir).rolesTracked);
+    let role = roles[0];
+    assert.strictEqual(role.application.appliedAt, "2026-06-01", "appliedAt should be set to the provided date");
+    assert.strictEqual(role.nextAction.type, "follow-up", "nextAction should be set");
+
+    // Transition to interview without a date — appliedAt must stay unchanged
+    await run({
+      workspace: tmpDir,
+      company: "Acme Corp",
+      title: "Senior Engineer",
+      status: "interview",
+    });
+
+    roles = readJson(workspacePaths(tmpDir).rolesTracked);
+    role = roles[0];
+    assert.strictEqual(
+      role.application.appliedAt,
+      "2026-06-01",
+      "Original appliedAt should be preserved on later transition"
+    );
+    assert.strictEqual(role.nextAction.type, "follow-up", "nextAction.type should be updated");
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
+test("set-status: a repeat call to the same status does not duplicate the follow-up note", async () => {
+  const tmpDir = createFixtureWorkspace();
+  try {
+    await run({
+      workspace: tmpDir,
+      company: "Acme Corp",
+      title: "Senior Engineer",
+      status: "applied",
+      date: "2026-06-01",
+    });
+    await run({
+      workspace: tmpDir,
+      company: "Acme Corp",
+      title: "Senior Engineer",
+      status: "applied",
+      date: "2026-06-01",
+    });
+
+    const roles = readJson(workspacePaths(tmpDir).rolesTracked);
+    const role = roles[0];
+    const occurrences = role.notes.filter((note) => note === "check in if no response").length;
+    assert.strictEqual(occurrences, 1, "repeat call to the same status must not push a duplicate note");
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});

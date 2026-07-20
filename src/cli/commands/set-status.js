@@ -6,8 +6,42 @@ const { readJson, resolveWorkspace, workspacePaths, writeJson } = require("../..
 const VALID_STATUSES = ["interested", "applied", "interview", "offer", "rejected", "withdrawn"];
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
+// Rule table for auto-generating nextAction on status transitions
+const NEXT_ACTION_RULES = {
+  applied: {
+    type: "follow-up",
+    dueDateOffsetDays: 7,
+    note: "check in if no response",
+  },
+  interview: {
+    type: "follow-up",
+    dueDateOffsetDays: 1,
+    note: "send thank-you",
+  },
+  offer: {
+    type: "follow-up",
+    dueDateOffsetDays: 2,
+    note: "respond to offer",
+  },
+  rejected: {
+    type: "close",
+    // no dueDate, no note
+  },
+  withdrawn: {
+    type: "close",
+    // no dueDate, no note
+  },
+  // interested: untouched entirely
+};
+
 function getCurrentDate() {
   return new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+}
+
+function addDays(dateStr, days) {
+  const date = new Date(dateStr + "T00:00:00Z");
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().split("T")[0];
 }
 
 function validateStatus(status) {
@@ -98,6 +132,33 @@ async function run(options) {
   if ((options.status === "applied" && !role.application.appliedAt) || options.date) {
     role.application.appliedAt = options.date || getCurrentDate();
   }
+
+  // Auto-generate nextAction based on status transition, per the rule table.
+  // "interested" has no entry in NEXT_ACTION_RULES, so nextAction is left
+  // completely untouched for it.
+  const rule = NEXT_ACTION_RULES[options.status];
+  if (rule && (options.status === "rejected" || options.status === "withdrawn")) {
+    role.nextAction = { type: rule.type };
+  } else if (rule) {
+    const statusDate = options.date || getCurrentDate();
+    const dueDate = addDays(statusDate, rule.dueDateOffsetDays);
+    role.nextAction = {
+      type: rule.type,
+      owner: "candidate",
+      dueDate,
+    };
+    if (!Array.isArray(role.notes)) {
+      role.notes = [];
+    }
+    // Guard against duplicate notes from a repeat call to the same status
+    // (e.g. an idempotent re-run) — a genuine later re-cycle (reapplying
+    // after rejection) still gets a fresh note since it won't be the
+    // immediately preceding entry.
+    if (rule.note && role.notes[role.notes.length - 1] !== rule.note) {
+      role.notes.push(rule.note);
+    }
+  }
+
   role.updatedAt = getCurrentDate();
 
   // Write updated roles, then delegate the tracker rebuild to build-tracker
