@@ -53,6 +53,13 @@
     "length": "one-page",
     "emphasis": ["developer platforms", "launch leadership", "evidence-backed claims"]
   },
-  "notes": "Fictional preferences for validating the reusable sample workflow.",
+  "stalenessThresholds": {
+    "applied": 14,
+    "interview": 7,
+    "offer": 3,
+    "not-applied": 30,
+    "other": 21
+  },
+  "notes": "Fictional preferences for validating the reusable sample workflow. Staleness thresholds are optional; defaults are applied if omitted.",
   "updatedAt": "2026-06-08"
 }
