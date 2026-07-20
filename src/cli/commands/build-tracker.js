@@ -3,6 +3,7 @@
 const { renderTracker } = require("../../renderers/markdown-tracker");
 const { renderHtmlTracker } = require("../../renderers/html-tracker");
 const { readJson, resolveWorkspace, workspacePaths, writeTextIfMissing } = require("../../core/workspace");
+const { DEFAULT_THRESHOLDS } = require("../../core/staleness");
 
 function run(options) {
   const workspace = resolveWorkspace(options.workspace);
@@ -10,18 +11,22 @@ function run(options) {
   const roles = readJson(paths.rolesTracked, []);
   const format = options.format === "html" ? "html" : "md";
 
+  // Load staleness thresholds from preferences, falling back to defaults.
+  const preferences = readJson(paths.preferences, {});
+  const stalenessThresholds = preferences.stalenessThresholds || DEFAULT_THRESHOLDS;
+
   if (format === "html") {
     const output = options.output || paths.htmlTracker;
     const profile = readJson(paths.profile, {});
     const candidateName = profile.candidate?.preferredName || profile.candidate?.name;
     const title = options.title || (candidateName ? `${candidateName} - Application Tracker` : "Application Tracker");
-    writeTextIfMissing(output, renderHtmlTracker(roles, { title }), true);
+    writeTextIfMissing(output, renderHtmlTracker(roles, { title, stalenessThresholds }), true);
     console.log(`Built html tracker for ${roles.length} tracked role(s): ${output}`);
     return;
   }
 
   const output = options.output || paths.tracker;
-  writeTextIfMissing(output, renderTracker(roles), true);
+  writeTextIfMissing(output, renderTracker(roles, { stalenessThresholds }), true);
   console.log(`Built tracker for ${roles.length} tracked role(s): ${output}`);
 }
 
