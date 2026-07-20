@@ -67,4 +67,18 @@ no data migrations, deletions, secret changes, or external sends.
 
 ## Execution Tracking
 
-Populated by plan-to-issues export after approval.
+- Issues: <https://github.com/DaveVoyles/resume-builder/issues?q=is%3Aissue+state%3Aopen+label%3Aplan%3A0005>
+- Board: [Agent Work](https://github.com/users/DaveVoyles/projects/2) (Projects v2, filtered by `plan:0005`)
+
+Issue map: D1 [#69](https://github.com/DaveVoyles/resume-builder/issues/69) ·
+D2 [#73](https://github.com/DaveVoyles/resume-builder/issues/73) ·
+D3 [#76](https://github.com/DaveVoyles/resume-builder/issues/76) ·
+D4 [#77](https://github.com/DaveVoyles/resume-builder/issues/77) ·
+D5 [#70](https://github.com/DaveVoyles/resume-builder/issues/70) ·
+D6 [#74](https://github.com/DaveVoyles/resume-builder/issues/74) ·
+D7 [#71](https://github.com/DaveVoyles/resume-builder/issues/71) ·
+D8 [#75](https://github.com/DaveVoyles/resume-builder/issues/75) ·
+D9 [#72](https://github.com/DaveVoyles/resume-builder/issues/72).
+Blocking edges wired natively (GitHub issue dependencies): #73←#69, #76←#73,
+#77←#76, #74←#70, #75←#71. The frontier = open + `plan:0005` + no open
+blockers + unassigned.
