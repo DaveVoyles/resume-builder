@@ -94,4 +94,10 @@ migrations, secret rotations, or external sends.
 
 ## Execution Tracking
 
-_Pending `plan-to-issues` export._
+Exported 2026-07-20 via plan-to-issues (second Lavish preview waived — 1:1 with the approved
+deliverable table, no new slicing decisions).
+
+- **Issues (the frontier):** https://github.com/DaveVoyles/resume-builder/issues?q=is%3Aissue+state%3Aopen+label%3Aplan%3A0002 — D1 is [#29](https://github.com/DaveVoyles/resume-builder/issues/29), D2 is [#30](https://github.com/DaveVoyles/resume-builder/issues/30). Both are dependency-free and open immediately.
+- **Board:** Agent Work (Projects v2) — https://github.com/users/DaveVoyles/projects/2 — both slices seeded to Todo.
+- The frontier rule is: open + `plan:0002` + no open blockers + unassigned.
+- This plan doc itself (plus the `CONTEXT.md` glossary entry) is [PR #28](https://github.com/DaveVoyles/resume-builder/pull/28) — open, awaiting manual merge (this repo lacks `scripts/review-lens-receipt.sh`, so the usual autonomous `land-pr.sh` auto-merge path isn't available here).
