@@ -49,7 +49,34 @@ Compare what the posting asks for against `profile.json` and `evidence.jsonl`:
 
 ---
 
-## Section 2: Draft the resume config
+## Section 2: Select relevant experience and draft the resume config
+
+### Step 2.0: Select roles by relevance to the job description
+
+Before drafting the resume config, you'll trim your experience to what actually matches this role. This semantic compression keeps your resume focused on what the posting asks for, rather than listing everything you've done.
+
+**The decision:**
+
+Look at `profile.json` and identify all experience entries (jobs, projects, roles, or teaching/speaking engagements — whatever's listed). For each one, ask: "Is this relevant to this specific job posting?" If yes, select it and write a **one-line justification** stating why it matches. If no, skip it.
+
+**Example (fictional candidate tailoring for a fintech SRE role):**
+
+```
+Profile has 7 roles:
+1. Senior Backend Engineer at Acme (2023–2025) — SELECTED: "Directly matches 'production infrastructure' and 'Kubernetes' from posting; same fintech domain."
+2. SRE at Stripe (2021–2023) — SELECTED: "Exact role match; evidence covers all required technologies."
+3. Barista at Cafe X (2015–2016) — SKIPPED: "No technical relevance to SRE role; too junior to strengthen claim."
+4. Python tutor at CodeBridge (2020–2021) — SKIPPED: "Teaching credential doesn't strengthen a production-infrastructure narrative."
+5. Open-source contributions (kubernetes-client library) — SELECTED: "Directly cited in Kubernetes requirements; real evidence of production exposure."
+6. Degree in Computer Science — SKIPPED: "Credential is expected for this role; not a differentiator."
+7. Conference talk on observability — SELECTED: "Matches 'observability tooling' from posting; shows expertise."
+```
+
+**Why this matters:**
+
+A tailored resume emphasizes what's relevant to this role, not a dump of your entire career history. It's shorter, more focused, and easier to defend in an interview: "I selected the three parts of my background that directly match what you posted — here's why each one is relevant."
+
+Once you've identified your selected experiences, proceed to drafting the config.
 
 ### Step 2.1: Write the config
 
@@ -113,6 +140,45 @@ Resume config failed the evidence-backed claim audit:
 ```
 
 Fix the config — either add the missing evidence (if the candidate can confirm it) or rephrase the bullet without the unverified figure — and re-run `tailor`.
+
+### Step 3.2a: Address style-lint findings (de-AI rewrite step)
+
+After running `tailor`, the command prints any style-lint advisory warnings to the console. These warnings detect common AI-generated writing patterns (buzzwords, overly uniform sentence lengths, and repetition) that can hurt your credibility in a resume.
+
+**Read the warnings and rewrite the flagged text.** This step takes 10–15 minutes and is optional but strongly recommended — resumes that sound natural and specific outperform generic, buzzword-heavy versions in real review.
+
+**What the warnings look like:**
+
+```
+⚠ AI-style buzzwords detected: "results-driven", "passionate", "leverage", "cutting-edge"
+⚠ Sentences are suspiciously uniform in length (12–15 words, avg 13 words)
+⚠ Repeated words: "platform", "solution", "deliver" (and 2 more)
+```
+
+**How to rewrite:**
+
+- **Buzzwords:** Replace vague, AI-generic words with specific, concrete ones from your actual experience.
+  - Before: "Results-driven engineer passionate about leveraging cutting-edge technologies to deliver innovative solutions."
+  - After: "Backend engineer who's deployed three production Kubernetes clusters and shipped two data-pipeline migrations for fintech clients."
+
+- **Sentence-uniformity:** Vary sentence length and structure. Mix short, punchy sentences ("I shipped it.") with longer, complex ones. Read aloud — if it sounds robotic, it probably is.
+  - Before: "I led the team. We designed the system. I shipped the code. We launched it successfully."
+  - After: "I led a five-person team through a full redesign — spec to launch in six weeks. The new system cut query latency by 40%."
+
+- **Repetition:** Replace repeated words and phrases with synonyms or restructure to avoid the repeat.
+  - Before: "...delivered platform features. The platform scales. Our platform..."
+  - After: "...delivered features that scale to 10K+ requests per second. The infrastructure handles..."
+
+Edit your resume config to address the flagged sections, then save and re-run `tailor`:
+
+```bash
+npm run workspace:tailor -- --workspace candidate \
+  --config candidate/resume-configs/<company-slug>-<role-slug>.json \
+  --url "<job-posting-url>" \
+  --title "<Role Title>"
+```
+
+The rerun produces a fresh DOCX with the rewritten text. If lint warnings remain, repeat the cycle until none appear (or until you're satisfied the resume reads naturally).
 
 ### Step 3.3: Re-running tailor for the same role
 
