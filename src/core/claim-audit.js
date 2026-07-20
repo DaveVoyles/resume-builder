@@ -337,7 +337,7 @@ module.exports = {
   auditCoverLetterConfig,
   auditResumeConfig,
   claimKey,
-  collectCoverLetterClaimSites,
   collectConfigClaimSites,
+  collectCoverLetterClaimSites,
   extractClaims,
 };

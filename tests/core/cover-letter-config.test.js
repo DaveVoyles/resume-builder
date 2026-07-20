@@ -73,6 +73,16 @@ test("validateCoverLetterConfig requires candidate.contact as non-empty array", 
   assert.ok(result.errors.some((e) => e.includes("candidate.contact: required non-empty array")));
 });
 
+test("validateCoverLetterConfig rejects a non-object contact entry", () => {
+  const result = validateCoverLetterConfig(
+    validConfig({
+      candidate: { name: "Test", contact: ["not-an-object"] },
+    })
+  );
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some((e) => e.includes("candidate.contact[0]: must be an object")));
+});
+
 test("validateCoverLetterConfig requires contact entries to have text field", () => {
   const result = validateCoverLetterConfig(
     validConfig({
