@@ -38,6 +38,35 @@ Use this repo to help a candidate run an evidence-backed resume workflow. Assume
 - Explain what command to run and what result to expect.
 - Ask one focused question at a time when user input is needed.
 
+## 📊 Status update recipe
+
+When a candidate reports a status change ("I was denied for X", "I have an interview at Y", etc.), use the `set-status` command to record it deterministically:
+
+```bash
+npm run workspace -- set-status \
+  --workspace candidate \
+  --company "<Company Name>" \
+  --title "<Role Title>" \
+  --status <status> \
+  [--date YYYY-MM-DD]
+```
+
+**Status enum:** `interested`, `applied`, `interview`, `offer`, `rejected`, `withdrawn`
+
+If the candidate has more than one tracked role with the same company + title (e.g. a reapply after an earlier rejection), `set-status` refuses to guess and lists the ambiguous role IDs — re-run with `--id <role-id>` instead of `--company`/`--title` to disambiguate.
+
+**Examples:**
+- "I got rejected by Acme Corp for Senior Engineer":
+  ```bash
+  npm run workspace -- set-status --workspace candidate --company "Acme Corp" --title "Senior Engineer" --status rejected
+  ```
+
+- "I interviewed at TechCorp for the PM role yesterday":
+  ```bash
+  npm run workspace -- set-status --workspace candidate --company "TechCorp" --title "Product Manager" --status interview --date 2026-07-19
+  ```
+
+The command updates `roles.tracked.json` and rebuilds `outputs/tracker.md` and `outputs/tracker.html` automatically.
 ## 🎤 Intake interview (grill)
 
 **When to use:** After the candidate has set up their workspace, run the grill intake interview to capture their work history, target roles, location preferences, compensation, and constraints.
