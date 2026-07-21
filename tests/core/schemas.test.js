@@ -2,7 +2,8 @@
 
 const { test, describe } = require("node:test");
 const assert = require("node:assert/strict");
-const { validateEvidence } = require("../../src/core/schemas");
+const { validateEvidence, validateOnboardingState } = require("../../src/core/schemas");
+const { defaultOnboardingState } = require("../../src/core/onboarding-state");
 
 // ---------------------------------------------------------------------------
 // Fixture builders
@@ -67,5 +68,42 @@ describe("validateEvidence — intake-kind sources", () => {
   test("passes a normal resume-kind entry with a path", () => {
     const errors = validateEvidence([evidenceEntry()]);
     assert.deepEqual(errors, []);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateOnboardingState (design plan 0006 D1, issue #128)
+// ---------------------------------------------------------------------------
+
+describe("validateOnboardingState", () => {
+  test("passes the default (all-pending) onboarding state", () => {
+    assert.deepEqual(validateOnboardingState(defaultOnboardingState()), []);
+  });
+
+  test("passes a fully-complete onboarding state", () => {
+    const state = defaultOnboardingState();
+    state.materialIngested = true;
+    state.firstRoleAdded = true;
+    Object.keys(state.sections).forEach((key) => { state.sections[key] = true; });
+    assert.deepEqual(validateOnboardingState(state), []);
+  });
+
+  test("flags a missing top-level boolean field", () => {
+    const state = defaultOnboardingState();
+    delete state.materialIngested;
+    const errors = validateOnboardingState(state);
+    assert.ok(errors.some((e) => /materialIngested must be a boolean/.test(e)));
+  });
+
+  test("flags a missing section key rather than silently ignoring it", () => {
+    const state = defaultOnboardingState();
+    delete state.sections.dealBreakers;
+    const errors = validateOnboardingState(state);
+    assert.ok(errors.some((e) => /sections\.dealBreakers must be a boolean/.test(e)));
+  });
+
+  test("flags a non-object state entirely", () => {
+    const errors = validateOnboardingState(null);
+    assert.ok(errors.some((e) => /must be an object/.test(e)));
   });
 });

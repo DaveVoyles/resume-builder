@@ -23,6 +23,7 @@ function workspacePaths(workspace) {
     similarRoles: path.join(workspace, "outputs", "similar-roles.md"),
     profile: path.join(workspace, "profile.json"),
     preferences: path.join(workspace, "preferences.json"),
+    onboardingState: path.join(workspace, ".onboarding-state.json"),
     evidence: path.join(workspace, "evidence.jsonl"),
     feedback: path.join(workspace, "feedback.jsonl"),
     rolesSeed: path.join(workspace, "roles.seed.json"),

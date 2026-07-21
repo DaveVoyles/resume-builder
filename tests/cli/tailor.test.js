@@ -9,6 +9,7 @@ const { readDocxText } = require("../helpers/read-docx-text");
 const command = require("../../src/cli/commands/tailor");
 const { readJson, workspacePaths, writeJson, ensureDir } = require("../../src/core/workspace");
 const { renderTracker } = require("../../src/renderers/markdown-tracker");
+const { defaultOnboardingState } = require("../../src/core/onboarding-state");
 
 // Composition tests for the tailor workflow (design plan 0001, D4): JD →
 // drafted resume config → validated + audited → rendered DOCX → tracked
@@ -658,5 +659,52 @@ test("tailor persists the resume linkage even when the cover letter step blocks 
     assert.strictEqual(role.resume.configPath, "resume-configs/fabrikam-ai.json", "the resume linkage must survive a cover-letter-step failure");
     assert.strictEqual(role.resume.status, "review-needed");
     assert.strictEqual(role.coverLetter, undefined, "coverLetter must not be set since its own render/audit step never completed");
+  });
+});
+
+// Coverage for design plan 0006 D1 (issue #128): the first tracked role ever
+// added completes onboarding's checklist.
+
+test("tailor marks onboarding-state.firstRoleAdded true after the first tracked role", async () => {
+  await withWorkspace({ evidenceEntries: backedEvidence }, async ({ workspace, configPath, paths }) => {
+    writeJson(paths.onboardingState, defaultOnboardingState());
+
+    await command.run({
+      workspace,
+      config: configPath,
+      url: "https://jobs.example.invalid/fabrikam/developer-platform-pm",
+      title: "Developer platform product manager",
+    });
+
+    const state = readJson(paths.onboardingState);
+    assert.strictEqual(state.firstRoleAdded, true);
+  });
+});
+
+test("tailor does not touch onboarding-state on a second tracked role (already true, stays true)", async () => {
+  await withWorkspace({ evidenceEntries: backedEvidence }, async ({ workspace, configPath, paths }) => {
+    writeJson(paths.onboardingState, defaultOnboardingState());
+
+    await command.run({
+      workspace,
+      config: configPath,
+      url: "https://jobs.example.invalid/fabrikam/developer-platform-pm",
+      title: "Developer platform product manager",
+    });
+
+    const secondConfigPath = path.join(paths.resumeConfigs, "contoso.json");
+    writeJson(secondConfigPath, fictionalConfig({ company: "Contoso" }));
+
+    await command.run({
+      workspace,
+      config: secondConfigPath,
+      url: "https://jobs.example.invalid/contoso/developer-platform-pm",
+      title: "Developer platform product manager",
+    });
+
+    const roles = readJson(paths.rolesTracked);
+    assert.strictEqual(roles.length, 2, "sanity check: a second distinct role was actually tracked");
+    const state = readJson(paths.onboardingState);
+    assert.strictEqual(state.firstRoleAdded, true, "still true after a second role — never reset");
   });
 });

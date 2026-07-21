@@ -3,7 +3,7 @@
 const fs = require("fs");
 const path = require("path");
 const { renderTracker } = require("../../renderers/markdown-tracker");
-const { validateEvidence, validateProfile, validateRoles, validateFeedback } = require("../../core/schemas");
+const { validateEvidence, validateOnboardingState, validateProfile, validateRoles, validateFeedback } = require("../../core/schemas");
 const { validateResumeConfig } = require("../../core/resume-config");
 const { auditResumeConfig } = require("../../core/claim-audit");
 const { lintConfig } = require("../../core/style-lint");
@@ -90,6 +90,10 @@ function run(options) {
   errors.push(...validateRoles(trackedRoles, "roles.tracked.json"));
   errors.push(...validateEvidence(evidence));
   if (feedback.length > 0) errors.push(...validateFeedback(feedback));
+  // Older workspaces created before design plan 0006 won't have this file —
+  // it's optional, not retroactively required, so validate skips it entirely
+  // rather than failing a pre-existing workspace over a feature it predates.
+  if (fs.existsSync(paths.onboardingState)) errors.push(...validateOnboardingState(readJson(paths.onboardingState)));
 
   const expectedTracker = renderTracker(trackedRoles);
   const actualTracker = fs.readFileSync(paths.tracker, "utf8");

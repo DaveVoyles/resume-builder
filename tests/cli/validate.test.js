@@ -268,6 +268,40 @@ test("validate passes when feedback.jsonl is absent (optional file)", () => {
   }
 });
 
+// Coverage for design plan 0006 D1 (issue #128): .onboarding-state.json is
+// optional, same as feedback.jsonl — older workspaces created before this
+// feature existed must still validate cleanly.
+
+test("validate passes when .onboarding-state.json is absent (optional file, predates plan 0006)", () => {
+  const tmpDir = createFixtureWorkspace();
+  try {
+    assert.doesNotThrow(() => run({ workspace: tmpDir }));
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
+test("validate passes when .onboarding-state.json is present and well-formed", () => {
+  const tmpDir = createFixtureWorkspace();
+  try {
+    const { defaultOnboardingState } = require("../../src/core/onboarding-state");
+    writeJson(workspacePaths(tmpDir).onboardingState, defaultOnboardingState());
+    assert.doesNotThrow(() => run({ workspace: tmpDir }));
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
+test("validate fails when .onboarding-state.json has a malformed shape", () => {
+  const tmpDir = createFixtureWorkspace();
+  try {
+    writeJson(workspacePaths(tmpDir).onboardingState, { sections: "not-an-object" });
+    assert.throws(() => run({ workspace: tmpDir }), /onboarding-state\.sections must be an object/);
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
 test("validate passes when feedback.jsonl contains a valid entry", () => {
   const tmpDir = createFixtureWorkspace({
     resumeConfig: baseResumeConfig(["Sample bullet."]),

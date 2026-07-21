@@ -36,6 +36,32 @@ When ingested material already answers the question, skip the blind "Ask" and go
 
 ---
 
+## Onboarding state
+
+Each section below ends with a **Mark progress** step, once its answers are confirmed: update `candidate/.onboarding-state.json` and rebuild the tracker, so the onboarding checklist on the tracker page fills in as the interview goes. Create the file with this shape the first time a Mark progress step needs it (it's also created empty — every step pending — by `npm run setup`, so it will usually already exist):
+
+```json
+{
+  "schemaVersion": "1.0",
+  "setupComplete": true,
+  "materialIngested": false,
+  "sections": {
+    "basicInfo": false,
+    "workHistory": false,
+    "education": false,
+    "targetRole": false,
+    "location": false,
+    "compensation": false,
+    "dealBreakers": false
+  },
+  "firstRoleAdded": false
+}
+```
+
+A Mark progress step only ever flips its own `sections.<name>` key to `true` — never infer completion from whether a field is empty (an empty `dealBreakers` array is a valid "no deal breakers" answer, not "not asked yet," and `compensation` is optional, so its absence doesn't mean incomplete).
+
+---
+
 ## Section 1: Basic information
 
 **Narrate to the candidate:** "Section 1 of 7: Basic information"
@@ -73,6 +99,8 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
   - `snippet`: The candidate's own words
   - `confidence`: "source-text"
   - `category`: "other"
+
+**Mark progress:** create `candidate/.onboarding-state.json` from the template in [Onboarding state](#onboarding-state) if it doesn't exist yet, set `sections.basicInfo` to `true`, then run `npm run workspace:tracker:html -- --workspace candidate` so the onboarding checklist reflects it.
 
 ---
 
@@ -159,6 +187,8 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
 - The candidate says they've shared all relevant roles, or
 - You've captured the most recent 5–10 years (adjust for the candidate's preferences).
 
+**Mark progress:** set `sections.workHistory` to `true` in `candidate/.onboarding-state.json`, then run `npm run workspace:tracker:html -- --workspace candidate` so the onboarding checklist reflects it.
+
 ---
 
 ## Section 3: Education
@@ -200,6 +230,8 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
   - `category`: "education"
 
 **Repeat** for each additional degree or credential the candidate wants included.
+
+**Mark progress:** set `sections.education` to `true` in `candidate/.onboarding-state.json`, then run `npm run workspace:tracker:html -- --workspace candidate` so the onboarding checklist reflects it.
 
 ---
 
@@ -245,6 +277,8 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
   - `name`: Industry or domain name
   - `priority`: `"must"`, `"should"`, `"could"`, or `"avoid"`
 
+**Mark progress:** set `sections.targetRole` to `true` in `candidate/.onboarding-state.json`, then run `npm run workspace:tracker:html -- --workspace candidate` so the onboarding checklist reflects it.
+
 ---
 
 ## Section 5: Location and work mode
@@ -270,6 +304,8 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
   - `preferredRegions`: Array of preferred locations, ordered by priority — the first entry is the candidate's most preferred region, with each later entry progressively less preferred. For example, if the candidate says "Philadelphia is ideal for hybrid; New York works, but is less desirable," write `["Philadelphia", "New York"]`. Use `[]` if flexible.
   - `excludedRegions`: Array of avoided locations, or `[]` if none — this is a flat set with no ranking, since exclusions don't need a "how much I don't want it" order
   - `priority`: `"must"`, `"should"`, or `"could"`
+
+**Mark progress:** set `sections.location` to `true` in `candidate/.onboarding-state.json`, then run `npm run workspace:tracker:html -- --workspace candidate` so the onboarding checklist reflects it.
 
 ---
 
@@ -302,6 +338,8 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
 
 **Example:** If the candidate says "$300k total is my ideal, and I'm flexible on how base, bonus, and equity mix — but I wouldn't go below $250k total," that's a total-comp floor, not a base floor. Write `totalTarget: 300000` and `totalMinimum: 250000`, and omit `baseMinimum` rather than repurposing it to hold the $250k figure.
 
+**Mark progress:** set `sections.compensation` to `true` in `candidate/.onboarding-state.json`, then run `npm run workspace:tracker:html -- --workspace candidate` so the onboarding checklist reflects it.
+
 ---
 
 ## Section 7: Constraints and deal breakers
@@ -326,6 +364,8 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
   - `id`: `deal-001` (increment for each)
   - `text`: The deal breaker condition
   - `priority`: `"must"`
+
+**Mark progress:** set `sections.dealBreakers` to `true` in `candidate/.onboarding-state.json` (create the file from the template in [Onboarding state](#onboarding-state) if it doesn't exist yet), then run `npm run workspace:tracker:html -- --workspace candidate` so the onboarding checklist reflects it.
 
 ---
 

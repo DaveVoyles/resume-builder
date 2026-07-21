@@ -6,8 +6,9 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const command = require("../../src/cli/commands/ingest");
-const { readJsonLines, workspacePaths, writeJson, ensureDir } = require("../../src/core/workspace");
+const { readJson, readJsonLines, workspacePaths, writeJson, ensureDir } = require("../../src/core/workspace");
 const { createDefaultProfile } = require("../../src/core/candidate-profile");
+const { defaultOnboardingState } = require("../../src/core/onboarding-state");
 
 // Integration tests for the ingest command. Exercises local source collection,
 // evidence entry creation, and profile updates.
@@ -126,5 +127,36 @@ test("ingest with multiple --links files creates separate evidence entries", asy
     } finally {
       fs.rmSync(linksFixture, { recursive: true, force: true });
     }
+  });
+});
+
+// Coverage for design plan 0006 D1 (issue #128): ingest marks
+// materialIngested once real sources are provided.
+
+test("ingest with at least one source marks onboarding-state.materialIngested true", async () => {
+  await withWorkspace(async ({ workspace, paths }) => {
+    writeJson(paths.onboardingState, defaultOnboardingState());
+    const linksFixture = fs.mkdtempSync(path.join(os.tmpdir(), "links-fixture-"));
+    const linksFile = path.join(linksFixture, "links.md");
+    fs.writeFileSync(linksFile, "https://github.com/sample-user");
+
+    try {
+      await command.run({ workspace, links: linksFile });
+      const state = readJson(paths.onboardingState);
+      assert.strictEqual(state.materialIngested, true);
+    } finally {
+      fs.rmSync(linksFixture, { recursive: true, force: true });
+    }
+  });
+});
+
+test("ingest with zero sources leaves onboarding-state.materialIngested untouched", async () => {
+  await withWorkspace(async ({ workspace, paths }) => {
+    writeJson(paths.onboardingState, defaultOnboardingState());
+
+    await command.run({ workspace });
+
+    const state = readJson(paths.onboardingState);
+    assert.strictEqual(state.materialIngested, false, "a no-op ingest call must not flip materialIngested");
   });
 });

@@ -11,6 +11,7 @@ const { validateResumeConfig } = require("../../core/resume-config");
 const { auditResumeConfig } = require("../../core/claim-audit");
 const { scoreKeywordCoverage } = require("../../core/keyword-coverage");
 const { lintConfig } = require("../../core/style-lint");
+const { updateOnboardingState } = require("../../core/onboarding-state");
 const { readJson, readJsonLines, relativeToWorkspace, resolveWorkspace, workspacePaths, writeJson } = require("../../core/workspace");
 
 // The D7 enum value (src/cli/commands/set-status.js's VALID_STATUSES) that
@@ -151,6 +152,7 @@ async function run(options) {
   // it.
   const roleOptions = { ...options, tracked: true, company: options.company || config.company };
   const trackedRolesBefore = readJson(paths.rolesTracked, []);
+  const isFirstTrackedRole = trackedRolesBefore.length === 0;
   addRole.run(roleOptions);
 
   const trackedRoles = readJson(paths.rolesTracked, []);
@@ -159,6 +161,12 @@ async function run(options) {
     throw new Error("tailor could not find the tracked role it just registered.");
   }
   const roleId = role.id;
+
+  // Onboarding's last step (design plan 0006 D1): the first tracked role ever
+  // added completes the onboarding checklist. Piggybacks on this command's
+  // own tracker rebuild below (via setStatus or the explicit rebuildTrackers
+  // call) rather than triggering a separate one.
+  if (isFirstTrackedRole) updateOnboardingState(paths.onboardingState, { firstRoleAdded: true });
 
   // Step 5: link the role to the resume artifacts just produced.
   // `role.status` stays "tracked" (list membership, set by add-role above);

@@ -15,6 +15,8 @@ Before you start:
 
 Work through these four checks, in order. The first one that's true tells you which state the candidate is in — stop there.
 
+`candidate/.onboarding-state.json` (design plan 0006 D1) mechanically backs these same states as onboarding progresses — `materialIngested` tracks check 3, and `sections` tracks check 4's finer-grained progress through [`grill.md`](grill.md)'s seven sections — and drives the tracker page's onboarding checklist. It doesn't replace the manual checks above; read it as a shortcut when it's present, but fall back to the checks themselves for any workspace created before this file existed.
+
 ### 1. Does the workspace exist?
 
 Check whether `candidate/profile.json` exists (substitute the candidate's actual `--workspace` path if they're using something other than the default `candidate/`).

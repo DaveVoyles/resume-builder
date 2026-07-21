@@ -4,6 +4,7 @@ const { fetchGithubMetadata } = require("../../adapters/github");
 const { readTextSource } = require("../../adapters/freeform-notes");
 const { createEvidenceEntry, appendUniqueEvidence, snippet } = require("../../core/evidence-ledger");
 const { mergeProfileSource } = require("../../core/candidate-profile");
+const { updateOnboardingState } = require("../../core/onboarding-state");
 const { asArray } = require("../args");
 const {
   readJson,
@@ -114,6 +115,7 @@ async function run(options) {
 
   writeJson(paths.profile, profile);
   const sourceCount = collectSources(options).length + (options.github ? 1 : 0);
+  if (sourceCount > 0) updateOnboardingState(paths.onboardingState, { materialIngested: true });
   console.log(`Ingested ${sourceCount} source(s); appended ${local.appended + github.appended} evidence entr${local.appended + github.appended === 1 ? "y" : "ies"}.`);
   if (sourceCount === 0) console.log("No sources provided. Use --resume, --notes, --links, --input, or --github.");
   if (profile.sources?.length) console.log(`Profile now references ${profile.sources.length} source(s). Latest snippet: ${snippet(profile.sources.at(-1).path || profile.sources.at(-1).url || "", 80)}`);
