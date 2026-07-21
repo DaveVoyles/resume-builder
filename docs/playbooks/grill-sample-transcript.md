@@ -59,6 +59,8 @@ This is a fictional transcript of a complete grill intake interview. It demonstr
 
 ## Section 2: Work history
 
+**Agent:** "Section 2 of 7: Work history"
+
 ### Q2.1: Most recent role
 
 **Agent:** "Tell me about your most recent position. Include the company, your official title, when you started and ended the role, and whether it was remote, hybrid, or on-site."

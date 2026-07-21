@@ -38,6 +38,8 @@ When ingested material already answers the question, skip the blind "Ask" and go
 
 ## Section 1: Basic information
 
+**Narrate to the candidate:** "Section 1 of 7: Basic information"
+
 Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic information" section — if the candidate already filled that template in, confirm those answers here rather than asking blind (see "Check ingested evidence before asking," above).
 
 ### Question 1.1: Name, location, and work authorization
@@ -75,6 +77,8 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
 ---
 
 ## Section 2: Work history
+
+**Narrate to the candidate:** "Section 2 of 7: Work history"
 
 ### Question 2.1: Most recent role
 
@@ -159,6 +163,8 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
 
 ## Section 3: Education
 
+**Narrate to the candidate:** "Section 3 of 7: Education"
+
 ### Question 3.1: Education
 
 **Before asking:** check `candidate/profile.json` and `candidate/evidence.jsonl` (and the raw resume/notes text if a record is `metadata-only`) for degree, institution, and date information already ingested — a resume's Education section usually states this, often near the bottom. **Only use what the source text actually states.** If a resume gives just a graduation year (e.g. "2009") rather than a full date range, propose that graduation year — don't invent a plausible-looking start date (e.g. don't turn "2009" into "2005 - 2009") to fill in a range the candidate never confirmed.
@@ -198,6 +204,8 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
 ---
 
 ## Section 4: Target role
+
+**Narrate to the candidate:** "Section 4 of 7: Target role"
 
 ### Question 4.1: Role titles and seniority
 
@@ -241,6 +249,8 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
 
 ## Section 5: Location and work mode
 
+**Narrate to the candidate:** "Section 5 of 7: Location and work mode"
+
 ### Question 5.1: Location and work mode
 
 **Ask:**
@@ -264,6 +274,8 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
 ---
 
 ## Section 6: Salary and compensation
+
+**Narrate to the candidate:** "Section 6 of 7: Salary and compensation"
 
 ### Question 6.1: Compensation expectations
 
@@ -293,6 +305,8 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
 ---
 
 ## Section 7: Constraints and deal breakers
+
+**Narrate to the candidate:** "Section 7 of 7: Constraints and deal breakers"
 
 ### Question 7.1: Deal breakers
 
