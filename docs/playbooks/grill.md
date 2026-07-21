@@ -24,11 +24,23 @@ Before you start:
 - [ ] The candidate can describe roles and responsibilities.
 - [ ] You have access to create or edit `candidate/profile.json`, `candidate/preferences.json`, and `candidate/evidence.jsonl`.
 
+**Check ingested evidence before asking — for every question, not just Section 1:**
+
+If the candidate reached this playbook via onboarding's State 3 handoff, they've already ingested resumes, notes, or links — the raw material is sitting in the workspace even though `profile.json`'s `experience[]` is still empty. Before posing each question's "Ask" step, check whether the answer is already evident from what's been ingested:
+
+- Read `candidate/profile.json` — a prior session or partial import may have already populated fields relevant to the question.
+- Read `candidate/evidence.jsonl` and scan its `fact` and `snippet` values for anything relevant.
+- If an evidence record's `snippet` is empty (`confidence: "metadata-only"`), don't treat that as "nothing there" — follow the record's `source.path` and skim the raw file directly under `candidate/inputs/resumes/` or `candidate/inputs/notes/`.
+
+When ingested material already answers the question, skip the blind "Ask" and go straight to a **Recommend**-style proposal built from that evidence — for example, "Your resume shows you started at Xbox Commerce in 2020, and it's still listed as your current role — is that still accurate?" rather than "What are your dates at Xbox Commerce?" Only fall back to asking from scratch when ingested material doesn't cover the field. Either way, still confirm with the candidate before writing to the workspace files — proposing from evidence shortcuts the ask, not the confirmation.
+
 ---
 
 ## Section 1: Work history
 
 ### Question 1.1: Most recent role
+
+**Before asking:** check `candidate/profile.json` and `candidate/evidence.jsonl` (and the raw resume/notes text if a record is `metadata-only`) for a company, title, dates, or location that's already ingested. Role history is usually the most complete part of a resume, so this is where you're most likely to find an answer already sitting in the workspace.
 
 **Ask:**
 
