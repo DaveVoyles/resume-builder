@@ -3,6 +3,7 @@
 const { formatNextAction, normalizeRole } = require("../core/role-view");
 const { computeStaleness, DEFAULT_THRESHOLDS } = require("../core/staleness");
 const { STATUS_ENDPOINT } = require("../core/server-config");
+const { SECTIONS, isOnboardingComplete } = require("../core/onboarding-state");
 
 const STATUS_LABELS = {
   applied: "Applied",
@@ -41,6 +42,43 @@ function jsonScriptSafe(value) {
   return JSON.stringify(value, null, 2).replace(/<\/(script)/giu, "<\\/$1");
 }
 
+// Shared, reusable checklist source (design plan 0006 D5, issue #132): both
+// build-tracker and init call renderHtmlTracker with an onboardingState
+// option, so this is the one place that turns that file's raw booleans into
+// an ordered, human-labeled step list — every caller and every test reads
+// the same 10 steps in the same order.
+function onboardingSteps(onboardingState) {
+  const state = onboardingState || {};
+  const sections = state.sections || {};
+  return [
+    { label: "Workspace created", done: Boolean(state.setupComplete) },
+    { label: "Material ingested", done: Boolean(state.materialIngested) },
+    ...SECTIONS.map((section) => ({ label: section.label, done: Boolean(sections[section.key]) })),
+    { label: "First role added", done: Boolean(state.firstRoleAdded) },
+  ];
+}
+
+function renderOnboardingChecklist(onboardingState) {
+  const steps = onboardingSteps(onboardingState);
+  const doneCount = steps.filter((step) => step.done).length;
+  const items = steps
+    .map((step) => {
+      const statusClass = step.done ? "onboarding-check-done" : "onboarding-check-pending";
+      const labelClass = step.done ? "onboarding-item-label" : "onboarding-item-label onboarding-item-label-pending";
+      return (
+        '<div class="onboarding-item">' +
+        `<span class="onboarding-check ${statusClass}">${step.done ? "✓" : ""}</span>` +
+        `<span class="${labelClass}">${escapeHtml(step.label)}</span>` +
+        "</div>"
+      );
+    })
+    .join("");
+  return (
+    `<div class="onboarding-progress-pill">Onboarding: ${doneCount} of ${steps.length} steps</div>` +
+    `<div class="onboarding-checklist">${items}</div>`
+  );
+}
+
 function formatAvgCompensation(roles) {
   const withRange = roles
     .map((role) => role.compensationRange)
@@ -61,6 +99,13 @@ function renderHtmlTracker(roles, options = {}) {
   const title = options.title || "Application Tracker";
   const generatedAt = options.generatedAt || new Date().toISOString();
   const stalenessThresholds = options.stalenessThresholds || DEFAULT_THRESHOLDS;
+
+  // Onboarding is opt-in via options.onboardingState so every pre-plan-0006
+  // caller (and every existing test that doesn't pass it) renders exactly
+  // as before, with no checklist and no pill.
+  const onboardingState = options.onboardingState;
+  const showChecklist = Boolean(onboardingState) && !isOnboardingComplete(onboardingState);
+  const showCompletePill = Boolean(onboardingState) && isOnboardingComplete(onboardingState);
 
   // Pair each source role with its normalized view, then sort both in lockstep
   // so `notesHtml(sortedSourceRoles[index])` below stays aligned with `normalized`.
@@ -369,6 +414,64 @@ function renderHtmlTracker(roles, options = {}) {
     border-radius: 1rem;
     border: 1px solid #e2e8f0;
   }
+  .onboarding-progress-pill {
+    display: inline-block;
+    padding: 0.35rem 0.9rem;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+  }
+  .onboarding-progress-pill-complete {
+    background: #dcfce7;
+    color: #166534;
+    border-color: #bbf7d0;
+  }
+  .onboarding-checklist {
+    background: #fff;
+    border-radius: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 0.5rem 1.5rem;
+  }
+  .onboarding-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .onboarding-item:last-child {
+    border-bottom: none;
+  }
+  .onboarding-check {
+    flex-shrink: 0;
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 0.375rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+  .onboarding-check-done {
+    background: #dcfce7;
+    color: #166534;
+  }
+  .onboarding-check-pending {
+    background: #f1f5f9;
+    border: 1px dashed #cbd5e1;
+  }
+  .onboarding-item-label {
+    font-size: 0.9rem;
+    color: #334155;
+  }
+  .onboarding-item-label-pending {
+    color: #94a3b8;
+  }
   a {
     color: #0284c7;
     text-decoration: none;
@@ -382,8 +485,14 @@ function renderHtmlTracker(roles, options = {}) {
 </head>
 <body>
   <h1>${escapeHtml(title)}</h1>
+  ${showCompletePill ? '<div class="onboarding-progress-pill onboarding-progress-pill-complete">✓ Onboarding complete</div>' : ""}
   <p class="subtitle">Generated ${escapeHtml(generatedAt)} from <code>roles.tracked.json</code>. Rebuild with <code>build-tracker --format html</code>; do not hand-edit.</p>
 
+  <div class="onboarding-section" style="display:${showChecklist ? "block" : "none"}">
+    ${renderOnboardingChecklist(onboardingState)}
+  </div>
+
+  <div class="dashboard-section" style="display:${showChecklist ? "none" : "block"}">
   <div class="stats">
     <div class="stat-card"><div class="stat-value">${total}</div><div class="stat-label">📋 Total roles</div></div>
     <div class="stat-card"><div class="stat-value">${counts.applied}</div><div class="stat-label">✅ Applied</div></div>
@@ -429,6 +538,7 @@ function renderHtmlTracker(roles, options = {}) {
     <tbody></tbody>
   </table>
   <p class="empty-state" id="emptyState" style="display:none;">No roles match your search/filter.</p>
+  </div>
 
   <script>
     const roles = ${jsonScriptSafe(rowsData)};
@@ -654,4 +764,4 @@ function renderHtmlTracker(roles, options = {}) {
 `;
 }
 
-module.exports = { renderHtmlTracker };
+module.exports = { renderHtmlTracker, renderOnboardingChecklist };

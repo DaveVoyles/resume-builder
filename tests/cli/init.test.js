@@ -169,6 +169,62 @@ test("init does not overwrite an existing tracker.html on re-run (idempotent)", 
   });
 });
 
+// Coverage for design plan 0006 D5 (issue #132): the initial tracker.html
+// shows the onboarding checklist (all-pending) from the very first setup.
+
+test("init's initial tracker.html shows the onboarding checklist, all-pending except setup itself", async () => {
+  await withTempWorkspaceAsync(async (workspace) => {
+    await command.run({ workspace, noServe: true });
+    const paths = workspacePaths(workspace);
+    const html = fs.readFileSync(paths.htmlTracker, "utf8");
+    assert.match(html, /class="onboarding-section" style="display:block"/);
+    assert.match(html, /Onboarding: 1 of 10 steps/);
+  });
+});
+
+test("init --force resets both tracker.html and onboarding-state together, consistently (back to all-pending)", async () => {
+  await withTempWorkspaceAsync(async (workspace) => {
+    await command.run({ workspace, noServe: true });
+    const paths = workspacePaths(workspace);
+
+    const state = defaultOnboardingState();
+    state.materialIngested = true;
+    state.sections.basicInfo = true;
+    fs.writeFileSync(paths.onboardingState, JSON.stringify(state));
+
+    await command.run({ workspace, force: true, noServe: true });
+
+    // --force resets onboarding-state.json back to defaults, same as every
+    // other file init scaffolds — the re-rendered tracker.html must reflect
+    // that same reset, not a stale mix of old progress and a fresh render.
+    assert.deepEqual(JSON.parse(fs.readFileSync(paths.onboardingState, "utf8")), defaultOnboardingState());
+    const html = fs.readFileSync(paths.htmlTracker, "utf8");
+    assert.match(html, /Onboarding: 1 of 10 steps/);
+  });
+});
+
+test("init without --force re-renders a missing tracker.html against real, untouched onboarding progress", async () => {
+  await withTempWorkspaceAsync(async (workspace) => {
+    await command.run({ workspace, noServe: true });
+    const paths = workspacePaths(workspace);
+
+    const state = defaultOnboardingState();
+    state.materialIngested = true;
+    state.sections.basicInfo = true;
+    fs.writeFileSync(paths.onboardingState, JSON.stringify(state));
+    fs.rmSync(paths.htmlTracker); // simulates tracker.html missing for some other reason
+
+    await command.run({ workspace, noServe: true }); // no --force
+
+    // onboarding-state.json must be untouched (idempotent, no --force)...
+    assert.deepEqual(JSON.parse(fs.readFileSync(paths.onboardingState, "utf8")), state);
+    // ...and the freshly-written tracker.html must reflect that real state,
+    // not reset to all-pending.
+    const html = fs.readFileSync(paths.htmlTracker, "utf8");
+    assert.match(html, /Onboarding: 3 of 10 steps/);
+  });
+});
+
 // Coverage for design plan 0006 D1 (issue #128): setup scaffolds the
 // onboarding-state marker file every step keys off of.
 

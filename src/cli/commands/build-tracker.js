@@ -1,5 +1,6 @@
 "use strict";
 
+const fs = require("fs");
 const { renderTracker } = require("../../renderers/markdown-tracker");
 const { renderHtmlTracker } = require("../../renderers/html-tracker");
 const { readJson, resolveWorkspace, workspacePaths, writeTextIfMissing } = require("../../core/workspace");
@@ -20,7 +21,10 @@ function run(options) {
     const profile = readJson(paths.profile, {});
     const candidateName = profile.candidate?.preferredName || profile.candidate?.name;
     const title = options.title || (candidateName ? `${candidateName} - Application Tracker` : "Application Tracker");
-    writeTextIfMissing(output, renderHtmlTracker(roles, { title, stalenessThresholds }), true);
+    // Optional, same as preferences.stalenessThresholds above — older
+    // workspaces created before design plan 0006 render exactly as before.
+    const onboardingState = fs.existsSync(paths.onboardingState) ? readJson(paths.onboardingState) : undefined;
+    writeTextIfMissing(output, renderHtmlTracker(roles, { title, stalenessThresholds, onboardingState }), true);
     console.log(`Built html tracker for ${roles.length} tracked role(s): ${output}`);
     return;
   }
