@@ -23,12 +23,6 @@ function defaultPreferences() {
       excludedRegions: [],
       priority: "should",
     },
-    compensation: {
-      currency: "USD",
-      baseMinimum: null,
-      totalTarget: null,
-      publiclyShare: false,
-    },
     dealBreakers: [],
     updatedAt: new Date().toISOString(),
   };

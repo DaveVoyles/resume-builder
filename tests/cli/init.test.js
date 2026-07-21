@@ -63,9 +63,11 @@ test("init --force overwrites an existing links.md back to the template", () => 
 
 // Coverage for issue #100: the scaffolded preferences.json must match the
 // documented schema (docs/workspace-schemas.md#preferencesjson) — `locations`
-// and `compensation` are objects (not a flat array/string), `dealBreakers` is
-// present, and the undocumented `workAuthorization`/`remotePreference` fields
-// are gone.
+// is a required object (not a flat array), `dealBreakers` is a required
+// array, `compensation` is an *optional* field so it's omitted entirely per
+// the doc's shared convention ("Omit unknown optional fields instead of
+// adding placeholder values"), and the undocumented `workAuthorization`/
+// `remotePreference` fields are gone.
 test("init scaffolds preferences.json matching the documented schema", () => {
   withTempWorkspace((workspace) => {
     command.run({ workspace });
@@ -73,24 +75,55 @@ test("init scaffolds preferences.json matching the documented schema", () => {
     const preferences = JSON.parse(fs.readFileSync(paths.preferences, "utf8"));
 
     assert.strictEqual(preferences.schemaVersion, "1.0");
-    assert.ok(Array.isArray(preferences.roleTargets), "roleTargets should be an array");
+    assert.deepEqual(preferences.roleTargets, []);
 
-    assert.ok(
-      preferences.locations && typeof preferences.locations === "object" && !Array.isArray(preferences.locations),
-      "locations should be an object, not an array",
+    assert.deepEqual(preferences.locations, {
+      workModes: [],
+      preferredRegions: [],
+      excludedRegions: [],
+      priority: "should",
+    });
+
+    assert.deepEqual(preferences.dealBreakers, [], "dealBreakers is required and defaults to empty");
+
+    assert.strictEqual(
+      preferences.compensation,
+      undefined,
+      "compensation is documented as optional — omit it rather than scaffold a placeholder object",
     );
-    assert.ok(Array.isArray(preferences.locations.workModes));
-    assert.ok(Array.isArray(preferences.locations.preferredRegions));
-    assert.ok(Array.isArray(preferences.locations.excludedRegions));
-
-    assert.ok(
-      preferences.compensation && typeof preferences.compensation === "object" && !Array.isArray(preferences.compensation),
-      "compensation should be an object, not a string",
-    );
-
-    assert.ok(Array.isArray(preferences.dealBreakers), "dealBreakers should be a required array");
-
     assert.strictEqual(preferences.workAuthorization, undefined, "workAuthorization is not part of the documented schema");
     assert.strictEqual(preferences.remotePreference, undefined, "remotePreference is not part of the documented schema");
+
+    assert.ok(!Number.isNaN(Date.parse(preferences.updatedAt)), "updatedAt should be a valid ISO timestamp");
+  });
+});
+
+test("init does not overwrite an existing preferences.json on re-run (idempotent)", () => {
+  withTempWorkspace((workspace) => {
+    command.run({ workspace });
+    const paths = workspacePaths(workspace);
+
+    const customPreferences = JSON.parse(fs.readFileSync(paths.preferences, "utf8"));
+    customPreferences.dealBreakers = [{ id: "deal-001", text: "No relocation.", priority: "must" }];
+    fs.writeFileSync(paths.preferences, JSON.stringify(customPreferences, null, 2));
+
+    command.run({ workspace });
+
+    const reread = JSON.parse(fs.readFileSync(paths.preferences, "utf8"));
+    assert.deepEqual(reread.dealBreakers, customPreferences.dealBreakers);
+  });
+});
+
+test("init --force overwrites an existing preferences.json back to the documented schema shape", () => {
+  withTempWorkspace((workspace) => {
+    command.run({ workspace });
+    const paths = workspacePaths(workspace);
+
+    fs.writeFileSync(paths.preferences, JSON.stringify({ schemaVersion: "1.0", stale: true }, null, 2));
+    command.run({ workspace, force: true });
+
+    const preferences = JSON.parse(fs.readFileSync(paths.preferences, "utf8"));
+    assert.deepEqual(preferences.dealBreakers, []);
+    assert.strictEqual(preferences.stale, undefined);
   });
 });
