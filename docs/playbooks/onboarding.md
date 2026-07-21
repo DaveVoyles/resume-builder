@@ -63,6 +63,17 @@ If `profile.json`'s `experience` array has at least one entry, the candidate has
 npm run setup
 ```
 
+**Then, show a concrete preview before anything else:** `build-tracker` produces a real HTML dashboard even with zero tracked roles — there's no technical reason to wait until roles exist to show it. Seeing the tracker now, empty, gives the candidate a concrete payoff before they've invested any time in intake.
+
+```bash
+npm run workspace:tracker:html -- --workspace candidate
+npm run workspace:serve -- --workspace candidate
+```
+
+**Say:**
+
+"While that's set up, here's a quick preview: this is your tracker dashboard, live in your browser. It's empty right now, but as you add roles and I tailor resumes for them, this page fills in — funnel stage counts, application status, stale-application flags, all in one view. It'll rebuild automatically each time we update it."
+
 Then move straight into State 1's messaging below — the candidate is now in that state.
 
 **Worktree note (agent-facing, not for the candidate):** `candidate/` is gitignored on purpose, for privacy — but a side effect of being gitignored is that it's *not* shared across git worktree checkouts. Each worktree has its own separate, untracked `candidate/` directory on disk. If files get dropped into one checkout's `candidate/` folder (by the candidate, by Dave, or by a session running elsewhere), a session running from a different worktree won't see them — the workspace-state check above will read as State 0 or State 1 even though real material exists in another checkout. Work from the same checkout/worktree consistently for a given candidate workspace, or copy/symlink `candidate/` across worktrees if you genuinely need to share it.

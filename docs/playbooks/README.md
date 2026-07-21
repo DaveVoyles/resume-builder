@@ -20,7 +20,7 @@ Playbooks are vendor-neutral markdown instruction docs for terminal LLM agents. 
 
 ## Current playbooks
 
-- `onboarding.md`: Proactive, state-aware first-run sequence — workspace setup, dropping in real material, ingesting it, and starting grill intake. Run this at the start of any session; it short-circuits for returning candidates.
+- `onboarding.md`: Proactive, state-aware first-run sequence — workspace setup (with a live tracker-dashboard preview shown immediately), dropping in real material, ingesting it, and starting grill intake. Run this at the start of any session; it short-circuits for returning candidates.
 - `grill.md`: Intake interview capturing basic information, work history, education, target roles, location, compensation, and constraints.
 - `find-roles.md`: Search and vet prospective roles against preferences, maintain leads, and promote accepted leads to tracked roles.
 - `tailor.md`: Select relevant experience from your profile, draft a tailored resume config for a job posting, address AI-writing patterns, then validate, render, and track it with the `tailor` command.
