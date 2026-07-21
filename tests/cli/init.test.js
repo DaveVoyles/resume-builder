@@ -21,9 +21,22 @@ function withTempWorkspace(fn) {
   }
 }
 
+// Separate from withTempWorkspace (kept sync, unchanged) rather than making
+// that one async: an async wrapper would swallow a synchronous assertion
+// throw from an un-awaited sync callback into a dropped promise rejection
+// instead of a failing test, for every existing synchronous call site above.
+async function withTempWorkspaceAsync(fn) {
+  const workspace = fs.mkdtempSync(path.join(os.tmpdir(), "init-workspace-"));
+  try {
+    return await fn(workspace);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+}
+
 test("init scaffolds inputs/links.md with a one-link-per-line template", () => {
   withTempWorkspace((workspace) => {
-    command.run({ workspace });
+    command.run({ workspace, noServe: true });
     const paths = workspacePaths(workspace);
     assert.ok(fs.existsSync(paths.links), "links.md should be scaffolded");
     const content = fs.readFileSync(paths.links, "utf8");
@@ -33,13 +46,13 @@ test("init scaffolds inputs/links.md with a one-link-per-line template", () => {
 
 test("init does not overwrite an existing links.md on re-run (idempotent)", () => {
   withTempWorkspace((workspace) => {
-    command.run({ workspace });
+    command.run({ workspace, noServe: true });
     const paths = workspacePaths(workspace);
 
     const customContent = "https://github.com/real-candidate\n";
     fs.writeFileSync(paths.links, customContent);
 
-    command.run({ workspace });
+    command.run({ workspace, noServe: true });
 
     assert.strictEqual(
       fs.readFileSync(paths.links, "utf8"),
@@ -51,11 +64,11 @@ test("init does not overwrite an existing links.md on re-run (idempotent)", () =
 
 test("init --force overwrites an existing links.md back to the template", () => {
   withTempWorkspace((workspace) => {
-    command.run({ workspace });
+    command.run({ workspace, noServe: true });
     const paths = workspacePaths(workspace);
 
     fs.writeFileSync(paths.links, "https://github.com/real-candidate\n");
-    command.run({ workspace, force: true });
+    command.run({ workspace, force: true, noServe: true });
 
     assert.match(fs.readFileSync(paths.links, "utf8"), /Public source links/);
   });
@@ -70,7 +83,7 @@ test("init --force overwrites an existing links.md back to the template", () => 
 // `remotePreference` fields are gone.
 test("init scaffolds preferences.json matching the documented schema", () => {
   withTempWorkspace((workspace) => {
-    command.run({ workspace });
+    command.run({ workspace, noServe: true });
     const paths = workspacePaths(workspace);
     const preferences = JSON.parse(fs.readFileSync(paths.preferences, "utf8"));
 
@@ -100,14 +113,14 @@ test("init scaffolds preferences.json matching the documented schema", () => {
 
 test("init does not overwrite an existing preferences.json on re-run (idempotent)", () => {
   withTempWorkspace((workspace) => {
-    command.run({ workspace });
+    command.run({ workspace, noServe: true });
     const paths = workspacePaths(workspace);
 
     const customPreferences = JSON.parse(fs.readFileSync(paths.preferences, "utf8"));
     customPreferences.dealBreakers = [{ id: "deal-001", text: "No relocation.", priority: "must" }];
     fs.writeFileSync(paths.preferences, JSON.stringify(customPreferences, null, 2));
 
-    command.run({ workspace });
+    command.run({ workspace, noServe: true });
 
     const reread = JSON.parse(fs.readFileSync(paths.preferences, "utf8"));
     assert.deepEqual(reread.dealBreakers, customPreferences.dealBreakers);
@@ -116,14 +129,80 @@ test("init does not overwrite an existing preferences.json on re-run (idempotent
 
 test("init --force overwrites an existing preferences.json back to the documented schema shape", () => {
   withTempWorkspace((workspace) => {
-    command.run({ workspace });
+    command.run({ workspace, noServe: true });
     const paths = workspacePaths(workspace);
 
     fs.writeFileSync(paths.preferences, JSON.stringify({ schemaVersion: "1.0", stale: true }, null, 2));
-    command.run({ workspace, force: true });
+    command.run({ workspace, force: true, noServe: true });
 
     const preferences = JSON.parse(fs.readFileSync(paths.preferences, "utf8"));
     assert.deepEqual(preferences.dealBreakers, []);
     assert.strictEqual(preferences.stale, undefined);
+  });
+});
+
+// Coverage for design plan 0006 D3 (issue #130): setup should write an
+// initial tracker.html and auto-launch the local server, so a candidate
+// sees a result immediately instead of a 404 until build-tracker runs.
+
+test("init scaffolds an initial tracker.html alongside tracker.md", async () => {
+  await withTempWorkspaceAsync(async (workspace) => {
+    await command.run({ workspace, noServe: true });
+    const paths = workspacePaths(workspace);
+    assert.ok(fs.existsSync(paths.htmlTracker), "tracker.html should be scaffolded at setup");
+    assert.match(fs.readFileSync(paths.htmlTracker, "utf8"), /<html/u);
+  });
+});
+
+test("init does not overwrite an existing tracker.html on re-run (idempotent)", async () => {
+  await withTempWorkspaceAsync(async (workspace) => {
+    await command.run({ workspace, noServe: true });
+    const paths = workspacePaths(workspace);
+
+    const customContent = "<html><body>hand-edited</body></html>";
+    fs.writeFileSync(paths.htmlTracker, customContent);
+
+    await command.run({ workspace, noServe: true });
+
+    assert.strictEqual(fs.readFileSync(paths.htmlTracker, "utf8"), customContent);
+  });
+});
+
+test("init attempts to launch the local server by default, unless --noServe is passed", async () => {
+  await withTempWorkspaceAsync(async (workspace) => {
+    let launched = false;
+    await command.run({ workspace }, { serveRunner: async () => { launched = true; }, openInBrowser: () => {} });
+    assert.strictEqual(launched, true, "init should attempt a server launch by default");
+
+    launched = false;
+    await command.run({ workspace, noServe: true }, { serveRunner: async () => { launched = true; }, openInBrowser: () => {} });
+    assert.strictEqual(launched, false, "--noServe should skip the launch attempt entirely");
+  });
+});
+
+test("init treats an already-running server on the configured port as success, and still opens the browser", async () => {
+  await withTempWorkspaceAsync(async (workspace) => {
+    let openedUrl = null;
+    await command.run(
+      { workspace, port: "5555" },
+      {
+        serveRunner: async () => {
+          throw new Error("Port 5555 is already in use — pass --port <n> to use a different one.");
+        },
+        openInBrowser: (url) => {
+          openedUrl = url;
+        },
+      },
+    );
+    assert.strictEqual(openedUrl, "http://localhost:5555/tracker.html", "should still open the browser against the already-running instance");
+  });
+});
+
+test("init propagates a launch failure that isn't a port conflict", async () => {
+  await withTempWorkspaceAsync(async (workspace) => {
+    await assert.rejects(
+      command.run({ workspace }, { serveRunner: async () => { throw new Error("boom"); }, openInBrowser: () => {} }),
+      /boom/,
+    );
   });
 });

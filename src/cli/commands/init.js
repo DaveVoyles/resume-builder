@@ -4,7 +4,9 @@ const path = require("path");
 const fs = require("fs");
 const { createDefaultProfile } = require("../../core/candidate-profile");
 const { renderTracker } = require("../../renderers/markdown-tracker");
+const { renderHtmlTracker } = require("../../renderers/html-tracker");
 const { renderSimilarRoles } = require("../../renderers/markdown-similar-roles");
+const serve = require("./serve");
 const {
   ensureDir,
   resolveWorkspace,
@@ -12,6 +14,8 @@ const {
   writeJsonIfMissing,
   writeTextIfMissing,
 } = require("../../core/workspace");
+
+const DEFAULT_SERVE_PORT = 4321;
 
 function defaultPreferences() {
   return {
@@ -65,7 +69,10 @@ function gitignoreText() {
   ].join("\n");
 }
 
-function run(options) {
+// `serveRunner`/`openInBrowser` are injectable so tests can verify a launch
+// was attempted (and how init reacts to it) without starting a real HTTP
+// server or opening a real browser window.
+async function run(options, { serveRunner = serve.run, openInBrowser = serve.openInBrowser } = {}) {
   const workspace = resolveWorkspace(options.workspace);
   const paths = workspacePaths(workspace);
   const force = Boolean(options.force);
@@ -85,10 +92,28 @@ function run(options) {
   writeTextIfMissing(path.join(paths.notes, "intake.md"), intakeText, force);
   writeTextIfMissing(paths.links, linksTemplate(), force);
   writeTextIfMissing(paths.tracker, renderTracker([]), force);
+  writeTextIfMissing(paths.htmlTracker, renderHtmlTracker([]), force);
   writeTextIfMissing(paths.similarRoles, renderSimilarRoles({ searchBriefs: [], recommendations: [], duplicateCandidates: [] }), force);
   writeTextIfMissing(paths.gitignore, gitignoreText(), force);
 
   console.log(`Initialized candidate workspace at ${workspace}`);
+
+  if (options.noServe) return;
+
+  const parsedPort = Number.parseInt(options.port, 10);
+  const port = Number.isNaN(parsedPort) ? DEFAULT_SERVE_PORT : parsedPort;
+
+  try {
+    await serveRunner({ workspace, port: options.port, noOpen: options.noOpen });
+  } catch (error) {
+    if (!/already in use/iu.test(error.message)) throw error;
+    // Setup's job is "make sure the candidate sees a result immediately" —
+    // a server already running on this port (from a previous setup, or a
+    // manually-started `workspace:serve`) already satisfies that, so treat
+    // it as success rather than failing the whole `npm run setup` run.
+    console.log(`A server is already running on port ${port} — reusing it.`);
+    if (!options.noOpen) openInBrowser(`http://localhost:${port}/tracker.html`);
+  }
 }
 
 module.exports = { run };

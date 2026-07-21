@@ -79,4 +79,4 @@ async function run(options) {
   });
 }
 
-module.exports = { run };
+module.exports = { run, openInBrowser };

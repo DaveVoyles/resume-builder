@@ -63,16 +63,11 @@ If `profile.json`'s `experience` array has at least one entry, the candidate has
 npm run setup
 ```
 
-**Then, show a concrete preview before anything else:** `build-tracker` produces a real HTML dashboard even with zero tracked roles — there's no technical reason to wait until roles exist to show it. Seeing the tracker now, empty, gives the candidate a concrete payoff before they've invested any time in intake.
-
-```bash
-npm run workspace:tracker:html -- --workspace candidate
-npm run workspace:serve -- --workspace candidate
-```
+**`npm run setup` already opens a concrete preview for you** — it writes an initial (empty) `tracker.html` and auto-launches the local server, opening a browser tab automatically. There's no separate `build-tracker`/`serve` step to run; seeing the tracker now, empty, gives the candidate a concrete payoff before they've invested any time in intake.
 
 **Say:**
 
-"While that's set up, here's a quick preview: this is your tracker dashboard, live in your browser. It's empty right now, but as you add roles and I tailor resumes for them, this page fills in — funnel stage counts, application status, stale-application flags, all in one view. It'll rebuild automatically each time we update it."
+"You should already have a browser tab open — that's your tracker dashboard, live. It's empty right now, but as you add roles and I tailor resumes for them, this page fills in — funnel stage counts, application status, stale-application flags, all in one view. It'll rebuild automatically each time we update it."
 
 Then move straight into State 1's messaging below — the candidate is now in that state.
 

@@ -42,7 +42,7 @@ The command surface is intentionally small and modular — each command is a thi
 
 | Command | Package script | Purpose | Status |
 | --- | --- | --- | --- |
-| `init --workspace <dir> [--force]` | `npm run workspace:init -- --workspace <dir>` | Create the candidate workspace directories, default JSON files, evidence ledger, tracker, and workspace-local ignore rules. | Implemented. |
+| `init --workspace <dir> [--force] [--noServe] [--noOpen] [--port <n>]` | `npm run workspace:init -- --workspace <dir>` | Create the candidate workspace directories, default JSON files, evidence ledger, tracker (md + html), and workspace-local ignore rules; auto-launches the local server and opens a browser tab unless `--noServe` is passed. | Implemented. |
 | `ingest --workspace <dir> [--resume <file> ...] [--notes <file> ...] [--input <file> ...] [--github <user>]` | `npm run workspace:ingest -- --workspace <dir>` | Add local resume, notes, generic text, and public GitHub profile evidence to `evidence.jsonl` and update `profile.json`. | Implemented. |
 | `add-role --workspace <dir> (--url <url> \| --title <title> --company <company>) [--tracked]` | `npm run workspace:add-role -- --workspace <dir>` | Add seed roles to `roles.seed.json`, or tracked roles to `roles.tracked.json` with `--tracked`. | Implemented. |
 | `find-similar --workspace <dir> [--candidates <file>] [--max <count>]` | `npm run workspace:similar -- --workspace <dir>` | Build search briefs from seed roles and score optional manually researched candidate roles for candidate review. | Implemented. |

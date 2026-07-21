@@ -55,6 +55,8 @@ This creates a local `candidate/` workspace with:
 - 📌 `roles.seed.json` and `roles.tracked.json` for job search tracking.
 - 📊 `outputs/` for generated local outputs.
 
+It also opens a browser tab to your tracker dashboard automatically (`outputs/tracker.html`) — empty at first, it fills in as you go. Pass `--noServe` to skip this in CI/automation contexts, or `--noOpen` to start the server without opening a tab.
+
 Drop your material into `inputs/`, then ask your agent to ingest it:
 
 ```bash
