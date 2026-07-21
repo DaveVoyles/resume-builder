@@ -302,6 +302,16 @@ test("validate fails when .onboarding-state.json has a malformed shape", () => {
   }
 });
 
+test("validate reports (does not crash on) a .onboarding-state.json with invalid JSON", () => {
+  const tmpDir = createFixtureWorkspace();
+  try {
+    fs.writeFileSync(workspacePaths(tmpDir).onboardingState, "{not valid json");
+    assert.throws(() => run({ workspace: tmpDir }), /\.onboarding-state\.json:/);
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
 test("validate passes when feedback.jsonl contains a valid entry", () => {
   const tmpDir = createFixtureWorkspace({
     resumeConfig: baseResumeConfig(["Sample bullet."]),

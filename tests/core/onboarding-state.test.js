@@ -102,4 +102,20 @@ describe("readOnboardingState / updateOnboardingState", () => {
     assert.strictEqual(state.materialIngested, true);
     assert.strictEqual(state.firstRoleAdded, true);
   });
+
+  test("updateOnboardingState backfills a missing sections key to false instead of dropping it", () => {
+    const file = tempFile();
+    // Simulates a hand-edited or pre-this-feature file whose `sections`
+    // object is missing a key entirely (not just falsy) — a naive
+    // `{...current.sections, ...patch.sections}` merge would silently omit
+    // it from the result rather than defaulting it.
+    fs.writeFileSync(file, JSON.stringify({ schemaVersion: "1.0", setupComplete: true, materialIngested: false, sections: { workHistory: true }, firstRoleAdded: false }));
+
+    const state = updateOnboardingState(file, { materialIngested: true });
+
+    assert.strictEqual(state.sections.workHistory, true, "the one key that was present must survive");
+    SECTIONS.forEach(({ key }) => {
+      if (key !== "workHistory") assert.strictEqual(state.sections[key], false, `sections.${key} must backfill to false, not be missing`);
+    });
+  });
 });

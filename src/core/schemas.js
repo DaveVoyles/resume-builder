@@ -150,6 +150,9 @@ function validateFeedback(entries) {
 function validateOnboardingState(state) {
   const errors = [];
   if (!requireObject(state, "onboarding-state", errors)) return errors;
+  if (requireString(state.schemaVersion, "onboarding-state.schemaVersion", errors) && state.schemaVersion !== "1.0") {
+    errors.push('onboarding-state.schemaVersion: must be "1.0"');
+  }
   requireBoolean(state.setupComplete, "onboarding-state.setupComplete", errors);
   requireBoolean(state.materialIngested, "onboarding-state.materialIngested", errors);
   requireBoolean(state.firstRoleAdded, "onboarding-state.firstRoleAdded", errors);

@@ -43,13 +43,18 @@ function isOnboardingComplete(state) {
 
 // Merges a partial update into the existing (or default) state and writes
 // it back — the shape callers reach for whenever a step completes, so no
-// caller has to hand-roll a read-modify-write against the raw file.
+// caller has to hand-roll a read-modify-write against the raw file. Backfills
+// `sections` against the default shape (not just `current.sections`) so a
+// state file that predates a since-added section key — or was hand-edited
+// down to a subset — never silently drops keys instead of defaulting them
+// to false.
 function updateOnboardingState(path, patch) {
   const current = readOnboardingState(path);
   const next = {
+    ...defaultOnboardingState(),
     ...current,
     ...patch,
-    sections: { ...current.sections, ...patch.sections },
+    sections: { ...defaultOnboardingState().sections, ...current.sections, ...patch.sections },
   };
   writeJson(path, next);
   return next;

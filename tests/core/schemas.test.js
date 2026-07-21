@@ -106,4 +106,18 @@ describe("validateOnboardingState", () => {
     const errors = validateOnboardingState(null);
     assert.ok(errors.some((e) => /must be an object/.test(e)));
   });
+
+  test("flags a missing schemaVersion", () => {
+    const state = defaultOnboardingState();
+    delete state.schemaVersion;
+    const errors = validateOnboardingState(state);
+    assert.ok(errors.some((e) => /onboarding-state\.schemaVersion/.test(e)));
+  });
+
+  test("flags a wrong-value schemaVersion", () => {
+    const state = defaultOnboardingState();
+    state.schemaVersion = "2.0";
+    const errors = validateOnboardingState(state);
+    assert.ok(errors.some((e) => /schemaVersion: must be "1\.0"/.test(e)));
+  });
 });
