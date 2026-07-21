@@ -452,8 +452,13 @@ function renderHtmlTracker(roles, options = {}) {
     // table maintained by hand. See #121.
     const COMPANY_COLORS = ["#0284c7", "#7c3aed", "#db2777", "#ea580c", "#16a34a", "#0891b2", "#ca8a04", "#dc2626", "#4f46e5", "#059669"];
     function companyColor(name) {
+      // Case-normalize before hashing — "Acme Corp" and "ACME CORP" are the
+      // same company, and casing drift in source data (a hand-edited role,
+      // a different ingestion pass) shouldn't fracture the "same company
+      // always gets the same dot" guarantee this function exists for.
+      const normalized = name.toLowerCase();
       let hash = 0;
-      for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+      for (let i = 0; i < normalized.length; i++) hash = (hash * 31 + normalized.charCodeAt(i)) >>> 0;
       return COMPANY_COLORS[hash % COMPANY_COLORS.length];
     }
 

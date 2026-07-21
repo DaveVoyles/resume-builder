@@ -100,8 +100,8 @@ function statusBucket(appliedText) {
 // hasn't been worked on at all. Lives here (not inlined per-renderer) so
 // every renderer that wants this distinction agrees on its definition;
 // display-only, and independent of statusBucket itself, which stays the
-// stable, closed classification staleness.js and every renderer already key
-// off of.
+// stable, closed classification that staleness.js and every renderer
+// already key off of.
 function isReadyToApply(bucket, resume) {
   return bucket === "not-applied" && Boolean(resume);
 }

@@ -18,6 +18,28 @@ const { renderHtmlTracker } = require("../../src/renderers/html-tracker");
 // etc. aren't directly readable here, but the stub objects backing
 // `document.querySelector(...)` are the same references the script mutates,
 // so tbodyStub.innerHTML reflects real output after calling context.render().
+// Builds a stub filter button matching the real markup's
+// `<button data-filter="...">`, capable of storing the click handler
+// render() attaches via addEventListener and actually invoking it — so a
+// test can simulate a real click (`button.click()`) and observe render()'s
+// real effect on tbody, not just assert the button exists in the HTML.
+function makeFilterButtonStub(filterValue, isActive) {
+  const classes = new Set(isActive ? ["active"] : []);
+  const stub = {
+    getAttribute: (name) => (name === "data-filter" ? filterValue : null),
+    addEventListener: (type, handler) => {
+      stub._handler = type === "click" ? handler : stub._handler;
+    },
+    classList: {
+      add: (c) => classes.add(c),
+      remove: (c) => classes.delete(c),
+      contains: (c) => classes.has(c),
+    },
+    click: () => stub._handler && stub._handler(),
+  };
+  return stub;
+}
+
 function runClientScript(html) {
   const scriptMatch = html.match(/<script>([\s\S]*?)<\/script>/u);
   if (!scriptMatch) throw new Error("runClientScript: no <script> block found in rendered output");
@@ -25,11 +47,14 @@ function runClientScript(html) {
   const tbody = { innerHTML: "" };
   const emptyState = { style: { display: "" } };
   const searchInput = { value: "", addEventListener() {} };
+  const filterButtons = [...html.matchAll(/<button data-filter="([^"]+)"( class="active")?>/gu)].map(([, filterValue, active]) =>
+    makeFilterButtonStub(filterValue, Boolean(active)),
+  );
 
   const documentStub = {
     querySelector: (selector) => (selector.includes("tbody") ? tbody : null),
     getElementById: (id) => (id === "emptyState" ? emptyState : id === "search" ? searchInput : null),
-    querySelectorAll: () => [],
+    querySelectorAll: (selector) => (selector.includes("data-filter") ? filterButtons : []),
     createElement: () => {
       let text = "";
       return {
@@ -49,7 +74,30 @@ function runClientScript(html) {
 
   const context = vm.createContext({ document: documentStub });
   vm.runInContext(scriptMatch[1], context);
-  return { context, tbody, emptyState, searchInput };
+  return { context, tbody, emptyState, searchInput, filterButtons };
+}
+
+// Finds the filter-button stub for a given data-filter value and clicks it,
+// exercising the real click -> activeFilter change -> render() path instead
+// of only asserting the button's markup exists.
+function clickFilter(filterButtons, filterValue) {
+  const button = filterButtons.find((b) => b.getAttribute("data-filter") === filterValue);
+  if (!button) throw new Error(`clickFilter: no button found for data-filter="${filterValue}"`);
+  button.click();
+}
+
+// Column order in every rendered row, per the <thead> in html-tracker.js.
+const ROW_COLUMNS = ["company", "title", "location", "compensation", "fit", "status", "links", "resume", "coverLetterStatus", "stale", "notes"];
+
+// Splits a single <tr>...</tr> row's inner HTML into one string per column,
+// by column name — so a test can assert on exactly the cell it cares about
+// (e.g. "coverLetterStatus") instead of a bare "some <td> somewhere shows a
+// dash" match that any other empty column would also satisfy.
+function rowCell(rowHtml, columnName) {
+  const cells = rowHtml.split(/<\/?td>/u).filter((_, i) => i % 2 === 1);
+  const index = ROW_COLUMNS.indexOf(columnName);
+  if (index === -1) throw new Error(`rowCell: unknown column "${columnName}"`);
+  return cells[index];
 }
 
 test("html tracker renders a table with all columns including Cover Letter", () => {
@@ -95,12 +143,14 @@ test("html tracker shows empty dash for missing Cover Letter status", () => {
   ];
 
   const output = renderHtmlTracker(roles);
+  const { tbody } = runClientScript(output);
+  const row = tbody.innerHTML.match(/<tr>.*?<\/tr>/u)[0];
 
   // The script data should include empty string for missing cover letter status
   assert.match(output, /"coverLetterStatus": ""/);
 
-  // The JavaScript code should handle the empty status by showing a dash
-  assert.match(output, /esc\(role\.coverLetterStatus \|\| "—"\)/);
+  // The actual rendered Cover Letter cell (not just some other empty column) shows a dash.
+  assert.equal(rowCell(row, "coverLetterStatus"), "—");
 });
 
 test("html tracker HTML-escapes special characters in Cover Letter status when rendering", () => {
@@ -117,12 +167,14 @@ test("html tracker HTML-escapes special characters in Cover Letter status when r
   ];
 
   const output = renderHtmlTracker(roles);
+  const { tbody } = runClientScript(output);
+  const row = tbody.innerHTML.match(/<tr>.*?<\/tr>/u)[0];
 
   // The JSON data should contain the raw status (not escaped)
   assert.match(output, /"coverLetterStatus": "review & needed <urgently>"/);
 
-  // When rendered as HTML, it should be escaped in the <td> cell
-  assert.match(output, /esc\(role\.coverLetterStatus \|\| "—"\)/);
+  // The actual rendered Cover Letter cell is escaped, not just passed through raw.
+  assert.equal(rowCell(row, "coverLetterStatus"), "review &amp; needed &lt;urgently&gt;");
 });
 
 test("html tracker renders empty list correctly with Cover Letter header", () => {
@@ -213,6 +265,24 @@ test("html tracker does not mark a not-applied role without a resume as ready to
   assert.match(tbody.innerHTML, /<span class="badge badge-not-applied">Not applied<\/span>/);
 });
 
+test("html tracker does not mark a role past the not-applied stage as ready to apply, even with a resume", () => {
+  // isReadyToApply's bucket guard is the whole point of the predicate — a role that has
+  // already applied (or moved further) is not "ready to apply," it already did. This guards
+  // against a regression that drops the `bucket === "not-applied"` check and treats any
+  // resume-having role as ready to apply regardless of its actual status.
+  const roles = [
+    { id: "role-001", company: "Fabrikam AI", title: "PM", application: { status: "applied", appliedAt: "2026-07-01" }, resume: { outputPath: "outputs/resumes/fabrikam-ai.docx" } },
+  ];
+
+  const output = renderHtmlTracker(roles);
+  const { tbody } = runClientScript(output);
+
+  assert.match(output, /"readyToApply": false/);
+  assert.match(output, /"statusBucket": "applied"/);
+  assert.match(tbody.innerHTML, /<span class="badge badge-applied">Applied 2026-07-01<\/span>/);
+  assert.doesNotMatch(tbody.innerHTML, /badge-ready-to-apply/);
+});
+
 test("html tracker badges a ready-to-apply role as 'ready to apply' even when it also has raw status text (e.g. Interested)", () => {
   // A role can be both readyToApply (not-applied bucket + has a resume) AND carry raw status
   // text like "Interested" — the badge must still read as ready-to-apply (teal), not the
@@ -235,6 +305,26 @@ test("html tracker badges a ready-to-apply role as 'ready to apply' even when it
   assert.match(output, /"readyToApply": true/);
   // Raw text still wins for the label ("Interested" is more specific than the generic fallback)...
   assert.match(tbody.innerHTML, /<span class="badge badge-ready-to-apply">Interested<\/span>/);
+});
+
+test("html tracker's Ready to apply filter button actually filters rows when clicked, not just exists in the markup", () => {
+  const roles = [
+    { id: "role-001", company: "Fabrikam AI", title: "PM", resume: { outputPath: "outputs/resumes/a.docx" } },
+    { id: "role-002", company: "TechCorp", title: "Engineer", application: { status: "applied", appliedAt: "2026-07-01" } },
+    { id: "role-003", company: "StartupXYZ", title: "Lead" }, // not-applied, no resume — should NOT show
+  ];
+
+  const output = renderHtmlTracker(roles);
+  const { tbody, filterButtons } = runClientScript(output);
+
+  assert.equal((tbody.innerHTML.match(/<tr>/gu) || []).length, 3, "all 3 roles render before any filter is applied");
+
+  clickFilter(filterButtons, "ready-to-apply");
+
+  assert.equal((tbody.innerHTML.match(/<tr>/gu) || []).length, 1, "only the one ready-to-apply role should remain after filtering");
+  assert.match(tbody.innerHTML, /Fabrikam AI/u);
+  assert.doesNotMatch(tbody.innerHTML, /TechCorp/u);
+  assert.doesNotMatch(tbody.innerHTML, /StartupXYZ/u);
 });
 
 test("html tracker splits the not-applied stat into Ready to apply and Not started, without double-counting", () => {
@@ -294,6 +384,35 @@ test("html tracker renders a deterministic, non-uniform per-company color dot", 
   // different — collisions are an accepted tradeoff of a small fixed palette — but real,
   // computed, and not the placeholder default).
   assert.match(dotColors[2], /^#[0-9a-f]{6}$/u);
+});
+
+test("html tracker's company color is case-insensitive, so casing drift doesn't fracture the same-company guarantee", () => {
+  const output = renderHtmlTracker([{ id: "role-001", company: "Fabrikam AI" }]);
+  const { context } = runClientScript(output);
+
+  assert.equal(context.companyColor("Fabrikam AI"), context.companyColor("FABRIKAM AI"));
+  assert.equal(context.companyColor("Fabrikam AI"), context.companyColor("fabrikam ai"));
+});
+
+test("html tracker shows a dash for a role with no company at all", () => {
+  const output = renderHtmlTracker([{ id: "role-001", title: "Product Manager" }]);
+  const { context } = runClientScript(output);
+
+  assert.equal(context.companyCell({}), "—");
+  assert.equal(context.companyCell({ company: "" }), "—");
+});
+
+test("html tracker escapes HTML-special characters in company and location text", () => {
+  const roles = [{ id: "role-001", company: 'Acme & <Sons>', title: "PM", location: 'Remote <script>' }];
+
+  const output = renderHtmlTracker(roles);
+  const { tbody } = runClientScript(output);
+  const row = tbody.innerHTML.match(/<tr>.*?<\/tr>/u)[0];
+
+  assert.match(rowCell(row, "company"), /Acme &amp; &lt;Sons&gt;/u);
+  assert.doesNotMatch(rowCell(row, "company"), /<Sons>/u);
+  assert.match(rowCell(row, "location"), /Remote &lt;script&gt;/u);
+  assert.doesNotMatch(rowCell(row, "location"), /<script>/u);
 });
 
 test("html tracker renders location as a styled pill, colored correctly across every work-mode variant", () => {
