@@ -28,11 +28,27 @@ function uniqueSorted(values) {
 
 // Query/fragment key names that suggest a URL is tokenized (a one-time
 // auth link, a session-scoped share link, etc.) rather than a stable public
-// URL a candidate would want surfaced in a resume or profile.
-const SUSPICIOUS_PARAM_KEYS = new Set(["token", "auth", "key", "session", "sig", "jwt"]);
+// URL a candidate would want surfaced in a resume or profile. Matched as
+// whole tokens (see splitIntoTokens), so "code" also catches "promo_code"
+// and "sig"/"signature" also catch AWS presigned params like X-Amz-Signature.
+const SUSPICIOUS_PARAM_KEYS = new Set([
+  "token",
+  "auth",
+  "key",
+  "session",
+  "sig",
+  "signature",
+  "jwt",
+  "code",
+  "nonce",
+  "otp",
+]);
 
-// Hostname substrings that suggest an internal/non-public system.
-const INTERNAL_HOSTNAME_SUBSTRINGS = ["internal", "corp", "intranet"];
+// Hostname labels (whole dot-separated segments, not substrings) that
+// suggest an internal/non-public system — matched as exact labels so a
+// legitimate domain that merely contains one of these as a substring
+// (corpus.io, mycorp.com) isn't misclassified as internal.
+const INTERNAL_HOSTNAME_LABELS = new Set(["internal", "corp", "intranet"]);
 
 const IPV4_HOSTNAME_PATTERN = /^\d{1,3}(\.\d{1,3}){3}$/u;
 
@@ -69,7 +85,7 @@ function isPubliclyShareableLink(rawUrl) {
   if (!hostname.includes(".")) {
     return false; // no public-looking TLD (bare hostname, e.g. "intranet")
   }
-  if (INTERNAL_HOSTNAME_SUBSTRINGS.some((needle) => hostname.includes(needle))) {
+  if (hostname.split(".").some((label) => INTERNAL_HOSTNAME_LABELS.has(label))) {
     return false;
   }
   if (hasSuspiciousParamKey(url.search.replace(/^\?/u, ""))) {
