@@ -5,6 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const { execFile } = require("child_process");
 const { resolveWorkspace, workspacePaths } = require("../../core/workspace");
+const { STATUS_ENDPOINT } = require("../../core/server-config");
 
 const CONTENT_TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -24,14 +25,14 @@ const DEFAULT_PORT = 4321;
 // 0003): reports tracker.html's own mtime so the tracker page's embedded
 // client script can poll and reload itself when it changes, without adding
 // any new persistent server-side state or a write endpoint.
-const STATUS_ENDPOINT = "/__status";
-
 function trackerStatus(root) {
+  let mtimeMs = null;
   try {
-    return { path: "tracker.html", mtimeMs: fs.statSync(path.join(root, "tracker.html")).mtimeMs };
+    mtimeMs = fs.statSync(path.join(root, "tracker.html")).mtimeMs;
   } catch (error) {
-    return { path: "tracker.html", mtimeMs: null };
+    // tracker.html doesn't exist yet — reported as null, not an error.
   }
+  return { path: "tracker.html", mtimeMs };
 }
 
 function openInBrowser(url) {

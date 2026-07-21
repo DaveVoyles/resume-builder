@@ -2,6 +2,7 @@
 
 const { formatNextAction, normalizeRole } = require("../core/role-view");
 const { computeStaleness, DEFAULT_THRESHOLDS } = require("../core/staleness");
+const { STATUS_ENDPOINT } = require("../core/server-config");
 
 const STATUS_LABELS = {
   applied: "Applied",
@@ -618,14 +619,19 @@ function renderHtmlTracker(roles, options = {}) {
     // was opened directly from disk (no fetch/no server to poll) rather
     // than served — everything above still works unserved, this is purely
     // additive.
+    const POLL_INTERVAL_MS = 3000;
+    let hasPollBaseline = false;
     let lastKnownTrackerMtime = null;
+    let pollInFlight = false;
     async function pollForTrackerChanges() {
-      if (typeof fetch !== "function") return;
+      if (typeof fetch !== "function" || pollInFlight) return;
+      pollInFlight = true;
       try {
-        const response = await fetch("/__status");
+        const response = await fetch("${STATUS_ENDPOINT}");
         if (!response.ok) return;
         const status = await response.json();
-        if (lastKnownTrackerMtime === null) {
+        if (!hasPollBaseline) {
+          hasPollBaseline = true;
           lastKnownTrackerMtime = status.mtimeMs;
         } else if (status.mtimeMs !== lastKnownTrackerMtime) {
           location.reload();
@@ -634,11 +640,13 @@ function renderHtmlTracker(roles, options = {}) {
         // No server behind this page (opened directly from disk, or the
         // server isn't running) — fail silently rather than spamming the
         // console every poll interval.
+      } finally {
+        pollInFlight = false;
       }
     }
     if (typeof setInterval === "function") {
       pollForTrackerChanges();
-      setInterval(pollForTrackerChanges, 3000);
+      setInterval(pollForTrackerChanges, POLL_INTERVAL_MS);
     }
   </script>
 </body>

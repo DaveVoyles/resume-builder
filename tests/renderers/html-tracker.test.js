@@ -712,3 +712,74 @@ test("pollForTrackerChanges ignores a non-ok response instead of treating it as 
   await context.pollForTrackerChanges();
   assert.strictEqual(reloaded, false);
 });
+
+test("pollForTrackerChanges fails silently when the response body isn't valid JSON", async () => {
+  const html = renderHtmlTracker([]);
+  let reloaded = false;
+  const { context } = runClientScript(html, {
+    fetchImpl: fetchStub([
+      {
+        ok: true,
+        json: async () => {
+          throw new SyntaxError("Unexpected token in JSON");
+        },
+      },
+    ]),
+    location: { reload: () => { reloaded = true; } },
+  });
+
+  await assert.doesNotReject(context.pollForTrackerChanges());
+  assert.strictEqual(reloaded, false);
+});
+
+test("pollForTrackerChanges detects tracker.html appearing after starting out absent (mtimeMs: null is not mistaken for 'no baseline yet')", async () => {
+  // Regression: an earlier version used `lastKnownTrackerMtime === null` as
+  // both the "haven't polled yet" sentinel AND a legitimate value (serve.js
+  // reports mtimeMs: null when tracker.html doesn't exist), so a file that
+  // appeared after the page loaded could never be detected — every poll
+  // would keep re-establishing "no baseline yet" instead of comparing.
+  const html = renderHtmlTracker([]);
+  let reloaded = false;
+  const { context } = runClientScript(html, {
+    fetchImpl: fetchStub([
+      { ok: true, json: async () => ({ path: "tracker.html", mtimeMs: null }) },
+      { ok: true, json: async () => ({ path: "tracker.html", mtimeMs: null }) },
+      { ok: true, json: async () => ({ path: "tracker.html", mtimeMs: 1000 }) },
+    ]),
+    location: { reload: () => { reloaded = true; } },
+  });
+
+  await context.pollForTrackerChanges(); // baseline: absent (null)
+  await context.pollForTrackerChanges(); // still absent: null === null — no reload
+  assert.strictEqual(reloaded, false);
+
+  await context.pollForTrackerChanges(); // now exists: 1000 !== null — reload
+  assert.strictEqual(reloaded, true, "tracker.html appearing for the first time must be detected as a change");
+});
+
+test("pollForTrackerChanges ignores an overlapping poll started while one is already in flight", async () => {
+  // Regression: with no re-entrancy guard, a slow poll (still awaiting
+  // fetch) overlapping with a second poll firing on the next interval tick
+  // could race on the shared lastKnownTrackerMtime/hasBaseline state.
+  let resolveFirstFetch;
+  let fetchCallCount = 0;
+  const html = renderHtmlTracker([]);
+  let reloaded = false;
+  const { context } = runClientScript(html, {
+    fetchImpl: () => {
+      fetchCallCount += 1;
+      return new Promise((resolve) => {
+        resolveFirstFetch = () => resolve({ ok: true, json: async () => ({ path: "tracker.html", mtimeMs: 1000 }) });
+      });
+    },
+    location: { reload: () => { reloaded = true; } },
+  });
+
+  const firstPoll = context.pollForTrackerChanges(); // still pending — fetch hasn't resolved yet
+  await context.pollForTrackerChanges(); // fires while the first is in flight — should be a no-op
+  assert.strictEqual(fetchCallCount, 1, "an overlapping call must not start a second fetch while one is already in flight");
+
+  resolveFirstFetch();
+  await firstPoll;
+  assert.strictEqual(reloaded, false, "a single in-flight poll establishing the baseline must not itself trigger a reload");
+});
