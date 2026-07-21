@@ -229,7 +229,7 @@ Use these conventions across all workspace files:
 | `type` | string | Ingestion type, such as `resume`, `notes`, `links`, `source`, or `github_profile`. |
 | `fact` | string | Concise fact that can support a claim. |
 | `summary` | string | Human-readable ingestion summary. |
-| `source` | object | Source descriptor. It must include `kind` and either `path` or `url`. |
+| `source` | object | Source descriptor. It must include `kind` and either `path` or `url` — except `kind: "intake"`, which is exempt from the `path`/`url` requirement (see below). |
 | `snippet` | string | Supporting source text. Leave empty only for `metadata-only` evidence. |
 | `confidence` | string | Source confidence or review confidence. |
 | `metadata` | object | Adapter metadata such as SHA-256, byte count, extraction mode, or API counts. |
@@ -273,7 +273,7 @@ The validator flags evidence before output when:
 - Any required field is missing or blank.
 - A duplicate `id` appears.
 - `source.kind` is missing.
-- `source` has neither `path` nor `url`.
+- `source` has neither `path` nor `url` — unless `source.kind` is `"intake"` (a candidate's own conversational statement during grill intake has no file or URL to point to; see [`grill.md`](playbooks/grill.md)'s evidence-source example).
 - Source-backed evidence has no `snippet` or `quote`.
 - `metadata-only` evidence tries to state a separate fact instead of matching `summary`.
 

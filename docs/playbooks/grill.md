@@ -1,6 +1,6 @@
 # Grill intake playbook
 
-**Grill** is an intake interview that captures the candidate's work history, target role, location preferences, compensation, and constraints into structured workspace files.
+**Grill** is an intake interview that captures the candidate's basic information, work history, education, target role, location preferences, compensation, and constraints into structured workspace files.
 
 This playbook guides you through a conversation with the candidate, one question at a time. The candidate answers with specific details, and you write their answers into `profile.json`, `preferences.json`, and `evidence.jsonl`.
 
@@ -16,7 +16,7 @@ Before you start:
 
 **Propose a recommended approach:**
 
-"I'll ask you about your work history, target roles, location preferences, and salary expectations. For each question, I'll propose a recommended answer based on what you tell me, and you can confirm, refine, or correct it. Let's start with your most recent role."
+"I'll ask you about your basic info, work history, education, target roles, location preferences, and salary expectations. For each question, I'll propose a recommended answer based on what you tell me, and you can confirm, refine, or correct it. Let's start with the basics."
 
 **Confirm the candidate is ready:**
 
@@ -24,7 +24,7 @@ Before you start:
 - [ ] The candidate can describe roles and responsibilities.
 - [ ] You have access to create or edit `candidate/profile.json`, `candidate/preferences.json`, and `candidate/evidence.jsonl`.
 
-**Check ingested evidence before asking — for every question, not just Section 1:**
+**Check ingested evidence before asking — for every question, not just Section 2 (Work history):**
 
 If the candidate reached this playbook via onboarding's State 3 handoff, they've already ingested resumes, notes, or links — the raw material is sitting in the workspace even though `profile.json`'s `experience[]` is still empty. Before posing each question's "Ask" step, check whether the answer is already evident from what's been ingested:
 
@@ -36,9 +36,47 @@ When ingested material already answers the question, skip the blind "Ask" and go
 
 ---
 
-## Section 1: Work history
+## Section 1: Basic information
 
-### Question 1.1: Most recent role
+Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic information" section — if the candidate already filled that template in, confirm those answers here rather than asking blind (see "Check ingested evidence before asking," above).
+
+### Question 1.1: Name, location, and work authorization
+
+**Before asking:** check `candidate/profile.json`, `candidate/intake.md` (if present), and `candidate/evidence.jsonl` for a name, location, or work-authorization status already captured. A resume's header usually states the candidate's name and sometimes their location; work authorization is rarely stated in a resume and usually needs a direct question.
+
+**Ask:**
+
+"What name would you like to appear on your resume? What's your current city and country? And what's your work authorization status — for example, citizen, permanent resident, or do you need visa sponsorship — for the country or countries you're targeting?"
+
+**Candidate answers with:** Preferred name, current location (city/region/country), work authorization status and sponsorship needs.
+
+**Recommend:**
+
+"I'm proposing: [Name], based in [Location], work authorization: [Status]. Does that look right?"
+
+**Write to `candidate/profile.json`:**
+
+- Set `candidate.preferredName`: the name to use in generated documents.
+- Set `candidate.location`: object with `city`, `region`, `country` (and `timeZone` if known).
+- Set `workAuthorization`: object with `countries` (array of countries the candidate is authorized to work in) and `requiresSponsorship` (boolean).
+
+**Also create an evidence record** (optional but useful):
+
+- Add to `candidate/evidence.jsonl`:
+  - `id`: `ev-basic-001`
+  - `type`: "resume"
+  - `fact`: "[Name], based in [Location], work authorization: [Status]"
+  - `summary`: "Basic information from candidate intake"
+  - `source`: `{"kind": "intake", "note": "Candidate-provided during grill intake"}`
+  - `snippet`: The candidate's own words
+  - `confidence`: "source-text"
+  - `category`: "other"
+
+---
+
+## Section 2: Work history
+
+### Question 2.1: Most recent role
 
 **Before asking:** check `candidate/profile.json` and `candidate/evidence.jsonl` (and the raw resume/notes text if a record is `metadata-only`) for a company, title, dates, or location that's already ingested. Role history is usually the most complete part of a resume, so this is where you're most likely to find an answer already sitting in the workspace.
 
@@ -74,7 +112,7 @@ When ingested material already answers the question, skip the blind "Ask" and go
   - `confidence`: "source-text"
   - `category`: "employment"
 
-### Question 1.2: Responsibilities and impact
+### Question 2.2: Responsibilities and impact
 
 **Ask:**
 
@@ -110,7 +148,7 @@ When ingested material already answers the question, skip the blind "Ask" and go
 
 "Do you want to include your previous role? If yes, tell me about the company, title, dates, and location."
 
-**Repeat questions 1.1 and 1.2** for each earlier role, working backward from most recent.
+**Repeat questions 2.1 and 2.2** for each earlier role, working backward from most recent.
 
 **Stop when:**
 
@@ -119,9 +157,49 @@ When ingested material already answers the question, skip the blind "Ask" and go
 
 ---
 
-## Section 2: Target role
+## Section 3: Education
 
-### Question 2.1: Role titles and seniority
+### Question 3.1: Education
+
+**Before asking:** check `candidate/profile.json` and `candidate/evidence.jsonl` (and the raw resume/notes text if a record is `metadata-only`) for degree, institution, and date information already ingested — a resume's Education section usually states this, often near the bottom. **Only use what the source text actually states.** If a resume gives just a graduation year (e.g. "2009") rather than a full date range, propose that graduation year — don't invent a plausible-looking start date (e.g. don't turn "2009" into "2005 - 2009") to fill in a range the candidate never confirmed.
+
+**Ask:**
+
+"What's your educational background? Include your degree(s), institution(s), and dates. If you're not sure of the exact start date, just share what you do know — for example, a graduation year is fine."
+
+**Candidate answers with:** Degree, institution, dates (or a single graduation year), honors or activities if relevant.
+
+**Recommend:**
+
+"I'm proposing: [Degree], [Institution], [Dates]. Does that look right?"
+
+**Write to `candidate/profile.json`:**
+
+- Add an entry to the `education` array with:
+  - `degree`: The degree or credential earned
+  - `institution`: The school or program name
+  - `dates`: The date range or single year exactly as stated by the candidate or source text — never expand a partial date into a full range without the candidate explicitly confirming the start date
+  - `details`: Honors, activities, or relevant coursework (optional)
+
+**Also create an evidence record** (optional but useful):
+
+- Add to `candidate/evidence.jsonl`:
+  - `id`: `ev-education-001`
+  - `type`: "resume"
+  - `fact`: "[Degree], [Institution], [Dates]"
+  - `summary`: "Education from candidate intake"
+  - `source`: `{"kind": "intake", "note": "Candidate-provided during grill intake"}`
+  - `snippet`: The candidate's own words, or the exact source-text excerpt if backfilled from an ingested resume
+  - `confidence`: "source-text"
+  - `category`: "education"
+
+**Repeat** for each additional degree or credential the candidate wants included.
+
+---
+
+## Section 4: Target role
+
+### Question 4.1: Role titles and seniority
 
 **Ask:**
 
@@ -141,7 +219,7 @@ When ingested material already answers the question, skip the blind "Ask" and go
   - `employmentTypes`: Array, e.g., `["full-time"]`
   - `priority`: `"must"` or `"should"`
 
-### Question 2.2: Preferred industries or domains
+### Question 4.2: Preferred industries or domains
 
 **Ask:**
 
@@ -161,9 +239,9 @@ When ingested material already answers the question, skip the blind "Ask" and go
 
 ---
 
-## Section 3: Location and work mode
+## Section 5: Location and work mode
 
-### Question 3.1: Location and work mode
+### Question 5.1: Location and work mode
 
 **Ask:**
 
@@ -185,9 +263,9 @@ When ingested material already answers the question, skip the blind "Ask" and go
 
 ---
 
-## Section 4: Salary and compensation
+## Section 6: Salary and compensation
 
-### Question 4.1: Compensation expectations
+### Question 6.1: Compensation expectations
 
 **Ask:**
 
@@ -214,9 +292,9 @@ When ingested material already answers the question, skip the blind "Ask" and go
 
 ---
 
-## Section 5: Constraints and deal breakers
+## Section 7: Constraints and deal breakers
 
-### Question 5.1: Deal breakers
+### Question 7.1: Deal breakers
 
 **Ask:**
 
@@ -241,7 +319,7 @@ When ingested material already answers the question, skip the blind "Ask" and go
 
 **Summarize what you've collected:**
 
-"Here's what we captured: [Work history], targeting [Roles] in [Locations] with [Compensation] range. I've written this into your workspace files. Let me validate everything now."
+"Here's what we captured: [Basic info], [Work history], [Education], targeting [Roles] in [Locations] with [Compensation] range. I've written this into your workspace files. Let me validate everything now."
 
 **Validate the workspace:**
 
