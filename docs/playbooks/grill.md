@@ -76,6 +76,8 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
 
 ## Section 2: Work history
 
+**Narrate to the candidate:** "Section 1 of 5: Work history"
+
 ### Question 2.1: Most recent role
 
 **Before asking:** check `candidate/profile.json` and `candidate/evidence.jsonl` (and the raw resume/notes text if a record is `metadata-only`) for a company, title, dates, or location that's already ingested. Role history is usually the most complete part of a resume, so this is where you're most likely to find an answer already sitting in the workspace.
@@ -199,6 +201,8 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
 
 ## Section 4: Target role
 
+**Narrate to the candidate:** "Section 2 of 5: Target role"
+
 ### Question 4.1: Role titles and seniority
 
 **Ask:**
@@ -241,6 +245,8 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
 
 ## Section 5: Location and work mode
 
+**Narrate to the candidate:** "Section 3 of 5: Location and work mode"
+
 ### Question 5.1: Location and work mode
 
 **Ask:**
@@ -264,6 +270,8 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
 ---
 
 ## Section 6: Salary and compensation
+
+**Narrate to the candidate:** "Section 4 of 5: Salary and compensation"
 
 ### Question 6.1: Compensation expectations
 
@@ -293,6 +301,8 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
 ---
 
 ## Section 7: Constraints and deal breakers
+
+**Narrate to the candidate:** "Section 5 of 5: Constraints and deal breakers"
 
 ### Question 7.1: Deal breakers
 
