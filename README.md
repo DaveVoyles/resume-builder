@@ -84,10 +84,11 @@ an agent looking for the exact contract, there's one place to look:
 | Find roles | Search, vet, and track prospective roles as leads before promoting them. | [`find-roles.md`](docs/playbooks/find-roles.md) | [Workspace schemas](docs/workspace-schemas.md#leadsjson) |
 | Tailor | Draft a resume config, then validate, audit claims, render DOCX, and track — in one pass. | [`tailor.md`](docs/playbooks/tailor.md) | [Accuracy and claims](docs/accuracy-and-claims.md#evidence-backed-claim-audit-blocking) |
 | Gap analysis | Score keyword coverage in a resume, then classify missing keywords by gap type (presentation, weak evidence, adjacent skill, true gap) and generate actionable feedback. | [`gap-analysis.md`](docs/playbooks/gap-analysis.md) · `npm run workspace:score-keywords` · `npm run workspace:gap-report` | [Workspace schemas](docs/workspace-schemas.md#gap-classification-input-gap-report) |
-| Status updates | Record an application status change and auto-propose the next follow-up. | Recipe in [`AGENTS.md`](AGENTS.md#-status-update-recipe) | [Workspace schemas](docs/workspace-schemas.md#auto-generating-nextaction-on-status-transitions) |
+| Status updates | Record an application status change — including `ghosted`, for roles that went silent — and auto-propose the next follow-up. | Recipe in [`AGENTS.md`](AGENTS.md#-status-update-recipe) | [Workspace schemas](docs/workspace-schemas.md#auto-generating-nextaction-on-status-transitions) |
 | Study guide | Bundle profile, evidence, resume config, and job posting into interview prep. | [`study-guide.md`](docs/playbooks/study-guide.md) | [Workspace schemas](docs/workspace-schemas.md#study-guide-bundle-study-guide-bundle) |
 | Debrief | Capture Q&A feedback and sentiment from interviews or practice sessions. | [`debrief.md`](docs/playbooks/debrief.md) | [Workspace schemas](docs/workspace-schemas.md#feedbackjsonl) |
-| Tracker | Markdown + interactive HTML application tracker, generated from tracked roles. | — | [CLI workflow](docs/cli-workflow.md) |
+| Tracker | Markdown + interactive HTML application tracker, generated from tracked roles — pipeline funnel, per-role stale badges, and a `ghosted` status for roles that went silent. | — | [Workspace schemas](docs/workspace-schemas.md#staleness-computation) |
+| Style check | Advisory de-AI lint over resume/cover-letter text (buzzwords, sentence-uniformity, repetition) from `tailor` and `validate` — never blocks. | Rewrite step in [`tailor.md`](docs/playbooks/tailor.md) | [`style-lint.md`](docs/style-lint.md) |
 | Privacy & validation | Schema validation, evidence-backed claim audit, and privacy checks. | — | [Candidate workspace](docs/candidate-workspace.md) |
 
 ## 🎓 Walk into interviews prepared

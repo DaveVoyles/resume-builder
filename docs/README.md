@@ -16,6 +16,7 @@ playbook and reference doc. This page is the flat index for browsing the folder 
 | [`candidate-workspace.md`](candidate-workspace.md) | The `candidate/` workspace layout, privacy defaults, intake checklist, and evidence rules. |
 | [`workspace-schemas.md`](workspace-schemas.md) | Field-by-field schema reference for every workspace file (`profile.json`, `evidence.jsonl`, resume configs, the study-guide bundle, etc.). |
 | [`accuracy-and-claims.md`](accuracy-and-claims.md) | Claim-safety rules and the evidence-backed claim audit that `validate` enforces mechanically. |
+| [`style-lint.md`](style-lint.md) | The de-AI style lint: what it checks (buzzwords, sentence-uniformity, repetition), where the wordlist lives, and how `tailor`/`validate` surface its advisory warnings. |
 | [`agent-runbook.md`](agent-runbook.md) | Checklist an agent works through when drafting role content: required reads, duplicate detection, validation, handoff. |
 | [`e2e-showcase.md`](e2e-showcase.md) | Every playbook run end to end against the fictional sample candidate, with real captured command output — the regression pass over this page's own claims. |
 | [`modular-architecture.md`](modular-architecture.md) | The underlying architecture: reusable engine vs. candidate workspace vs. examples, the full CLI command surface table, data flow. |

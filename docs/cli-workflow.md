@@ -21,8 +21,10 @@ The CLI can:
 - 📌 Create seed roles and tracked application records.
 - 📄 Render a schema-validated resume config to a finished DOCX resume, and audit its claims against `evidence.jsonl`.
 - 🎯 Validate, audit, render, and track a resume for one job posting in a single `tailor` pass.
-- 📊 Render a markdown application tracker.
-- 🔁 Record application status changes and auto-propose the next follow-up (`set-status`).
+- 🪄 Advisory de-AI style lint on resume/cover-letter text from `tailor` and `validate` — see [`style-lint.md`](style-lint.md).
+- 🧩 Classify missing keywords by gap type and render a gap report (`gap-report`).
+- 📊 Render a markdown or interactive HTML application tracker, with a pipeline funnel and stale-application badges.
+- 🔁 Record application status changes — including a `ghosted` status for roles that went silent — and auto-propose the next follow-up (`set-status`).
 - 🎓 Bundle profile, evidence, resume config, and job-posting context for interview prep (`study-guide-bundle`).
 - 🧭 Generate similar-role search briefs.
 - ⚖️ Score manually collected candidate roles against seed-role patterns.
@@ -46,10 +48,12 @@ The CLI does not currently:
 | Add a seed or tracked role | `npm run workspace:add-role -- --workspace <dir> --url <url>` or add `--tracked` |
 | Build similar-role review output | `npm run workspace:similar -- --workspace <dir> [--candidates <file>]` |
 | Render the application tracker | `npm run workspace:tracker -- --workspace <dir>` |
-| Render an interactive HTML tracker (searchable/filterable, stat cards) | `npm run workspace:tracker -- --workspace <dir> --format html` |
+| Render an interactive HTML tracker (searchable/filterable, stat cards, pipeline funnel, stale badges) | `npm run workspace:tracker -- --workspace <dir> --format html` |
 | Render a schema-validated resume config to DOCX | `npm run workspace:render -- --workspace <dir> --config <resume-config.json>` |
 | Validate, render, and track a role for a job posting in one pass | `npm run workspace:tailor -- --workspace <dir> --config <resume-config.json> --url <url> --title <title>` |
-| Record an application status change and rebuild the tracker | `npm run workspace:set-status -- --workspace <dir> --company "<name>" --title "<name>" --status <status>` |
+| Score how well a resume config covers a job posting's keywords | `npm run workspace:score-keywords -- --config <resume-config.json> --keywords <keywords.json>` |
+| Classify missing keywords into gap types and render a markdown gap report | `npm run workspace:gap-report -- --input <gaps.json> --workspace <dir> [--roleId <id>]` |
+| Record an application status change (including `ghosted`) and rebuild the tracker | `npm run workspace:set-status -- --workspace <dir> --company "<name>" --title "<name>" --status <status>` |
 | Bundle context for interview prep on a tracked role | `npm run workspace:bundle -- --workspace <dir> --company "<name>" --title "<name>"` |
 | Validate workspace files, the claim audit, and tracker freshness | `npm run workspace:validate -- --workspace <dir>` |
 | Check privacy before sharing | `npm run check:privacy` |
