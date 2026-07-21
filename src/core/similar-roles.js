@@ -181,6 +181,10 @@ function buildDiscovery(seedRoles, preferences, trackedRoles, candidates) {
     workModes: preferredWorkModes(preferences),
     avoided: avoidedTerms(preferences),
     compensationMinimum: preferences.compensation?.baseMinimum || preferences.compensation?.minimum,
+    // Total-comp floor (base + bonus + equity), distinct from the base-only compensationMinimum above.
+    // Postings don't carry a base-vs-total distinction today, so this isn't consumed by scoreCandidate()
+    // yet — it's exposed here so it's available once that distinction exists.
+    compensationTotalMinimum: preferences.compensation?.totalMinimum,
   };
   const existingRoles = [...(seedRoles || []), ...(trackedRoles || [])];
   const duplicateCandidates = (candidates || []).filter((role) => isDuplicate(role, existingRoles));

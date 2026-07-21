@@ -183,6 +183,8 @@ Before you start:
 
 **Candidate answers with:** Base salary or total compensation range.
 
+**Note which frame the candidate is using.** Some candidates answer in base-salary terms ("I need at least $X base"); others answer entirely in total-comp terms ("any mix of base/bonus/equity is fine, but I need $X total"). Don't force a total-comp answer into `baseMinimum` — that field is a base-salary-only floor. If the candidate's floor is a total-comp number, capture it as `totalMinimum` instead (or in addition, if they gave both).
+
 **Recommend:**
 
 "I'm proposing a target range of: [Range] [Currency]. Is that right? Should we adjust?"
@@ -191,9 +193,12 @@ Before you start:
 
 - Set the `compensation` object:
   - `currency`: `"USD"` or other currency code
-  - `baseMinimum`: Minimum acceptable base salary (number)
+  - `baseMinimum`: Minimum acceptable base salary (number), if the candidate gave a base-only floor
+  - `totalMinimum`: Minimum acceptable total compensation — base + bonus + equity (number), if the candidate gave a total-comp floor
   - `totalTarget`: Target total compensation (number), or omit if not discussed
   - `publiclyShare`: `false` (default—candidate can opt in later)
+
+**Example:** If the candidate says "$300k total is my ideal, and I'm flexible on how base, bonus, and equity mix — but I wouldn't go below $250k total," that's a total-comp floor, not a base floor. Write `totalTarget: 300000` and `totalMinimum: 250000`, and omit `baseMinimum` rather than repurposing it to hold the $250k figure.
 
 ---
 

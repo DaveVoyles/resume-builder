@@ -154,11 +154,21 @@ Use these conventions across all workspace files:
 | `industries` | array | Preferred, neutral, or avoided industries. |
 | `companyStages` | array | Startup, growth, enterprise, nonprofit, or public-sector preferences. |
 | `technologies` | array | Technologies to highlight or avoid. |
-| `compensation` | object | Candidate-provided range and currency. |
+| `compensation` | object | Candidate-provided range and currency — see [`compensation` fields](#compensation-fields) below. |
 | `availability` | object | Start date, notice period, and interview windows. |
 | `resumeStyle` | object | Tone, length, and emphasis preferences. |
 | `stalenessThresholds` | object | Overrides the tracker's per-status-bucket stale-flag day thresholds (see [Staleness computation](#staleness-computation) under `roles.tracked.json`). Any subset of `not-applied`, `applied`, `interview`, `offer`, `other`; omitted keys keep the built-in default. |
 | `notes` | string | Candidate-approved notes for agents. |
+
+### `compensation` fields
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `currency` | string | Currency code, e.g. `"USD"`. |
+| `baseMinimum` | number | Minimum acceptable **base salary**, excluding bonus and equity. |
+| `totalMinimum` | number | Minimum acceptable **total compensation** (base + bonus + equity). Use this instead of `baseMinimum` when the candidate frames their floor in total-comp terms rather than base-only terms — don't misuse `baseMinimum` as a stand-in for a total-comp floor. |
+| `totalTarget` | number | Target total compensation, or omit if not discussed. |
+| `publiclyShare` | boolean | Whether the candidate allows this range to be shared publicly. |
 
 ### Example
 
@@ -192,6 +202,7 @@ Use these conventions across all workspace files:
   "compensation": {
     "currency": "USD",
     "baseMinimum": 160000,
+    "totalMinimum": 190000,
     "totalTarget": 220000,
     "publiclyShare": false
   },

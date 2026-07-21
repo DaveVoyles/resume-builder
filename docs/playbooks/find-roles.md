@@ -82,6 +82,7 @@ For each role you find, vet it against the candidate's preferences **before** yo
 
 **Check:**
 - If the posting lists a salary or range, does it meet the `compensation.baseMinimum`?
+- If `compensation.totalMinimum` is set (the candidate gave a total-comp floor instead of, or in addition to, a base floor), does the posting's total comp — base plus any listed bonus or equity — meet it?
 - Is it below any hard-cap the candidate mentioned?
 
 **If no → Skip this posting.**
