@@ -76,14 +76,13 @@ function renderHtmlTracker(roles, options = {}) {
     { applied: 0, rejected: 0, "not-applied": 0, ghosted: 0, other: 0, interview: 0, offer: 0, withdrawn: 0 },
   );
 
-  // A "not-applied" role with a rendered resume already has everything it
-  // needs to submit — that's a meaningfully different, more actionable state
-  // than a role that hasn't been worked on at all. Split it out as an
-  // additional, non-canonical dimension for the stat cards and filter chips
-  // only; the underlying statusBucket (used by staleness.js and the
-  // markdown renderer) and the funnel's stage breakdown are left untouched.
-  // See #121.
-  const readyToApplyCount = normalized.filter((role) => role.statusBucket === "not-applied" && Boolean(role.resume)).length;
+  // readyToApply (a "not-applied" role that already has a rendered resume)
+  // is computed once in role-view.js's normalizeRole and reused verbatim
+  // below in rowsData — see #121. Split out here as an additional,
+  // non-canonical dimension for the stat cards and filter chips only; the
+  // underlying statusBucket (used by staleness.js and the markdown
+  // renderer) and the funnel's stage breakdown are left untouched.
+  const readyToApplyCount = normalized.filter((role) => role.readyToApply).length;
   const notStartedCount = counts["not-applied"] - readyToApplyCount;
 
   // Every bucket other than "not-applied"/"other" presupposes an
@@ -91,10 +90,11 @@ function renderHtmlTracker(roles, options = {}) {
   // was later resolved (interview, offer, rejected, withdrawn, ghosted all
   // imply "applied" happened first) — so this is "% of roles that ever
   // reached the applied stage," not "% currently in the applied bucket."
-  const appliedOrBeyondCount = ["applied", "interview", "offer", "rejected", "withdrawn", "ghosted"].reduce(
-    (sum, bucket) => sum + counts[bucket],
-    0,
-  );
+  // Derived as "everything except not-applied/other" (rather than
+  // hand-listing the applied-or-beyond buckets) so a new bucket added to
+  // statusBucket() in role-view.js is automatically included here without
+  // this file needing a matching update.
+  const appliedOrBeyondCount = total - counts["not-applied"] - counts.other;
   const appliedFunnelPercent = total > 0 ? Math.round((appliedOrBeyondCount / total) * 100) : 0;
 
   const rowsData = normalized.map((role, index) => {
@@ -113,7 +113,7 @@ function renderHtmlTracker(roles, options = {}) {
       fit: role.fit || "",
       applied: role.applied || "",
       statusBucket: role.statusBucket,
-      readyToApply: role.statusBucket === "not-applied" && Boolean(role.resume),
+      readyToApply: role.readyToApply,
       jobUrl: role.jobUrl || "",
       applyUrl: role.applyUrl || "",
       resume: role.resume || "",
@@ -548,15 +548,18 @@ function renderHtmlTracker(roles, options = {}) {
           // when falling back, prefer "Ready to apply" over the generic
           // "Not applied" bucket label for a role that already has a
           // rendered resume (see #121).
-          let badgeClass = "badge-" + role.statusBucket;
+          //
+          // badgeClass is keyed on readyToApply rather than only on the
+          // fallback branch: a role can be readyToApply (counted in the
+          // "Ready to apply" stat/filter) while still showing raw text like
+          // "Interested" as its label — without this, that role's badge
+          // would read as generic "not-applied" amber even though it's
+          // filterable under "Ready to apply," which is exactly the
+          // filter/badge disagreement a reviewer would otherwise hit.
+          let badgeClass = role.readyToApply ? "badge-ready-to-apply" : "badge-" + role.statusBucket;
           let label = (role.applied || "").trim();
           if (!label) {
-            if (role.readyToApply) {
-              label = "Ready to apply";
-              badgeClass = "badge-ready-to-apply";
-            } else {
-              label = statusLabels[role.statusBucket] || role.statusBucket;
-            }
+            label = role.readyToApply ? "Ready to apply" : statusLabels[role.statusBucket] || role.statusBucket;
           }
           return (
             "<tr>" +

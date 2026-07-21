@@ -2,9 +2,55 @@
 
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
+const vm = require("node:vm");
 const { renderHtmlTracker } = require("../../src/renderers/html-tracker");
 
 // Tests for the HTML tracker renderer, including the Cover Letter column.
+
+// Executes the tracker's embedded client-side <script> in a real Node vm
+// sandbox (built-in module, no new dependency) against a minimal DOM stub,
+// so tests can call the actual rendering helpers (companyColor, resumeCell,
+// locationCell, esc, ...) and assert on real computed output — rather than
+// pattern-matching the helpers' own source text, which would pass even if
+// the underlying logic were broken. Top-level `function` declarations in
+// the script become callable properties on the returned context object;
+// top-level `const`/`let` do not (standard JS scoping), so `tbody`/`roles`
+// etc. aren't directly readable here, but the stub objects backing
+// `document.querySelector(...)` are the same references the script mutates,
+// so tbodyStub.innerHTML reflects real output after calling context.render().
+function runClientScript(html) {
+  const scriptMatch = html.match(/<script>([\s\S]*?)<\/script>/u);
+  if (!scriptMatch) throw new Error("runClientScript: no <script> block found in rendered output");
+
+  const tbody = { innerHTML: "" };
+  const emptyState = { style: { display: "" } };
+  const searchInput = { value: "", addEventListener() {} };
+
+  const documentStub = {
+    querySelector: (selector) => (selector.includes("tbody") ? tbody : null),
+    getElementById: (id) => (id === "emptyState" ? emptyState : id === "search" ? searchInput : null),
+    querySelectorAll: () => [],
+    createElement: () => {
+      let text = "";
+      return {
+        set textContent(value) {
+          text = String(value);
+        },
+        get innerHTML() {
+          // Mirrors a real browser's textContent -> innerHTML text-node
+          // escaping: &, <, > only — quotes are not escaped in text-node
+          // content (only in attribute values), matching esc()'s actual
+          // production behavior.
+          return text.replace(/&/gu, "&amp;").replace(/</gu, "&lt;").replace(/>/gu, "&gt;");
+        },
+      };
+    },
+  };
+
+  const context = vm.createContext({ document: documentStub });
+  vm.runInContext(scriptMatch[1], context);
+  return { context, tbody, emptyState, searchInput };
+}
 
 test("html tracker renders a table with all columns including Cover Letter", () => {
   const roles = [
@@ -113,46 +159,30 @@ test("html tracker includes coverLetterStatus in rowsData object", () => {
 // to the bucket label only when there's no raw status text at all.
 test("html tracker status badge shows the specific status text, not a disconnected bucket label + sub-line", () => {
   const roles = [
-    {
-      id: "role-001",
-      company: "Fabrikam AI",
-      title: "Product Manager",
-      location: "Remote",
-      application: { status: "interested" },
-    },
+    { id: "role-001", company: "Fabrikam AI", title: "Product Manager", location: "Remote", application: { status: "interested" } },
   ];
 
   const output = renderHtmlTracker(roles);
+  const { tbody } = runClientScript(output);
 
-  // The row-data JSON still carries the raw applied text for the badge label to use.
-  assert.match(output, /"applied": "Interested"/);
   // The old disconnected two-line markup (bucket label badge + unlabeled <small> raw text) is gone.
   assert.doesNotMatch(output, /<\/span><br><small>/);
-  // The new label logic prefers the raw status text over the generic bucket label.
-  assert.match(output, /let label = \(role\.applied \|\| ""\)\.trim\(\);/);
+  // The badge shows the raw status text directly, not the generic bucket label.
+  assert.match(tbody.innerHTML, /<span class="badge badge-not-applied">Interested<\/span>/);
 });
 
 test("html tracker status badge falls back to the bucket label when there's no raw status text", () => {
-  const roles = [
-    {
-      id: "role-001",
-      company: "Fabrikam AI",
-      title: "Product Manager",
-      location: "Remote",
-      // No application/status/applied field at all.
-    },
-  ];
+  const roles = [{ id: "role-001", company: "Fabrikam AI", title: "Product Manager", location: "Remote" }];
 
   const output = renderHtmlTracker(roles);
+  const { tbody } = runClientScript(output);
 
-  // rowsData carries an empty applied string, so the client-side fallback to the bucket label applies.
-  assert.match(output, /"applied": ""/);
-  assert.match(output, /"statusBucket": "not-applied"/);
+  assert.match(tbody.innerHTML, /<span class="badge badge-not-applied">Not applied<\/span>/);
 });
 
 // #121 — scoped UI/UX improvements borrowed from a more polished reference dashboard.
 
-test("html tracker marks a not-applied role with a rendered resume as ready to apply", () => {
+test("html tracker marks a not-applied role with a rendered resume as ready to apply, and badges it accordingly", () => {
   const roles = [
     {
       id: "role-001",
@@ -164,17 +194,47 @@ test("html tracker marks a not-applied role with a rendered resume as ready to a
   ];
 
   const output = renderHtmlTracker(roles);
+  const { tbody } = runClientScript(output);
 
   assert.match(output, /"readyToApply": true/);
   assert.match(output, /data-filter="ready-to-apply"/);
+  // statusBucket stays the stable, canonical "not-applied" — readyToApply is a display-only dimension layered on top.
+  assert.match(output, /"statusBucket": "not-applied"/);
+  assert.match(tbody.innerHTML, /<span class="badge badge-ready-to-apply">Ready to apply<\/span>/);
 });
 
 test("html tracker does not mark a not-applied role without a resume as ready to apply", () => {
   const roles = [{ id: "role-001", company: "Fabrikam AI", title: "Product Manager" }];
 
   const output = renderHtmlTracker(roles);
+  const { tbody } = runClientScript(output);
 
   assert.match(output, /"readyToApply": false/);
+  assert.match(tbody.innerHTML, /<span class="badge badge-not-applied">Not applied<\/span>/);
+});
+
+test("html tracker badges a ready-to-apply role as 'ready to apply' even when it also has raw status text (e.g. Interested)", () => {
+  // A role can be both readyToApply (not-applied bucket + has a resume) AND carry raw status
+  // text like "Interested" — the badge must still read as ready-to-apply (teal), not the
+  // generic not-applied amber, so filter membership and the badge visually agree. See the
+  // code-quality lens finding this test guards against: readyToApply used to be computed
+  // independently of the badge's color, so this exact combination silently disagreed.
+  const roles = [
+    {
+      id: "role-001",
+      company: "Fabrikam AI",
+      title: "Product Manager",
+      application: { status: "interested" },
+      resume: { outputPath: "outputs/resumes/fabrikam-ai.docx" },
+    },
+  ];
+
+  const output = renderHtmlTracker(roles);
+  const { tbody } = runClientScript(output);
+
+  assert.match(output, /"readyToApply": true/);
+  // Raw text still wins for the label ("Interested" is more specific than the generic fallback)...
+  assert.match(tbody.innerHTML, /<span class="badge badge-ready-to-apply">Interested<\/span>/);
 });
 
 test("html tracker splits the not-applied stat into Ready to apply and Not started, without double-counting", () => {
@@ -191,40 +251,87 @@ test("html tracker splits the not-applied stat into Ready to apply and Not start
   assert.match(output, /funnel-stage">Not Applied<\/div><div class="funnel-count">2</);
 });
 
-test("html tracker shows an applied-funnel percentage stat", () => {
+test("html tracker's applied-funnel percentage covers the zero-roles guard, exact halves, and non-exact rounding", () => {
+  assert.match(renderHtmlTracker([]), /<div class="stat-value">0%<\/div><div class="stat-label">📈 Applied funnel<\/div>/);
+
+  const halfApplied = [
+    { id: "r1", company: "A", title: "PM", application: { status: "applied", appliedAt: "2026-07-01" } },
+    { id: "r2", company: "B", title: "Eng" },
+  ];
+  assert.match(renderHtmlTracker(halfApplied), /<div class="stat-value">50%<\/div><div class="stat-label">📈 Applied funnel<\/div>/);
+
+  // 1 of 3 reached applied-or-beyond → 33.33...%, rounds to 33.
+  const oneOfThree = [
+    { id: "r1", company: "A", title: "PM", application: { status: "applied", appliedAt: "2026-07-01" } },
+    { id: "r2", company: "B", title: "Eng" },
+    { id: "r3", company: "C", title: "Lead" },
+  ];
+  assert.match(renderHtmlTracker(oneOfThree), /<div class="stat-value">33%<\/div><div class="stat-label">📈 Applied funnel<\/div>/);
+
+  // All roles reached applied-or-beyond (including a rejected one, which still counts) → 100%.
+  const allApplied = [
+    { id: "r1", company: "A", title: "PM", application: { status: "applied", appliedAt: "2026-07-01" } },
+    { id: "r2", company: "B", title: "Eng", application: { status: "rejected", appliedAt: "2026-06-01" } },
+  ];
+  assert.match(renderHtmlTracker(allApplied), /<div class="stat-value">100%<\/div><div class="stat-label">📈 Applied funnel<\/div>/);
+});
+
+test("html tracker renders a deterministic, non-uniform per-company color dot", () => {
+  const output = renderHtmlTracker([
+    { id: "role-001", company: "Fabrikam AI", title: "PM" },
+    { id: "role-002", company: "Fabrikam AI", title: "Eng" },
+    { id: "role-003", company: "Northwind Traders", title: "Lead" },
+  ]);
+  const { context, tbody } = runClientScript(output);
+
+  // Same company, called twice, always yields the same color (determinism).
+  assert.equal(context.companyColor("Fabrikam AI"), context.companyColor("Fabrikam AI"));
+  // The two Fabrikam AI rows render the identical dot color.
+  const dotColors = [...tbody.innerHTML.matchAll(/class="company-dot" style="background:(#[0-9a-f]{6})"/gu)].map((m) => m[1]);
+  assert.equal(dotColors.length, 3);
+  assert.equal(dotColors[0], dotColors[1], "both Fabrikam AI rows must share the same dot color");
+  // A different company name produces a color from the same fixed palette (not necessarily
+  // different — collisions are an accepted tradeoff of a small fixed palette — but real,
+  // computed, and not the placeholder default).
+  assert.match(dotColors[2], /^#[0-9a-f]{6}$/u);
+});
+
+test("html tracker renders location as a styled pill, colored correctly across every work-mode variant", () => {
   const roles = [
-    { id: "role-001", company: "A", title: "PM", application: { status: "applied", appliedAt: "2026-07-01" } },
-    { id: "role-002", company: "B", title: "Eng" }, // not-applied
+    { id: "r1", company: "A", title: "PM", location: "Remote" },
+    { id: "r2", company: "B", title: "Eng", location: "Seattle, WA (Hybrid)" },
+    { id: "r3", company: "C", title: "Lead", location: "San Francisco, CA (On-site)" },
+    { id: "r4", company: "D", title: "Dir", location: "REMOTE" }, // case-insensitivity
+    { id: "r5", company: "E", title: "VP", location: "Austin, TX" }, // no work-mode keyword
   ];
 
   const output = renderHtmlTracker(roles);
+  const { tbody } = runClientScript(output);
 
-  // 1 of 2 roles reached "applied" (or beyond) → 50%.
-  assert.match(output, /<div class="stat-value">50%<\/div><div class="stat-label">📈 Applied funnel<\/div>/);
+  assert.match(tbody.innerHTML, /<span class="loc-pill loc-remote">Remote<\/span>/);
+  assert.match(tbody.innerHTML, /<span class="loc-pill loc-hybrid">Seattle, WA \(Hybrid\)<\/span>/);
+  assert.match(tbody.innerHTML, /<span class="loc-pill loc-onsite">San Francisco, CA \(On-site\)<\/span>/);
+  assert.match(tbody.innerHTML, /<span class="loc-pill loc-remote">REMOTE<\/span>/);
+  assert.match(tbody.innerHTML, /<span class="loc-pill loc-other">Austin, TX<\/span>/);
 });
 
-test("html tracker renders a deterministic per-company color dot", () => {
-  const output = renderHtmlTracker([{ id: "role-001", company: "Fabrikam AI", title: "PM" }]);
+test("html tracker renders the resume cell as a clickable link with the outputs\\/ prefix stripped, and a dash when absent", () => {
+  const roles = [
+    { id: "r1", company: "A", title: "PM", resume: { outputPath: "outputs/resumes/fabrikam-ai.docx" } },
+    { id: "r2", company: "B", title: "Eng", resume: { outputPath: "resumes/no-prefix.docx" } },
+  ];
 
-  assert.match(output, /function companyCell\(role\)/);
-  assert.match(output, /class="company-dot"/);
-});
+  const output = renderHtmlTracker(roles);
+  const { context, tbody } = runClientScript(output);
 
-test("html tracker renders location as a styled pill, colored by work mode", () => {
-  const output = renderHtmlTracker([{ id: "role-001", company: "Fabrikam AI", title: "PM", location: "Remote" }]);
-
-  assert.match(output, /function locationCell\(role\)/);
-  assert.match(output, /loc-remote/);
-});
-
-test("html tracker renders the resume cell as a clickable link with the outputs\\/ prefix stripped", () => {
-  const output = renderHtmlTracker([
-    { id: "role-001", company: "Fabrikam AI", title: "PM", resume: { outputPath: "outputs/resumes/fabrikam-ai.docx" } },
-  ]);
-
-  assert.match(output, /function resumeCell\(role\)/);
-  // Strips the "outputs/" prefix so the link resolves relative to tracker.html's own location (inside outputs/).
-  assert.match(output, /role\.resume\.replace\(\/\^outputs\\\/\/, ""\)/);
+  // outputs/ prefix stripped so the href resolves relative to tracker.html's own location.
+  assert.match(tbody.innerHTML, /<a href="resumes\/fabrikam-ai\.docx" target="_blank" rel="noopener">fabrikam-ai\.docx<\/a>/);
+  // A path that never had the prefix passes through unchanged.
+  assert.match(tbody.innerHTML, /<a href="resumes\/no-prefix\.docx" target="_blank" rel="noopener">no-prefix\.docx<\/a>/);
+  // Calling resumeCell directly isolates the no-resume case unambiguously (a full-row
+  // assertion can't distinguish "resume cell is a dash" from "some other empty column is").
+  assert.equal(context.resumeCell({ resume: "" }), "—");
+  assert.equal(context.resumeCell({}), "—");
 });
 
 test("html tracker renders a pipeline funnel section with stage counts", () => {
