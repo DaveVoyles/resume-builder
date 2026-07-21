@@ -42,7 +42,7 @@ The CLI does not currently:
 | Workflow | Command |
 | --- | --- |
 | Run the sample workflow | `npm start` |
-| Create the default private workspace | `npm run setup` |
+| Create the default private workspace | `npm run setup` (also opens a browser tab to the tracker automatically — pass `--noServe` to skip, or `--noOpen` to start the server without opening a tab) |
 | Initialize a named workspace | `npm run workspace:init -- --workspace <dir>` |
 | Ingest resumes, notes, text, or public GitHub metadata | `npm run workspace:ingest -- --workspace <dir> --resume <file> --notes <file> --github <user>` |
 | Add a seed or tracked role | `npm run workspace:add-role -- --workspace <dir> --url <url>` or add `--tracked` |

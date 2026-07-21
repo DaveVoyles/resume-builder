@@ -31,7 +31,7 @@ function help() {
     "  node src/cli/index.js <command> [options]",
     "",
     "Commands:",
-    "  init --workspace <dir> [--force]",
+    "  init --workspace <dir> [--force] [--noServe] [--noOpen] [--port <n>]",
     "  ingest --workspace <dir> [--resume <file> ...] [--notes <file> ...] [--links <file> ...] [--input <file> ...] [--github <user>]",
     "  add-role --workspace <dir> (--url <url> | --title <title> --company <company>) [--tracked]",
     "  add-contact --workspace <dir> --name <name> [--company <name>] --relationship <relationship> [--linked-role <role-id> ...] [--notes <text>]",
