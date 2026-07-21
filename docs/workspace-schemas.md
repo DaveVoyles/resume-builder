@@ -974,6 +974,33 @@ The validator is intentionally lightweight today. These low-risk v1 checks would
 6. Confirm evidence references from profile, tracked roles, and claim policy exceptions point to existing evidence IDs.
 7. Warn when examples under `examples/sample-candidate/` use non-fictional domains outside `example.invalid`, `example.com`, `example.org`, or `example.net`.
 
+## Keyword list input (`score-keywords`)
+
+A keyword list is a plain JSON array of strings — the required/preferred skills and technologies an agent extracts from a job posting by reading it. **The CLI never fetches or parses posting text itself**; there is no scraper or keyword extractor anywhere in this codebase. `score-keywords --config <resume-config.json> --keywords <keywords.json>` (and `tailor`'s `--keywords` flag, which runs the same scoring inline — see [`tailor.md`](playbooks/tailor.md#step-31a-keyword-coverage-advisory---keywords)) case-insensitive substring-matches each keyword against the resume config's `summary.text`, job `bullets`, and `skills` values, and reports which are present vs. missing. Advisory only — never blocks, never persisted to a role or the tracker.
+
+### Shape
+
+A flat array of non-empty strings. No wrapper object, no `schemaVersion` — this is the simplest input shape in the workspace.
+
+### Example
+
+```json
+[
+  "Python",
+  "Kubernetes",
+  "AWS",
+  "Product management",
+  "Cross-functional leadership",
+  "A/B testing",
+  "Agile",
+  "SQL"
+]
+```
+
+### Related
+
+Missing keywords from this scoring step are the natural input to the [gap-classification workflow](#gap-classification-input-gap-report) below — see the [gap-analysis playbook](playbooks/gap-analysis.md) for the full walkthrough from score-keywords through a rendered gap report.
+
 ## Gap-classification input (`gap-report`)
 
 A gap-classification file is a JSON array used as input to the `gap-report` command. It organizes missing keywords from a job posting into four gap types, each with a rationale and recommended action. The `gap-report` command renders this classification into a markdown report.

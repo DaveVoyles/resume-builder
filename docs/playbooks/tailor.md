@@ -108,15 +108,18 @@ npm run workspace:tailor -- --workspace candidate \
   --title "<Role Title>"
 ```
 
-`--company` is optional — it defaults to the resume config's own `company` field. Pass `--applyUrl`, `--location`, `--compensation`, `--fit`, or `--notes` the same way you would with `add-role` if you want them captured on the tracked role right away.
+`--company` is optional — it defaults to the resume config's own `company` field. Pass `--applyUrl`, `--location`, `--compensation`, `--fit`, or `--notes` the same way you would with `add-role` if you want them captured on the tracked role right away. Add `--keywords <keywords.json>` for a keyword-coverage advisory (see Step 3.1a below) or `--cover-letter <config.json>` to draft a cover letter alongside the resume (see [`cover-letter.md`](cover-letter.md)).
 
 **This command, in one pass:**
 
 1. Validates the config against the resume-config schema (rejects it, with an itemized error, if malformed).
 2. Audits every claim in the config against `evidence.jsonl` — the same evidence-backed claim audit `validate` runs — and blocks with a per-claim error if anything is unsupported.
-3. Renders the DOCX to `outputs/resumes/<Company>/<file>.docx`.
-4. Registers the role in `roles.tracked.json`, linked to the exact resume config and DOCX it just produced.
-5. Sets the role's application status to **`interested`** — not-yet-applied — and rebuilds the tracker (md + html).
+3. If `--keywords` was passed: prints a keyword-coverage advisory (never blocks — see Step 3.1a).
+4. Runs the [de-AI style lint](../style-lint.md) against the resume text — advisory only, never blocks.
+5. Renders the DOCX to `outputs/resumes/<Company>/<file>.docx`.
+6. If `--cover-letter` was passed: validates, audits, lints, and renders the cover letter the same way, and links it on the tracked role.
+7. Registers the role in `roles.tracked.json`, linked to the exact resume config and DOCX it just produced.
+8. Sets the role's application status to **`interested`** — not-yet-applied — and rebuilds the tracker (md + html).
 
 **Example output:**
 
@@ -129,6 +132,27 @@ Built html tracker for 1 tracked role(s): candidate/outputs/tracker.html
 Updated Fabrikam AI — Developer platform product manager to status: interested (2026-07-20)
 Tailored resume for Fabrikam AI — Developer platform product manager: candidate/outputs/resumes/Fabrikam AI/alex-rivera-fabrikam-ai.docx
 ```
+
+### Step 3.1a: Keyword-coverage advisory (`--keywords`)
+
+Pass `--keywords <keywords.json>` — a plain JSON array of keyword strings **you extract from the
+job posting yourself** (see [Keyword list input](../workspace-schemas.md#keyword-list-input-score-keywords)
+for the exact shape) — and `tailor` prints how much of that list the resume config actually
+covers, without blocking the render either way:
+
+```
+Keyword coverage: 75% (3/4)
+Present: Python, AWS, Product management
+Missing: Kubernetes
+```
+
+**The CLI never fetches or parses the job posting itself** — it has no scraper and no keyword
+extractor. Reading the posting and pulling out the required/preferred skills is agent work,
+exactly like Section 1's posting-to-evidence mapping above; `--keywords` (and the standalone
+`score-keywords` command it shares logic with) only *scores* a list you already extracted. If you
+want to act on the `Missing` list — decide what kind of gap each one represents and get a
+recommended action — that's the [gap-analysis playbook](gap-analysis.md)'s job, one level up from
+this advisory.
 
 ### Step 3.2: If the claim audit blocks
 
