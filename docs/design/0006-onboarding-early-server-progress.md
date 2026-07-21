@@ -95,4 +95,5 @@ flaggable default, not a destructive action.
 
 ## Execution Tracking
 
-_Filled in by the `plan-to-issues` export._
+- Issues: https://github.com/DaveVoyles/resume-builder/issues?q=is%3Aissue+state%3Aopen+label%3Aplan%3A0006
+- Board: https://github.com/users/DaveVoyles/projects/2 ("Agent Work", Todo column)
