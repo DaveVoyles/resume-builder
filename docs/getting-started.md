@@ -73,7 +73,7 @@ Gather:
 
 - 📄 Your current resume, ideally as `.docx`, `.md`, or `.txt`.
 - 🗃️ Older resumes with projects or accomplishments you may want to reuse.
-- 🔗 LinkedIn, portfolio, personal site, or GitHub links.
+- 🔗 LinkedIn, portfolio, personal site, or GitHub links (LinkedIn isn't scraped automatically — see [onboarding.md](playbooks/onboarding.md) for how to include it).
 - 🧠 Notes about projects, metrics, launches, teams, publications, or speaking work.
 - 🎯 Three job links that represent roles you believe are a good fit.
 - 🚫 Constraints, such as location, compensation, industries to avoid, or claims to avoid.

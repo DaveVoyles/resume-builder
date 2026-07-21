@@ -41,7 +41,7 @@ function linksTemplate() {
   return [
     "# Public source links",
     "#",
-    "# One link per line — GitHub, portfolio, personal site, published writing, talks, etc.",
+    "# One link per line — GitHub, portfolio, personal site, LinkedIn (for reference — not scraped for content), published writing, talks, etc.",
     "# Lines starting with # are ignored.",
     "",
   ].join("\n");
