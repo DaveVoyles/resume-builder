@@ -65,6 +65,8 @@ npm run setup
 
 Then move straight into State 1's messaging below — the candidate is now in that state.
 
+**Worktree note (agent-facing, not for the candidate):** `candidate/` is gitignored on purpose, for privacy — but a side effect of being gitignored is that it's *not* shared across git worktree checkouts. Each worktree has its own separate, untracked `candidate/` directory on disk. If files get dropped into one checkout's `candidate/` folder (by the candidate, by Dave, or by a session running elsewhere), a session running from a different worktree won't see them — the workspace-state check above will read as State 0 or State 1 even though real material exists in another checkout. Work from the same checkout/worktree consistently for a given candidate workspace, or copy/symlink `candidate/` across worktrees if you genuinely need to share it.
+
 ---
 
 ## State 1: Workspace scaffolded, nothing real added yet
