@@ -78,6 +78,8 @@ npm run check:privacy
 
 The check fails when private candidate workspace paths or modular outputs are staged or already tracked. If it fails, unstage the path with `git restore --staged <path>` or remove a tracked private path with `git rm --cached <path>` after confirming the file should stay local.
 
+Being gitignored also means `candidate/` isn't shared across git worktree checkouts — each worktree has its own independent copy on disk. See the worktree note in [Onboarding](playbooks/onboarding.md#state-0-no-workspace-yet) for the full explanation.
+
 ## Intake checklist
 
 Collect the following inputs before generation:
