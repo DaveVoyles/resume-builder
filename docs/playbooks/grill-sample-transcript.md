@@ -236,7 +236,7 @@ This is a fictional transcript of a complete grill intake interview. It demonstr
 {
   "locations": {
     "workModes": ["remote", "hybrid"],
-    "preferredRegions": ["US West Coast", "Seattle, WA"],
+    "preferredRegions": ["Seattle, WA", "US West Coast"],
     "excludedRegions": ["San Francisco Bay Area", "New York City"],
     "priority": "must"
   }

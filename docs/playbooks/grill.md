@@ -155,20 +155,20 @@ Before you start:
 
 **Ask:**
 
-"What's your preferred work mode? (Remote, hybrid, on-site.) Are there specific locations you prefer or want to avoid?"
+"What's your preferred work mode? (Remote, hybrid, on-site.) Are there specific locations you prefer or want to avoid? If you prefer more than one region, which one is most desirable?"
 
-**Candidate answers with:** Work mode preference, regions or cities.
+**Candidate answers with:** Work mode preference, regions or cities — if they mention more than one preferred region, note which one they'd rank higher.
 
 **Recommend:**
 
-"I'm proposing: [Work mode], [Regions]. Does that fit your situation?"
+"I'm proposing: [Work mode], [Regions, most preferred first]. Does that fit your situation?"
 
 **Write to `candidate/preferences.json`:**
 
 - Set the `locations` object:
   - `workModes`: Array, e.g., `["remote", "hybrid"]`
-  - `preferredRegions`: Array of preferred locations (e.g., `["US West Coast", "Canada"]`), or `[]` if flexible
-  - `excludedRegions`: Array of avoided locations, or `[]` if none
+  - `preferredRegions`: Array of preferred locations, ordered by priority — the first entry is the candidate's most preferred region, with each later entry progressively less preferred. For example, if the candidate says "Philadelphia is ideal for hybrid; New York works, but is less desirable," write `["Philadelphia", "New York"]`. Use `[]` if flexible.
+  - `excludedRegions`: Array of avoided locations, or `[]` if none — this is a flat set with no ranking, since exclusions don't need a "how much I don't want it" order
   - `priority`: `"must"`, `"should"`, or `"could"`
 
 ---
