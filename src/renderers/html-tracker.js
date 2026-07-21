@@ -76,6 +76,27 @@ function renderHtmlTracker(roles, options = {}) {
     { applied: 0, rejected: 0, "not-applied": 0, ghosted: 0, other: 0, interview: 0, offer: 0, withdrawn: 0 },
   );
 
+  // A "not-applied" role with a rendered resume already has everything it
+  // needs to submit — that's a meaningfully different, more actionable state
+  // than a role that hasn't been worked on at all. Split it out as an
+  // additional, non-canonical dimension for the stat cards and filter chips
+  // only; the underlying statusBucket (used by staleness.js and the
+  // markdown renderer) and the funnel's stage breakdown are left untouched.
+  // See #121.
+  const readyToApplyCount = normalized.filter((role) => role.statusBucket === "not-applied" && Boolean(role.resume)).length;
+  const notStartedCount = counts["not-applied"] - readyToApplyCount;
+
+  // Every bucket other than "not-applied"/"other" presupposes an
+  // application was actually submitted at some point, regardless of how it
+  // was later resolved (interview, offer, rejected, withdrawn, ghosted all
+  // imply "applied" happened first) — so this is "% of roles that ever
+  // reached the applied stage," not "% currently in the applied bucket."
+  const appliedOrBeyondCount = ["applied", "interview", "offer", "rejected", "withdrawn", "ghosted"].reduce(
+    (sum, bucket) => sum + counts[bucket],
+    0,
+  );
+  const appliedFunnelPercent = total > 0 ? Math.round((appliedOrBeyondCount / total) * 100) : 0;
+
   const rowsData = normalized.map((role, index) => {
     // Compute staleness for this role
     const roleWithBucket = {
@@ -92,6 +113,7 @@ function renderHtmlTracker(roles, options = {}) {
       fit: role.fit || "",
       applied: role.applied || "",
       statusBucket: role.statusBucket,
+      readyToApply: role.statusBucket === "not-applied" && Boolean(role.resume),
       jobUrl: role.jobUrl || "",
       applyUrl: role.applyUrl || "",
       resume: role.resume || "",
@@ -307,7 +329,26 @@ function renderHtmlTracker(roles, options = {}) {
   .badge-withdrawn { background: #f1f5f9; color: #475569; }
   .badge-ghosted { background: #fed7aa; color: #92400e; }
   .badge-not-applied { background: #fef3c7; color: #92400e; }
+  .badge-ready-to-apply { background: #ccfbf1; color: #0f766e; }
   .badge-other { background: #e2e8f0; color: #334155; }
+  .company-dot {
+    display: inline-block;
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+  }
+  .loc-pill {
+    display: inline-block;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .loc-remote { background: #dcfce7; color: #166534; }
+  .loc-hybrid { background: #e0e7ff; color: #3730a3; }
+  .loc-onsite { background: #fce7f3; color: #9d174d; }
+  .loc-other { background: #f1f5f9; color: #475569; }
   .stale-badge {
     display: inline-block;
     padding: 0.25rem 0.75rem;
@@ -343,11 +384,13 @@ function renderHtmlTracker(roles, options = {}) {
   <p class="subtitle">Generated ${escapeHtml(generatedAt)} from <code>roles.tracked.json</code>. Rebuild with <code>build-tracker --format html</code>; do not hand-edit.</p>
 
   <div class="stats">
-    <div class="stat-card"><div class="stat-value">${total}</div><div class="stat-label">Total roles</div></div>
-    <div class="stat-card"><div class="stat-value">${counts.applied}</div><div class="stat-label">Applied</div></div>
-    <div class="stat-card"><div class="stat-value">${counts["not-applied"]}</div><div class="stat-label">Not applied yet</div></div>
-    <div class="stat-card"><div class="stat-value">${counts.rejected}</div><div class="stat-label">Rejected</div></div>
-    <div class="stat-card"><div class="stat-value">${formatAvgCompensation(normalized)}</div><div class="stat-label">Avg. compensation</div></div>
+    <div class="stat-card"><div class="stat-value">${total}</div><div class="stat-label">📋 Total roles</div></div>
+    <div class="stat-card"><div class="stat-value">${counts.applied}</div><div class="stat-label">✅ Applied</div></div>
+    <div class="stat-card"><div class="stat-value">${readyToApplyCount}</div><div class="stat-label">🎯 Ready to apply</div></div>
+    <div class="stat-card"><div class="stat-value">${notStartedCount}</div><div class="stat-label">⏳ Not started</div></div>
+    <div class="stat-card"><div class="stat-value">${counts.rejected}</div><div class="stat-label">❌ Rejected</div></div>
+    <div class="stat-card"><div class="stat-value">${appliedFunnelPercent}%</div><div class="stat-label">📈 Applied funnel</div></div>
+    <div class="stat-card"><div class="stat-value">${formatAvgCompensation(normalized)}</div><div class="stat-label">💰 Avg. compensation</div></div>
   </div>
 
   <table class="funnel">
@@ -366,6 +409,7 @@ function renderHtmlTracker(roles, options = {}) {
     <input type="text" id="search" placeholder="Search company, title, or location...">
     <button data-filter="all" class="active">All</button>
     <button data-filter="not-applied">Not applied</button>
+    <button data-filter="ready-to-apply">Ready to apply</button>
     <button data-filter="applied">Applied</button>
     <button data-filter="interview">Interview</button>
     <button data-filter="offer">Offer</button>
@@ -401,6 +445,45 @@ function renderHtmlTracker(roles, options = {}) {
       const div = document.createElement("div");
       div.textContent = value ?? "";
       return div.innerHTML;
+    }
+
+    // Deterministic per-company color so the same company always gets the
+    // same dot across renders/sessions, without needing logos or a lookup
+    // table maintained by hand. See #121.
+    const COMPANY_COLORS = ["#0284c7", "#7c3aed", "#db2777", "#ea580c", "#16a34a", "#0891b2", "#ca8a04", "#dc2626", "#4f46e5", "#059669"];
+    function companyColor(name) {
+      let hash = 0;
+      for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+      return COMPANY_COLORS[hash % COMPANY_COLORS.length];
+    }
+
+    function companyCell(role) {
+      if (!role.company) return "—";
+      const color = companyColor(role.company);
+      return '<span class="company-dot" style="background:' + color + '"></span>' + esc(role.company);
+    }
+
+    function locationCell(role) {
+      if (!role.location) return "—";
+      const lower = role.location.toLowerCase();
+      let cls = "loc-other";
+      if (lower.includes("remote")) cls = "loc-remote";
+      else if (lower.includes("hybrid")) cls = "loc-hybrid";
+      else if (lower.includes("on-site") || lower.includes("onsite") || lower.includes("in-office") || lower.includes("in office")) cls = "loc-onsite";
+      return '<span class="loc-pill ' + cls + '">' + esc(role.location) + "</span>";
+    }
+
+    // The resume path is stored relative to the workspace root (e.g.
+    // "outputs/resumes/acme.docx"), but tracker.html itself lives inside
+    // outputs/ — stripping that leading segment gives a link that resolves
+    // correctly both opened as a local file and via the serve command
+    // (which roots at outputs/). See #121.
+    function resumeCell(role) {
+      if (!role.resume) return "—";
+      const href = role.resume.replace(/^outputs\\//, "");
+      const parts = role.resume.split("/");
+      const filename = parts[parts.length - 1] || role.resume;
+      return '<a href="' + esc(href) + '" target="_blank" rel="noopener">' + esc(filename) + "</a>";
     }
 
     function linkCell(role) {
@@ -443,6 +526,8 @@ function renderHtmlTracker(roles, options = {}) {
       let rows = roles.filter((role) => {
         if (activeFilter === "stale") {
           if (!role.isStale) return false;
+        } else if (activeFilter === "ready-to-apply") {
+          if (!role.readyToApply) return false;
         } else if (activeFilter !== "all" && role.statusBucket !== activeFilter) {
           return false;
         }
@@ -454,24 +539,35 @@ function renderHtmlTracker(roles, options = {}) {
 
       tbody.innerHTML = rows
         .map((role) => {
-          const badgeClass = "badge-" + role.statusBucket;
           // Show the specific status text (e.g. "Interested", "Applied
           // 2026-06-08") when there is one — it's always at least as
           // informative as the generic bucket label, and showing both
           // stacked reads as two unrelated pieces of information rather
-          // than one coherent status (see #120). Only fall back to the
-          // bucket label when there's no raw status text to show at all.
-          const label = (role.applied || "").trim() || statusLabels[role.statusBucket] || role.statusBucket;
+          // than one coherent status (see #120). Only fall back to a
+          // label when there's no raw status text to show at all — and
+          // when falling back, prefer "Ready to apply" over the generic
+          // "Not applied" bucket label for a role that already has a
+          // rendered resume (see #121).
+          let badgeClass = "badge-" + role.statusBucket;
+          let label = (role.applied || "").trim();
+          if (!label) {
+            if (role.readyToApply) {
+              label = "Ready to apply";
+              badgeClass = "badge-ready-to-apply";
+            } else {
+              label = statusLabels[role.statusBucket] || role.statusBucket;
+            }
+          }
           return (
             "<tr>" +
-            "<td>" + esc(role.company) + "</td>" +
+            "<td>" + companyCell(role) + "</td>" +
             "<td>" + esc(role.title) + "</td>" +
-            "<td>" + esc(role.location) + "</td>" +
+            "<td>" + locationCell(role) + "</td>" +
             "<td>" + esc(role.compensation || "—") + "</td>" +
             "<td>" + esc(role.fit || "—") + "</td>" +
             "<td><span class=\\"badge " + badgeClass + "\\">" + esc(label) + "</span></td>" +
             "<td>" + linkCell(role) + "</td>" +
-            "<td>" + esc(role.resume || "—") + "</td>" +
+            "<td>" + resumeCell(role) + "</td>" +
             "<td>" + esc(role.coverLetterStatus || "—") + "</td>" +
             "<td>" + staleCell(role) + "</td>" +
             "<td>" + (role.notes || "—") + "</td>" +

@@ -129,7 +129,7 @@ test("html tracker status badge shows the specific status text, not a disconnect
   // The old disconnected two-line markup (bucket label badge + unlabeled <small> raw text) is gone.
   assert.doesNotMatch(output, /<\/span><br><small>/);
   // The new label logic prefers the raw status text over the generic bucket label.
-  assert.match(output, /const label = \(role\.applied \|\| ""\)\.trim\(\) \|\| statusLabels\[role\.statusBucket\] \|\| role\.statusBucket;/);
+  assert.match(output, /let label = \(role\.applied \|\| ""\)\.trim\(\);/);
 });
 
 test("html tracker status badge falls back to the bucket label when there's no raw status text", () => {
@@ -148,6 +148,83 @@ test("html tracker status badge falls back to the bucket label when there's no r
   // rowsData carries an empty applied string, so the client-side fallback to the bucket label applies.
   assert.match(output, /"applied": ""/);
   assert.match(output, /"statusBucket": "not-applied"/);
+});
+
+// #121 — scoped UI/UX improvements borrowed from a more polished reference dashboard.
+
+test("html tracker marks a not-applied role with a rendered resume as ready to apply", () => {
+  const roles = [
+    {
+      id: "role-001",
+      company: "Fabrikam AI",
+      title: "Product Manager",
+      resume: { outputPath: "outputs/resumes/fabrikam-ai.docx" },
+      // No application/status field — nothing to distinguish "ready" from "not started" except the resume.
+    },
+  ];
+
+  const output = renderHtmlTracker(roles);
+
+  assert.match(output, /"readyToApply": true/);
+  assert.match(output, /data-filter="ready-to-apply"/);
+});
+
+test("html tracker does not mark a not-applied role without a resume as ready to apply", () => {
+  const roles = [{ id: "role-001", company: "Fabrikam AI", title: "Product Manager" }];
+
+  const output = renderHtmlTracker(roles);
+
+  assert.match(output, /"readyToApply": false/);
+});
+
+test("html tracker splits the not-applied stat into Ready to apply and Not started, without double-counting", () => {
+  const roles = [
+    { id: "role-001", company: "Fabrikam AI", title: "PM", resume: { outputPath: "outputs/resumes/a.docx" } },
+    { id: "role-002", company: "TechCorp", title: "Engineer" },
+  ];
+
+  const output = renderHtmlTracker(roles);
+
+  assert.match(output, /<div class="stat-value">1<\/div><div class="stat-label">🎯 Ready to apply<\/div>/);
+  assert.match(output, /<div class="stat-value">1<\/div><div class="stat-label">⏳ Not started<\/div>/);
+  // The funnel's own "Not Applied" stage is untouched — it still reflects the full, undivided bucket count.
+  assert.match(output, /funnel-stage">Not Applied<\/div><div class="funnel-count">2</);
+});
+
+test("html tracker shows an applied-funnel percentage stat", () => {
+  const roles = [
+    { id: "role-001", company: "A", title: "PM", application: { status: "applied", appliedAt: "2026-07-01" } },
+    { id: "role-002", company: "B", title: "Eng" }, // not-applied
+  ];
+
+  const output = renderHtmlTracker(roles);
+
+  // 1 of 2 roles reached "applied" (or beyond) → 50%.
+  assert.match(output, /<div class="stat-value">50%<\/div><div class="stat-label">📈 Applied funnel<\/div>/);
+});
+
+test("html tracker renders a deterministic per-company color dot", () => {
+  const output = renderHtmlTracker([{ id: "role-001", company: "Fabrikam AI", title: "PM" }]);
+
+  assert.match(output, /function companyCell\(role\)/);
+  assert.match(output, /class="company-dot"/);
+});
+
+test("html tracker renders location as a styled pill, colored by work mode", () => {
+  const output = renderHtmlTracker([{ id: "role-001", company: "Fabrikam AI", title: "PM", location: "Remote" }]);
+
+  assert.match(output, /function locationCell\(role\)/);
+  assert.match(output, /loc-remote/);
+});
+
+test("html tracker renders the resume cell as a clickable link with the outputs\\/ prefix stripped", () => {
+  const output = renderHtmlTracker([
+    { id: "role-001", company: "Fabrikam AI", title: "PM", resume: { outputPath: "outputs/resumes/fabrikam-ai.docx" } },
+  ]);
+
+  assert.match(output, /function resumeCell\(role\)/);
+  // Strips the "outputs/" prefix so the link resolves relative to tracker.html's own location (inside outputs/).
+  assert.match(output, /role\.resume\.replace\(\/\^outputs\\\/\/, ""\)/);
 });
 
 test("html tracker renders a pipeline funnel section with stage counts", () => {
