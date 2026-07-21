@@ -37,6 +37,7 @@
   "compensation": {
     "currency": "USD",
     "baseMinimum": 160000,
+    "totalMinimum": 190000,
     "totalTarget": 220000,
     "publiclyShare": false
   },

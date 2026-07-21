@@ -34,4 +34,26 @@ describe("buildDiscovery compensation context", () => {
     assert.equal(context.compensationMinimum, 160000);
     assert.equal(context.compensationTotalMinimum, undefined);
   });
+
+  test("exposes only a total-comp floor when the candidate framed their answer entirely in total-comp terms (the primary motivating case for #102)", () => {
+    const preferences = {
+      compensation: {
+        currency: "USD",
+        totalMinimum: 250000,
+        totalTarget: 300000,
+      },
+    };
+
+    const { context } = buildDiscovery([], preferences, [], []);
+
+    assert.equal(context.compensationMinimum, undefined);
+    assert.equal(context.compensationTotalMinimum, 250000);
+  });
+
+  test("does not throw when preferences.compensation is entirely absent", () => {
+    const { context } = buildDiscovery([], {}, [], []);
+
+    assert.equal(context.compensationMinimum, undefined);
+    assert.equal(context.compensationTotalMinimum, undefined);
+  });
 });
