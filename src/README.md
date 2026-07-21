@@ -9,9 +9,9 @@ real workspace data. The CLI never calls an LLM; see
 
 | Folder | What it holds |
 | --- | --- |
-| [`cli/`](cli/) | The command-line entry point (`index.js`) and one file per command under [`cli/commands/`](cli/commands/) (`init`, `ingest`, `add-role`, `build-tracker`, `find-similar`, `render-resume`, `tailor`, `set-status`, `study-guide-bundle`, `validate`). Each command is a thin wrapper that reads/writes workspace files via `core/workspace.js` and calls into `core/` and `renderers/`. |
-| [`core/`](core/) | Schema validation, the evidence ledger, the evidence-backed claim audit, candidate-profile merging, similar-role scoring, ID generation, and the shared workspace file I/O every command builds on. |
-| [`renderers/`](renderers/) | Turns structured workspace data into output files: the DOCX resume renderer (`docx-resume.js` + `docx-helpers.js`), and the markdown/HTML tracker and similar-roles renderers. |
+| [`cli/`](cli/) | The command-line entry point (`index.js`) and one file per command under [`cli/commands/`](cli/commands/) (`init`, `ingest`, `add-role`, `build-tracker`, `find-similar`, `render-resume`, `render-cover-letter`, `tailor`, `score-keywords`, `gap-report`, `set-status`, `add-contact`, `set-contact-status`, `build-contacts-tracker`, `study-guide-bundle`, `validate`). Each command is a thin wrapper that reads/writes workspace files via `core/workspace.js` and calls into `core/` and `renderers/`. See [Modular architecture](../docs/modular-architecture.md) for the full command surface table. |
+| [`core/`](core/) | Schema validation, the evidence ledger, the evidence-backed claim audit, candidate-profile merging, similar-role scoring, ID generation, the contact schema, staleness computation, the de-AI style lint, and the shared workspace file I/O every command builds on. |
+| [`renderers/`](renderers/) | Turns structured workspace data into output files: the DOCX resume/cover-letter renderers (`docx-resume.js`/`docx-cover-letter.js` + `docx-helpers.js`), and the markdown/HTML renderers for the role tracker, contacts tracker, gap report, and similar-roles review. |
 | [`adapters/`](adapters/) | Reads external or semi-structured input into evidence: freeform notes/resumes (`.docx`/`.md`/`.txt`), a public GitHub profile, and job-posting URLs. |
 
 ## How a command is built

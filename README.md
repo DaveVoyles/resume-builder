@@ -65,6 +65,10 @@ want to learn from — a real interview, a practice session, or even a grill/tai
 The CLI never calls an LLM at any stage — schema validation is the contract between what your
 agent drafts and what the CLI is willing to write to disk or render.
 
+**Contact tracking runs alongside this lifecycle, not as one more numbered stage in it** — a
+referral, recruiter, or former colleague can enter the picture before, during, or after any
+specific tracked role. See the [contacts playbook](docs/playbooks/contacts.md).
+
 Steps 1–8 (onboarding through study guide) were run end to end against the fictional sample
 candidate as part of shipping this page, with real command output captured in
 [`docs/e2e-showcase.md`](docs/e2e-showcase.md) — that page is also the regression pass over each
@@ -89,6 +93,7 @@ an agent looking for the exact contract, there's one place to look:
 | Status updates | Record an application status change — including `ghosted`, for roles that went silent — and auto-propose the next follow-up. | Recipe in [`AGENTS.md`](AGENTS.md#-status-update-recipe) | [Workspace schemas](docs/workspace-schemas.md#auto-generating-nextaction-on-status-transitions) |
 | Study guide | Bundle profile, evidence, resume config, and job posting into interview prep. | [`study-guide.md`](docs/playbooks/study-guide.md) | [Workspace schemas](docs/workspace-schemas.md#study-guide-bundle-study-guide-bundle) |
 | Debrief | Capture Q&A feedback and sentiment from interviews or practice sessions. | [`debrief.md`](docs/playbooks/debrief.md) | [Workspace schemas](docs/workspace-schemas.md#feedbackjsonl) |
+| Contacts | Track your professional network — referrals, former colleagues, recruiters — independently of any specific tracked role. | [`contacts.md`](docs/playbooks/contacts.md) | [Workspace schemas](docs/workspace-schemas.md#contactsjson) |
 | Tracker | Markdown + interactive HTML application tracker, generated from tracked roles — pipeline funnel, per-role stale badges, and a `ghosted` status for roles that went silent. | — | [Workspace schemas](docs/workspace-schemas.md#staleness-computation) |
 | Style check | Advisory de-AI lint over resume/cover-letter text (buzzwords, sentence-uniformity, repetition) from `tailor` and `validate` — never blocks. | Rewrite step in [`tailor.md`](docs/playbooks/tailor.md) | [`style-lint.md`](docs/style-lint.md) |
 | Privacy & validation | Schema validation, evidence-backed claim audit, and privacy checks. | — | [Candidate workspace](docs/candidate-workspace.md) |

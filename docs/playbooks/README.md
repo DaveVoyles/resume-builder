@@ -27,6 +27,7 @@ Playbooks are vendor-neutral markdown instruction docs for terminal LLM agents. 
 - `cover-letter.md`: Draft an evidence-audited cover letter, either alongside a resume in one `tailor --cover-letter` pass or standalone via `render-cover-letter`.
 - `gap-analysis.md`: Analyze missing keywords from a job posting — classify each gap as a presentation issue, weak evidence, adjacent skill, or true gap — and generate a report with recommended actions.
 - `study-guide.md`: Gather a tracked role's context into a bundle and write an interview study guide.
+- `contacts.md`: Track your professional network — add contacts, update status as relationships progress, build a due-date-sorted contacts tracker. Runs alongside the main lifecycle, not as a numbered stage in it.
 - `debrief.md`: Capture Q&A performance feedback from an interview or practice session — question, answer, sentiment, and a proposed better answer — into `feedback.jsonl`.
 
 ## Why this design?
