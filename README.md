@@ -149,10 +149,11 @@ assistant, or anyone tired of maintaining tracker spreadsheets and resume versio
 
 Running `npm start` builds the tracker, renders a resume, and tracks a role from the fictional
 sample workspace. The interactive HTML tracker (`npm run workspace:tracker -- --workspace
-<dir> --format html`) — searchable, filterable, with summary stat cards — looks like this:
+<dir> --format html`) — searchable, filterable, with summary stat cards, a pipeline funnel, and
+stale-application badges — looks like this:
 
 <p align="center">
-  <img src="docs/images/tracker-html-sample.png" alt="Sample HTML application tracker for the fictional candidate Alex Rivera, showing one tracked role at Northwind Tools with fit, status, and resume link columns" width="820">
+  <img src="docs/images/tracker-html-sample.png" alt="Sample HTML application tracker for the fictional candidate Alex Rivera, showing one tracked role at Northwind Tools with fit, status, resume link, and stale-badge columns, plus a pipeline funnel section above the table" width="820">
 </p>
 
 And the resume `tailor`/`render-resume` produces — a real generated DOCX, evidence-backed and
