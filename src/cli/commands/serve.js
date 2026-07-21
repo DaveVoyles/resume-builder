@@ -18,9 +18,20 @@ const CONTENT_TYPES = {
   ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 };
 
+const DEFAULT_PORT = 4321;
+
 function openInBrowser(url) {
   const opener = process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
   execFile(opener, [url], () => {});
+}
+
+function trackerUrl(port) {
+  return `http://localhost:${port}/tracker.html`;
+}
+
+function resolvePort(rawPort) {
+  const parsed = Number.parseInt(rawPort, 10);
+  return Number.isNaN(parsed) ? DEFAULT_PORT : parsed;
 }
 
 async function run(options) {
@@ -32,8 +43,7 @@ async function run(options) {
     throw new Error(`No outputs/ directory found at ${root} — run build-tracker or tailor first.`);
   }
 
-  const parsedPort = Number.parseInt(options.port, 10);
-  const port = Number.isNaN(parsedPort) ? 4321 : parsedPort;
+  const port = resolvePort(options.port);
 
   const server = http.createServer((req, res) => {
     const requestedPath = decodeURIComponent(req.url.split("?")[0]);
@@ -61,14 +71,16 @@ async function run(options) {
   return new Promise((resolve, reject) => {
     server.on("error", (error) => {
       if (error.code === "EADDRINUSE") {
-        reject(new Error(`Port ${port} is already in use — pass --port <n> to use a different one.`));
+        const wrapped = new Error(`Port ${port} is already in use — pass --port <n> to use a different one.`);
+        wrapped.code = "EADDRINUSE";
+        reject(wrapped);
         return;
       }
       reject(error);
     });
 
     server.listen(port, () => {
-      const url = `http://localhost:${server.address().port}/tracker.html`;
+      const url = trackerUrl(server.address().port);
       console.log(`Serving ${root} at ${url}`);
       console.log("Press Ctrl+C to stop.");
       if (!options.noOpen) {
@@ -79,4 +91,4 @@ async function run(options) {
   });
 }
 
-module.exports = { run, openInBrowser };
+module.exports = { run, openInBrowser, trackerUrl, resolvePort, DEFAULT_PORT };

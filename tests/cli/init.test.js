@@ -168,17 +168,30 @@ test("init does not overwrite an existing tracker.html on re-run (idempotent)", 
   });
 });
 
-test("init attempts to launch the local server by default, unless --noServe is passed", async () => {
+test("init attempts to launch the local server by default, with the workspace/port/noOpen it was given", async () => {
   await withTempWorkspaceAsync(async (workspace) => {
-    let launched = false;
-    await command.run({ workspace }, { serveRunner: async () => { launched = true; }, openInBrowser: () => {} });
-    assert.strictEqual(launched, true, "init should attempt a server launch by default");
-
-    launched = false;
-    await command.run({ workspace, noServe: true }, { serveRunner: async () => { launched = true; }, openInBrowser: () => {} });
-    assert.strictEqual(launched, false, "--noServe should skip the launch attempt entirely");
+    let callArgs = null;
+    await command.run(
+      { workspace, port: "5555", noOpen: true },
+      { serveRunner: async (args) => { callArgs = args; }, openInBrowser: () => {} },
+    );
+    assert.deepEqual(callArgs, { workspace, port: "5555", noOpen: true });
   });
 });
+
+test("--noServe skips the launch attempt entirely", async () => {
+  await withTempWorkspaceAsync(async (workspace) => {
+    let launched = false;
+    await command.run({ workspace, noServe: true }, { serveRunner: async () => { launched = true; }, openInBrowser: () => {} });
+    assert.strictEqual(launched, false);
+  });
+});
+
+function eaddrinuseError(port) {
+  const error = new Error(`Port ${port} is already in use — pass --port <n> to use a different one.`);
+  error.code = "EADDRINUSE";
+  return error;
+}
 
 test("init treats an already-running server on the configured port as success, and still opens the browser", async () => {
   await withTempWorkspaceAsync(async (workspace) => {
@@ -187,7 +200,7 @@ test("init treats an already-running server on the configured port as success, a
       { workspace, port: "5555" },
       {
         serveRunner: async () => {
-          throw new Error("Port 5555 is already in use — pass --port <n> to use a different one.");
+          throw eaddrinuseError(5555);
         },
         openInBrowser: (url) => {
           openedUrl = url;
@@ -198,11 +211,59 @@ test("init treats an already-running server on the configured port as success, a
   });
 });
 
-test("init propagates a launch failure that isn't a port conflict", async () => {
+test("init reusing an already-running server respects --noOpen (no browser tab either)", async () => {
+  await withTempWorkspaceAsync(async (workspace) => {
+    let opened = false;
+    await command.run(
+      { workspace, port: "5555", noOpen: true },
+      { serveRunner: async () => { throw eaddrinuseError(5555); }, openInBrowser: () => { opened = true; } },
+    );
+    assert.strictEqual(opened, false, "--noOpen should suppress the browser open even on the reuse path");
+  });
+});
+
+test("init propagates a launch failure that isn't a port conflict (no .code, or a different code)", async () => {
   await withTempWorkspaceAsync(async (workspace) => {
     await assert.rejects(
       command.run({ workspace }, { serveRunner: async () => { throw new Error("boom"); }, openInBrowser: () => {} }),
       /boom/,
     );
+
+    const wrongCode = new Error("permission denied");
+    wrongCode.code = "EACCES";
+    await assert.rejects(
+      command.run({ workspace }, { serveRunner: async () => { throw wrongCode; }, openInBrowser: () => {} }),
+      /permission denied/,
+    );
+  });
+});
+
+// Integration coverage (no mocks): exercises the real serve.js EADDRINUSE
+// path end-to-end, closing the gap where every test above only verified
+// init.js's reaction to a hand-authored mock error, not the actual error
+// serve.js throws (its message text and .code could drift from the mock
+// and every test above would stay green).
+test("init reuses a real, already-listening serve.js instance on the same port (integration)", async () => {
+  await withTempWorkspaceAsync(async (workspace) => {
+    await command.run({ workspace, noServe: true });
+
+    const realServe = require("../../src/cli/commands/serve");
+    const runningServer = await realServe.run({ workspace, port: "0", noOpen: true });
+    const realPort = runningServer.address().port;
+
+    try {
+      let openedUrl = null;
+      await command.run(
+        { workspace, port: String(realPort) },
+        { serveRunner: realServe.run, openInBrowser: (url) => { openedUrl = url; } },
+      );
+      assert.strictEqual(
+        openedUrl,
+        `http://localhost:${realPort}/tracker.html`,
+        "should detect the real EADDRINUSE, not throw, and open the browser against the already-running instance",
+      );
+    } finally {
+      await new Promise((resolve) => runningServer.close(resolve));
+    }
   });
 });

@@ -15,8 +15,6 @@ const {
   writeTextIfMissing,
 } = require("../../core/workspace");
 
-const DEFAULT_SERVE_PORT = 4321;
-
 function defaultPreferences() {
   return {
     schemaVersion: "1.0",
@@ -100,19 +98,17 @@ async function run(options, { serveRunner = serve.run, openInBrowser = serve.ope
 
   if (options.noServe) return;
 
-  const parsedPort = Number.parseInt(options.port, 10);
-  const port = Number.isNaN(parsedPort) ? DEFAULT_SERVE_PORT : parsedPort;
-
   try {
     await serveRunner({ workspace, port: options.port, noOpen: options.noOpen });
   } catch (error) {
-    if (!/already in use/iu.test(error.message)) throw error;
+    if (error.code !== "EADDRINUSE") throw error;
     // Setup's job is "make sure the candidate sees a result immediately" —
     // a server already running on this port (from a previous setup, or a
     // manually-started `workspace:serve`) already satisfies that, so treat
     // it as success rather than failing the whole `npm run setup` run.
+    const port = serve.resolvePort(options.port);
     console.log(`A server is already running on port ${port} — reusing it.`);
-    if (!options.noOpen) openInBrowser(`http://localhost:${port}/tracker.html`);
+    if (!options.noOpen) openInBrowser(serve.trackerUrl(port));
   }
 }
 
