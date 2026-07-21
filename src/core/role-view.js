@@ -95,8 +95,21 @@ function statusBucket(appliedText) {
   return "other";
 }
 
+// A "not-applied" role with a rendered resume already has everything it
+// needs to submit — a meaningfully more actionable state than a role that
+// hasn't been worked on at all. Lives here (not inlined per-renderer) so
+// every renderer that wants this distinction agrees on its definition;
+// display-only, and independent of statusBucket itself, which stays the
+// stable, closed classification that staleness.js and every renderer
+// already key off of.
+function isReadyToApply(bucket, resume) {
+  return bucket === "not-applied" && Boolean(resume);
+}
+
 function normalizeRole(role) {
   const applied = formatApplied(role);
+  const bucket = statusBucket(applied);
+  const resume = firstNonEmpty(role.resume?.outputPath, role.output?.resume);
   return {
     id: role.id,
     company: role.company,
@@ -106,10 +119,11 @@ function normalizeRole(role) {
     compensationRange: compensationRange(role),
     fit: formatFit(role),
     applied,
-    statusBucket: statusBucket(applied),
+    statusBucket: bucket,
+    readyToApply: isReadyToApply(bucket, resume),
     jobUrl: role.urls?.job,
     applyUrl: role.urls?.apply,
-    resume: firstNonEmpty(role.resume?.outputPath, role.output?.resume),
+    resume,
     coverLetterStatus: role.coverLetter?.status || null,
     notes: formatNotes(role),
     sortKey: `${role.company || ""} ${role.title || role.role || ""} ${role.id || ""}`,
@@ -124,6 +138,7 @@ module.exports = {
   formatFit,
   formatNextAction,
   formatNotes,
+  isReadyToApply,
   normalizeRole,
   statusBucket,
 };
