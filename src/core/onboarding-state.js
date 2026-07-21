@@ -21,6 +21,13 @@ const SECTIONS = [
   { key: "dealBreakers", label: "Constraints and deal breakers" },
 ];
 
+// The three top-level steps around the 7 grill sections in the overall
+// onboarding sequence: setup and ingestion happen before any section, the
+// first tracked role happens after all of them.
+const SETUP_STEP = { key: "setupComplete", label: "Workspace created" };
+const INGEST_STEP = { key: "materialIngested", label: "Material ingested" };
+const FINAL_STEP = { key: "firstRoleAdded", label: "First role added" };
+
 function defaultOnboardingState() {
   return {
     schemaVersion: "1.0",
@@ -35,10 +42,23 @@ function readOnboardingState(path) {
   return readJson(path, defaultOnboardingState());
 }
 
+// The single canonical list of every onboarding step, in order, with its
+// done/pending status — isOnboardingComplete() and every checklist renderer
+// (src/renderers/html-tracker.js) both derive from this one list rather than
+// each hand-maintaining their own copy of "which fields count."
+function onboardingSteps(onboardingState) {
+  const state = onboardingState || {};
+  const sections = state.sections || {};
+  return [
+    { label: SETUP_STEP.label, done: Boolean(state[SETUP_STEP.key]) },
+    { label: INGEST_STEP.label, done: Boolean(state[INGEST_STEP.key]) },
+    ...SECTIONS.map((section) => ({ label: section.label, done: Boolean(sections[section.key]) })),
+    { label: FINAL_STEP.label, done: Boolean(state[FINAL_STEP.key]) },
+  ];
+}
+
 function isOnboardingComplete(state) {
-  return Boolean(
-    state.setupComplete && state.materialIngested && SECTIONS.every((section) => state.sections?.[section.key]) && state.firstRoleAdded,
-  );
+  return onboardingSteps(state).every((step) => step.done);
 }
 
 // Merges a partial update into the existing (or default) state and writes
@@ -64,6 +84,7 @@ module.exports = {
   SECTIONS,
   defaultOnboardingState,
   isOnboardingComplete,
+  onboardingSteps,
   readOnboardingState,
   updateOnboardingState,
 };

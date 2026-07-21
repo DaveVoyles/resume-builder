@@ -3,7 +3,8 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const vm = require("node:vm");
-const { renderHtmlTracker } = require("../../src/renderers/html-tracker");
+const { renderHtmlTracker, renderOnboardingChecklist } = require("../../src/renderers/html-tracker");
+const { defaultOnboardingState, isOnboardingComplete } = require("../../src/core/onboarding-state");
 
 // Tests for the HTML tracker renderer, including the Cover Letter column.
 
@@ -782,4 +783,112 @@ test("pollForTrackerChanges ignores an overlapping poll started while one is alr
   resolveFirstFetch();
   await firstPoll;
   assert.strictEqual(reloaded, false, "a single in-flight poll establishing the baseline must not itself trigger a reload");
+});
+
+// Coverage for design plan 0006 D5 (issue #132): the onboarding checklist
+// view, and the dashboard/checklist toggle in renderHtmlTracker.
+
+test("renderOnboardingChecklist covers all 10 steps in order and counts done accurately", () => {
+  const state = defaultOnboardingState();
+  state.materialIngested = true;
+  state.sections.basicInfo = true;
+  state.sections.workHistory = true;
+
+  const html = renderOnboardingChecklist(state);
+
+  // setupComplete is already true in defaultOnboardingState() (setup itself
+  // just ran) — so this is 4, not 3: setup + materialIngested + 2 sections.
+  assert.match(html, /Onboarding: 4 of 10 steps/);
+  ["Workspace created", "Material ingested", "Basic information", "Work history", "Education", "Target role", "Location and work mode", "Salary and compensation", "Constraints and deal breakers", "First role added"].forEach(
+    (label) => assert.match(html, new RegExp(label)),
+  );
+});
+
+test("renderOnboardingChecklist shows 1 of 10 for the fresh default state (setup itself already counts as done)", () => {
+  const html = renderOnboardingChecklist(defaultOnboardingState());
+  assert.match(html, /Onboarding: 1 of 10 steps/);
+  assert.match(html, /onboarding-check-done">✓<\/span><span class="onboarding-item-label">Workspace created/);
+});
+
+test("renderOnboardingChecklist shows 10 of 10 once every step is complete", () => {
+  const state = defaultOnboardingState();
+  state.materialIngested = true;
+  state.firstRoleAdded = true;
+  Object.keys(state.sections).forEach((key) => { state.sections[key] = true; });
+  const html = renderOnboardingChecklist(state);
+  assert.match(html, /Onboarding: 10 of 10 steps/);
+});
+
+test("renderOnboardingChecklist tolerates a missing sections object entirely", () => {
+  assert.doesNotThrow(() => renderOnboardingChecklist({}));
+  assert.match(renderOnboardingChecklist({}), /Onboarding: 0 of 10 steps/);
+});
+
+test("renderHtmlTracker without onboardingState renders exactly as before — checklist hidden, no pill", () => {
+  const html = renderHtmlTracker([]);
+  assert.match(html, /class="onboarding-section" style="display:none"/, "with no onboardingState passed, the checklist section must stay hidden");
+  assert.doesNotMatch(html, /Onboarding complete/);
+  assert.match(html, /class="dashboard-section" style="display:block"/);
+});
+
+test("renderHtmlTracker shows the checklist (and hides the dashboard) while onboarding is incomplete", () => {
+  const state = defaultOnboardingState();
+  state.materialIngested = true;
+  const html = renderHtmlTracker([], { onboardingState: state });
+
+  assert.match(html, /class="onboarding-section" style="display:block"/);
+  assert.match(html, /class="dashboard-section" style="display:none"/);
+  assert.match(html, /Onboarding: 2 of 10 steps/);
+  assert.doesNotMatch(html, /Onboarding complete/);
+});
+
+test("renderHtmlTracker shows the normal dashboard plus a completion pill once onboarding is done", () => {
+  const state = defaultOnboardingState();
+  state.materialIngested = true;
+  state.firstRoleAdded = true;
+  Object.keys(state.sections).forEach((key) => { state.sections[key] = true; });
+  const html = renderHtmlTracker([], { onboardingState: state });
+
+  assert.match(html, /class="onboarding-section" style="display:none"/);
+  assert.match(html, /class="dashboard-section" style="display:block"/);
+  assert.match(html, /onboarding-progress-pill-complete">✓ Onboarding complete/);
+});
+
+test("renderHtmlTracker's dashboard script still works normally when the checklist is showing (table markup stays present, just hidden)", () => {
+  const roles = [{ id: "role-001", company: "Fabrikam AI", title: "PM", application: { status: "applied" } }];
+  const state = defaultOnboardingState();
+  const html = renderHtmlTracker(roles, { onboardingState: state });
+  const { tbody } = runClientScript(html);
+  assert.match(tbody.innerHTML, /Fabrikam AI/, "the dashboard's own script must still render rows into the (hidden) table, not crash on a missing element");
+});
+
+test("renderHtmlTracker's filter buttons still work normally when the checklist is showing, not just when it's hidden", () => {
+  const roles = [
+    { id: "role-001", company: "Fabrikam AI", title: "PM", application: { status: "applied" } },
+    { id: "role-002", company: "Contoso", title: "Engineer" },
+  ];
+  const state = defaultOnboardingState();
+  const html = renderHtmlTracker(roles, { onboardingState: state });
+  const { tbody, filterButtons } = runClientScript(html);
+
+  clickFilter(filterButtons, "applied");
+
+  assert.match(tbody.innerHTML, /Fabrikam AI/);
+  assert.doesNotMatch(tbody.innerHTML, /Contoso/, "filtering must still correctly narrow rows even while the checklist container is the visible one");
+});
+
+test("renderOnboardingChecklist treats a sections object missing some keys entirely the same as those keys being false", () => {
+  const html = renderOnboardingChecklist({ setupComplete: true, sections: { workHistory: true } });
+  assert.match(html, /Onboarding: 2 of 10 steps/);
+  assert.match(html, /onboarding-check-pending"><\/span><span class="onboarding-item-label onboarding-item-label-pending">Education/);
+});
+
+test("isOnboardingComplete ignores unrecognized extra keys in the state object", () => {
+  const state = defaultOnboardingState();
+  state.materialIngested = true;
+  state.firstRoleAdded = true;
+  Object.keys(state.sections).forEach((key) => { state.sections[key] = true; });
+  state.someFutureFieldNotYetKnownToThisVersion = false;
+
+  assert.strictEqual(isOnboardingComplete(state), true, "an unknown extra key must not block completion — only the recognized steps matter");
 });

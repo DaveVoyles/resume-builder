@@ -38,7 +38,7 @@ When ingested material already answers the question, skip the blind "Ask" and go
 
 ## Onboarding state
 
-Each section below ends with a **Mark progress** step, once its answers are confirmed: update `candidate/.onboarding-state.json` and rebuild the tracker, so it stays current with the interview as it goes (the tracker page's visual onboarding checklist that reads this file ships in a follow-up). Create the file with this shape the first time a Mark progress step needs it (it's also created empty — every step pending — by `npm run setup`, so it will usually already exist):
+Each section below ends with a **Mark progress** step, once its answers are confirmed: update `candidate/.onboarding-state.json` and rebuild the tracker, so the tracker page's visual onboarding checklist reflects the interview as it goes. Create the file with this shape the first time a Mark progress step needs it (it's also created empty — every step pending — by `npm run setup`, so it will usually already exist):
 
 ```json
 {
@@ -100,7 +100,7 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
   - `confidence`: "source-text"
   - `category`: "other"
 
-**Mark progress:** create `candidate/.onboarding-state.json` from the template in [Onboarding state](#onboarding-state) if it doesn't exist yet, set `sections.basicInfo` to `true`, then run `npm run workspace:tracker:html -- --workspace candidate` so the tracker rebuild stays current with this progress (the visual onboarding checklist itself ships in a follow-up).
+**Mark progress:** create `candidate/.onboarding-state.json` from the template in [Onboarding state](#onboarding-state) if it doesn't exist yet, set `sections.basicInfo` to `true`, then run `npm run workspace:tracker:html -- --workspace candidate` so the checklist on the tracker page reflects it immediately.
 
 ---
 
@@ -187,7 +187,7 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
 - The candidate says they've shared all relevant roles, or
 - You've captured the most recent 5–10 years (adjust for the candidate's preferences).
 
-**Mark progress:** set `sections.workHistory` to `true` in `candidate/.onboarding-state.json`, then run `npm run workspace:tracker:html -- --workspace candidate` so the tracker rebuild stays current with this progress (the visual onboarding checklist itself ships in a follow-up).
+**Mark progress:** set `sections.workHistory` to `true` in `candidate/.onboarding-state.json`, then run `npm run workspace:tracker:html -- --workspace candidate` so the checklist on the tracker page reflects it immediately.
 
 ---
 
@@ -231,7 +231,7 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
 
 **Repeat** for each additional degree or credential the candidate wants included.
 
-**Mark progress:** set `sections.education` to `true` in `candidate/.onboarding-state.json`, then run `npm run workspace:tracker:html -- --workspace candidate` so the tracker rebuild stays current with this progress (the visual onboarding checklist itself ships in a follow-up).
+**Mark progress:** set `sections.education` to `true` in `candidate/.onboarding-state.json`, then run `npm run workspace:tracker:html -- --workspace candidate` so the checklist on the tracker page reflects it immediately.
 
 ---
 
@@ -277,7 +277,7 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
   - `name`: Industry or domain name
   - `priority`: `"must"`, `"should"`, `"could"`, or `"avoid"`
 
-**Mark progress:** set `sections.targetRole` to `true` in `candidate/.onboarding-state.json`, then run `npm run workspace:tracker:html -- --workspace candidate` so the tracker rebuild stays current with this progress (the visual onboarding checklist itself ships in a follow-up).
+**Mark progress:** set `sections.targetRole` to `true` in `candidate/.onboarding-state.json`, then run `npm run workspace:tracker:html -- --workspace candidate` so the checklist on the tracker page reflects it immediately.
 
 ---
 
@@ -305,7 +305,7 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
   - `excludedRegions`: Array of avoided locations, or `[]` if none — this is a flat set with no ranking, since exclusions don't need a "how much I don't want it" order
   - `priority`: `"must"`, `"should"`, or `"could"`
 
-**Mark progress:** set `sections.location` to `true` in `candidate/.onboarding-state.json`, then run `npm run workspace:tracker:html -- --workspace candidate` so the tracker rebuild stays current with this progress (the visual onboarding checklist itself ships in a follow-up).
+**Mark progress:** set `sections.location` to `true` in `candidate/.onboarding-state.json`, then run `npm run workspace:tracker:html -- --workspace candidate` so the checklist on the tracker page reflects it immediately.
 
 ---
 
@@ -338,7 +338,7 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
 
 **Example:** If the candidate says "$300k total is my ideal, and I'm flexible on how base, bonus, and equity mix — but I wouldn't go below $250k total," that's a total-comp floor, not a base floor. Write `totalTarget: 300000` and `totalMinimum: 250000`, and omit `baseMinimum` rather than repurposing it to hold the $250k figure.
 
-**Mark progress:** set `sections.compensation` to `true` in `candidate/.onboarding-state.json`, then run `npm run workspace:tracker:html -- --workspace candidate` so the tracker rebuild stays current with this progress (the visual onboarding checklist itself ships in a follow-up).
+**Mark progress:** set `sections.compensation` to `true` in `candidate/.onboarding-state.json`, then run `npm run workspace:tracker:html -- --workspace candidate` so the checklist on the tracker page reflects it immediately.
 
 ---
 
@@ -365,7 +365,7 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
   - `text`: The deal breaker condition
   - `priority`: `"must"`
 
-**Mark progress:** set `sections.dealBreakers` to `true` in `candidate/.onboarding-state.json` (create the file from the template in [Onboarding state](#onboarding-state) if it doesn't exist yet), then run `npm run workspace:tracker:html -- --workspace candidate` so the tracker rebuild stays current with this progress (the visual onboarding checklist itself ships in a follow-up).
+**Mark progress:** set `sections.dealBreakers` to `true` in `candidate/.onboarding-state.json` (create the file from the template in [Onboarding state](#onboarding-state) if it doesn't exist yet), then run `npm run workspace:tracker:html -- --workspace candidate` so the checklist on the tracker page reflects it immediately.
 
 ---
 

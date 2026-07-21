@@ -15,7 +15,7 @@ Before you start:
 
 Work through these four checks, in order. The first one that's true tells you which state the candidate is in — stop there.
 
-`candidate/.onboarding-state.json` (design plan 0006 D1) mechanically backs these same states as onboarding progresses — `materialIngested` tracks check 3, and `sections` tracks check 4's finer-grained progress through [`grill.md`](grill.md)'s seven sections. A future deliverable renders this as a visual checklist on the tracker page; for now it's a mechanical record only. It doesn't replace the manual checks above; read it as a shortcut when it's present, but fall back to the checks themselves for any workspace created before this file existed.
+`candidate/.onboarding-state.json` (design plan 0006 D1) mechanically backs these same states as onboarding progresses — `materialIngested` tracks check 3, and `sections` tracks check 4's finer-grained progress through [`grill.md`](grill.md)'s seven sections — and renders as a visual checklist on the tracker page itself while onboarding is incomplete (design plan 0006 D5), collapsing to a small "✓ Onboarding complete" pill once it's done. It doesn't replace the manual checks above; read it as a shortcut when it's present, but fall back to the checks themselves for any workspace created before this file existed.
 
 ### 1. Does the workspace exist?
 

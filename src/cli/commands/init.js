@@ -10,6 +10,7 @@ const { defaultOnboardingState } = require("../../core/onboarding-state");
 const serve = require("./serve");
 const {
   ensureDir,
+  readJson,
   resolveWorkspace,
   workspacePaths,
   writeJsonIfMissing,
@@ -92,7 +93,13 @@ async function run(options, { serveRunner = serve.run, openInBrowser = serve.ope
   writeTextIfMissing(path.join(paths.notes, "intake.md"), intakeText, force);
   writeTextIfMissing(paths.links, linksTemplate(), force);
   writeTextIfMissing(paths.tracker, renderTracker([]), force);
-  writeTextIfMissing(paths.htmlTracker, renderHtmlTracker([]), force);
+  // Read back rather than assuming defaults: --force resets both files
+  // together (consistent with every other pair here), but without --force,
+  // a tracker.html that's missing for some other reason (manually deleted,
+  // etc.) still renders against whatever real progress the untouched
+  // onboarding-state file already has, instead of a wrong "all pending" view.
+  const onboardingState = readJson(paths.onboardingState, defaultOnboardingState());
+  writeTextIfMissing(paths.htmlTracker, renderHtmlTracker([], { onboardingState }), force);
   writeTextIfMissing(paths.similarRoles, renderSimilarRoles({ searchBriefs: [], recommendations: [], duplicateCandidates: [] }), force);
   writeTextIfMissing(paths.gitignore, gitignoreText(), force);
 
