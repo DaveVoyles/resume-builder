@@ -17,10 +17,19 @@ function defaultPreferences() {
   return {
     schemaVersion: "1.0",
     roleTargets: [],
-    locations: [],
-    compensation: "",
-    workAuthorization: "",
-    remotePreference: "",
+    locations: {
+      workModes: [],
+      preferredRegions: [],
+      excludedRegions: [],
+      priority: "should",
+    },
+    compensation: {
+      currency: "USD",
+      baseMinimum: null,
+      totalTarget: null,
+      publiclyShare: false,
+    },
+    dealBreakers: [],
     updatedAt: new Date().toISOString(),
   };
 }
