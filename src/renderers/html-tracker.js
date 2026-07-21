@@ -611,6 +611,35 @@ function renderHtmlTracker(roles, options = {}) {
 
     searchInput.addEventListener("input", render);
     render();
+
+    // Live reload (design plan 0006 D4, permitted by ADR 0003): polls the
+    // local server's read-only change-detection signal and reloads this
+    // page when tracker.html has been regenerated. A no-op when the page
+    // was opened directly from disk (no fetch/no server to poll) rather
+    // than served — everything above still works unserved, this is purely
+    // additive.
+    let lastKnownTrackerMtime = null;
+    async function pollForTrackerChanges() {
+      if (typeof fetch !== "function") return;
+      try {
+        const response = await fetch("/__status");
+        if (!response.ok) return;
+        const status = await response.json();
+        if (lastKnownTrackerMtime === null) {
+          lastKnownTrackerMtime = status.mtimeMs;
+        } else if (status.mtimeMs !== lastKnownTrackerMtime) {
+          location.reload();
+        }
+      } catch (error) {
+        // No server behind this page (opened directly from disk, or the
+        // server isn't running) — fail silently rather than spamming the
+        // console every poll interval.
+      }
+    }
+    if (typeof setInterval === "function") {
+      pollForTrackerChanges();
+      setInterval(pollForTrackerChanges, 3000);
+    }
   </script>
 </body>
 </html>
