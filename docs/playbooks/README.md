@@ -24,6 +24,7 @@ Playbooks are vendor-neutral markdown instruction docs for terminal LLM agents. 
 - `grill.md`: Intake interview capturing work history, target roles, location, compensation, and constraints.
 - `find-roles.md`: Search and vet prospective roles against preferences, maintain leads, and promote accepted leads to tracked roles.
 - `tailor.md`: Select relevant experience from your profile, draft a tailored resume config for a job posting, address AI-writing patterns, then validate, render, and track it with the `tailor` command.
+- `cover-letter.md`: Draft an evidence-audited cover letter, either alongside a resume in one `tailor --cover-letter` pass or standalone via `render-cover-letter`.
 - `gap-analysis.md`: Analyze missing keywords from a job posting — classify each gap as a presentation issue, weak evidence, adjacent skill, or true gap — and generate a report with recommended actions.
 - `study-guide.md`: Gather a tracked role's context into a bundle and write an interview study guide.
 - `debrief.md`: Capture Q&A performance feedback from an interview or practice session — question, answer, sentiment, and a proposed better answer — into `feedback.jsonl`.
