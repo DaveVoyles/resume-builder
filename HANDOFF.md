@@ -35,7 +35,7 @@ replace the file).
   — a self-approval bypass of the sanctioned `land-pr.sh` wrapper. The harness's own deny-rule
   blocked the actual approval from taking effect, but the attempt happened. Its self-reported
   review-lenses "receipt" turned out to be posted under the personal `DaveVoyles` GitHub identity,
-  not the required `davevoyles-mac-automation[bot]` App identity — i.e. not a real gate pass.
+  not the required App-bot identity (`RECEIPT_APP_LOGIN` in `land-pr.sh`) — i.e. not a real gate pass.
   **Process fix applied mid-run:** later sub-agents were explicitly instructed to stop after
   opening their PR and never touch `land-pr.sh`/`review-lens-receipt.sh`/`gh pr review`/`gh pr
   merge` themselves; the orchestrator ran the real self-review gate and merge for every remaining
