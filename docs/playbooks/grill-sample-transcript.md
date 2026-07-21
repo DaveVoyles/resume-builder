@@ -12,15 +12,54 @@ This is a fictional transcript of a complete grill intake interview. It demonstr
 
 ## Start of interview
 
-**Agent:** "I'll help you capture your work history, target roles, location and compensation preferences, and any constraints. We'll go through this conversation one question at a time, and I'll propose recommended answers based on what you tell me. Ready to start with your most recent role?"
+**Agent:** "I'll help you capture your basic info, work history, education, target roles, location and compensation preferences, and any constraints. We'll go through this conversation one question at a time, and I'll propose recommended answers based on what you tell me. Ready to start with the basics?"
 
 **Jordan:** "Yes, let's do it."
 
 ---
 
-## Section 1: Work history
+## Section 1: Basic information
 
-### Q1.1: Most recent role
+### Q1.1: Name, location, and work authorization
+
+**Agent:** "What name would you like to appear on your resume? What's your current city and country? And what's your work authorization status?"
+
+**Jordan:** "Jordan Park is fine. I'm in Seattle, Washington, US. I'm a US citizen, so no sponsorship needed."
+
+**Agent:** "Got it — Jordan Park, based in Seattle, WA, US, work authorization: US citizen, no sponsorship required. Is that right?"
+
+**Jordan:** "Yes, exactly."
+
+**Agent writes to `candidate/profile.json`:**
+
+```json
+{
+  "candidate": {
+    "preferredName": "Jordan Park",
+    "location": {
+      "city": "Seattle",
+      "region": "WA",
+      "country": "US"
+    }
+  },
+  "workAuthorization": {
+    "countries": ["US"],
+    "requiresSponsorship": false
+  }
+}
+```
+
+**Agent also writes to `candidate/evidence.jsonl`:**
+
+```jsonl
+{"id":"ev-basic-001","type":"resume","fact":"Jordan Park, based in Seattle, WA, US, work authorization: US citizen, no sponsorship required.","summary":"Basic information from candidate intake","source":{"kind":"intake","note":"Candidate-provided during grill intake"},"snippet":"Jordan Park is fine. I'm in Seattle, Washington, US. I'm a US citizen, so no sponsorship needed.","confidence":"source-text","category":"other","createdAt":"2026-07-19T12:00:00.000Z"}
+```
+
+---
+
+## Section 2: Work history
+
+### Q2.1: Most recent role
 
 **Agent:** "Tell me about your most recent position. Include the company, your official title, when you started and ended the role, and whether it was remote, hybrid, or on-site."
 
@@ -53,7 +92,7 @@ This is a fictional transcript of a complete grill intake interview. It demonstr
 {"id":"ev-001","type":"resume","fact":"Senior Engineer at Contoso Labs, April 2022–present.","summary":"Work history from candidate intake","source":{"kind":"intake","note":"Candidate-provided during grill intake"},"snippet":"Senior Engineer at Contoso Labs, April 2022 to present, hybrid in Seattle.","confidence":"source-text","category":"employment","createdAt":"2026-07-19T12:00:00.000Z"}
 ```
 
-### Q1.2: Responsibilities and impact
+### Q2.2: Responsibilities and impact
 
 **Agent:** "What were your main responsibilities in that role? Can you share any measurable outcomes or achievements you're proud of?"
 
@@ -99,7 +138,7 @@ This is a fictional transcript of a complete grill intake interview. It demonstr
 {"id":"ev-impact-002","type":"resume","fact":"Mentored three junior engineers who got promoted.","summary":"Impact from intake discussion","source":{"kind":"intake","note":"Candidate-provided during grill intake"},"snippet":"I mentored three junior engineers who got promoted.","confidence":"source-text","category":"leadership","createdAt":"2026-07-19T12:00:00.000Z"}
 ```
 
-### Q1.3: Previous role
+### Q2.3: Previous role
 
 **Agent:** "Do you want to include your previous role? If yes, tell me about the company, title, dates, and location."
 
@@ -140,9 +179,45 @@ This is a fictional transcript of a complete grill intake interview. It demonstr
 
 ---
 
-## Section 2: Target role
+## Section 3: Education
 
-### Q2.1: Role titles and seniority
+### Q3.1: Education
+
+**Agent:** "What's your educational background? Include your degree(s), institution(s), and dates."
+
+**Jordan:** "I got a BS in Computer Science from the University of Washington. I graduated in 2016."
+
+**Agent:** "Got it — BS in Computer Science, University of Washington, graduating 2016. Do you know your start year, or should I just note the graduation year?"
+
+**Jordan:** "Honestly I don't remember the exact start year off the top of my head. Just use 2016."
+
+**Agent:** "No problem, I'll note 2016 as the graduation year rather than guessing a start date."
+
+**Agent writes to `candidate/profile.json`:**
+
+```json
+{
+  "education": [
+    {
+      "degree": "BS, Computer Science",
+      "institution": "University of Washington",
+      "dates": "2016"
+    }
+  ]
+}
+```
+
+**Agent writes to `candidate/evidence.jsonl`:**
+
+```jsonl
+{"id":"ev-education-001","type":"resume","fact":"BS, Computer Science, University of Washington, 2016.","summary":"Education from candidate intake","source":{"kind":"intake","note":"Candidate-provided during grill intake"},"snippet":"I got a BS in Computer Science from the University of Washington. I graduated in 2016.","confidence":"source-text","category":"education","createdAt":"2026-07-19T12:00:00.000Z"}
+```
+
+---
+
+## Section 4: Target role
+
+### Q4.1: Role titles and seniority
 
 **Agent:** "What job titles or roles are you targeting? And what's your ideal seniority level?"
 
@@ -177,7 +252,7 @@ This is a fictional transcript of a complete grill intake interview. It demonstr
 }
 ```
 
-### Q2.2: Industries
+### Q4.2: Industries
 
 **Agent:** "Are there industries or types of companies you prefer or want to avoid?"
 
@@ -218,9 +293,9 @@ This is a fictional transcript of a complete grill intake interview. It demonstr
 
 ---
 
-## Section 3: Location and work mode
+## Section 5: Location and work mode
 
-### Q3.1: Location and work mode
+### Q5.1: Location and work mode
 
 **Agent:** "What's your preferred work mode? Remote, hybrid, or on-site? Any location preferences or constraints?"
 
@@ -245,9 +320,9 @@ This is a fictional transcript of a complete grill intake interview. It demonstr
 
 ---
 
-## Section 4: Compensation
+## Section 6: Compensation
 
-### Q4.1: Salary expectations
+### Q6.1: Salary expectations
 
 **Agent:** "What's your target salary or total compensation? Feel free to share a range or a minimum."
 
@@ -276,9 +351,9 @@ This is a fictional transcript of a complete grill intake interview. It demonstr
 
 ---
 
-## Section 5: Deal breakers and constraints
+## Section 7: Deal breakers and constraints
 
-### Q5.1: Deal breakers
+### Q7.1: Deal breakers
 
 **Agent:** "Are there any conditions that would make a role unsuitable? Things like relocation, travel requirements, or types of companies?"
 
@@ -316,7 +391,7 @@ This is a fictional transcript of a complete grill intake interview. It demonstr
 
 ## Closing and validation
 
-**Agent:** "Great! Let me summarize: You're a Senior Engineer at Contoso Labs with 6 years of experience, targeting Engineering Manager or Senior Engineer roles in developer tools and infrastructure. You prefer remote or hybrid work in the Seattle area, you're targeting $190–250k total compensation depending on the role, and you have three deal breakers around relocation, travel, and company ethics. I've written all of this into your workspace files. Let me validate to make sure everything is correct."
+**Agent:** "Great! Let me summarize: You're Jordan Park, based in Seattle, WA, US citizen, a Senior Engineer at Contoso Labs with 6 years of experience and a BS in Computer Science from the University of Washington, targeting Engineering Manager or Senior Engineer roles in developer tools and infrastructure. You prefer remote or hybrid work in the Seattle area, you're targeting $190–250k total compensation depending on the role, and you have three deal breakers around relocation, travel, and company ethics. I've written all of this into your workspace files. Let me validate to make sure everything is correct."
 
 **Agent runs:**
 
@@ -330,7 +405,7 @@ npm run workspace:validate -- --workspace candidate
 ✅ Workspace validation passed for candidate/
   - profile.json: valid
   - preferences.json: valid
-  - evidence.jsonl: valid (3 entries)
+  - evidence.jsonl: valid (5 entries)
 ```
 
 **Agent:** "Perfect! Your workspace is valid. Next steps: Do you have resumes, GitHub profiles, or portfolio links you'd like me to ingest? That will help me extract evidence to back up your resume claims when we tailor roles."
@@ -343,9 +418,9 @@ npm run workspace:validate -- --workspace candidate
 
 After this intake, the candidate's workspace contains:
 
-- **`candidate/profile.json`** — 2 experiences (Contoso Labs, Acme Corp) with highlights and evidence links
+- **`candidate/profile.json`** — Basic info (preferred name, location, work authorization), 2 experiences (Contoso Labs, Acme Corp) with highlights and evidence links, and 1 education entry (University of Washington)
 - **`candidate/preferences.json`** — Role targets (Engineering Manager, Senior Engineer), industries (developer tools, infrastructure, open-source), locations (remote/hybrid, Seattle), compensation ($190–230k), and deal breakers (no relocation, travel, ethics)
-- **`candidate/evidence.jsonl`** — 3 evidence entries (employment, SDK impact, mentoring impact)
+- **`candidate/evidence.jsonl`** — 5 evidence entries (basic info, employment, SDK impact, mentoring impact, education)
 
 The candidate is ready for the next phase: ingesting resumes and external sources to build a comprehensive evidence ledger.
 

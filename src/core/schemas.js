@@ -56,10 +56,16 @@ function validateEvidence(entries) {
 
     if (requireObject(entry.source, `${label}.source`, errors)) {
       requireString(entry.source.kind, `${label}.source.kind`, errors);
-      const hasSourcePath = typeof entry.source.path === "string" && entry.source.path.trim() !== "";
-      const hasSourceUrl = typeof entry.source.url === "string" && entry.source.url.trim() !== "";
-      if (!hasSourcePath && !hasSourceUrl) {
-        errors.push(`${label}.source: missing path or url`);
+      // `kind: "intake"` sources are legitimately sourceless-by-file: they're
+      // the candidate's own conversational statement during grill intake
+      // (see docs/playbooks/grill.md), not derived from a document or URL —
+      // there is no path/url to require. See #103.
+      if (entry.source.kind !== "intake") {
+        const hasSourcePath = typeof entry.source.path === "string" && entry.source.path.trim() !== "";
+        const hasSourceUrl = typeof entry.source.url === "string" && entry.source.url.trim() !== "";
+        if (!hasSourcePath && !hasSourceUrl) {
+          errors.push(`${label}.source: missing path or url`);
+        }
       }
     }
 

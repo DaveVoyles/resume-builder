@@ -105,6 +105,51 @@ test("html tracker includes coverLetterStatus in rowsData object", () => {
   assert.match(output, /"coverLetterStatus": "submitted"/);
 });
 
+// #120 — the status badge previously showed a generic bucket label ("Not
+// applied") with the raw free-text status ("Interested") stacked
+// underneath in an unlabeled <small> line, reading as two unrelated pieces
+// of information. The badge now shows the specific status text directly
+// (it's always at least as informative as the bucket label), falling back
+// to the bucket label only when there's no raw status text at all.
+test("html tracker status badge shows the specific status text, not a disconnected bucket label + sub-line", () => {
+  const roles = [
+    {
+      id: "role-001",
+      company: "Fabrikam AI",
+      title: "Product Manager",
+      location: "Remote",
+      application: { status: "interested" },
+    },
+  ];
+
+  const output = renderHtmlTracker(roles);
+
+  // The row-data JSON still carries the raw applied text for the badge label to use.
+  assert.match(output, /"applied": "Interested"/);
+  // The old disconnected two-line markup (bucket label badge + unlabeled <small> raw text) is gone.
+  assert.doesNotMatch(output, /<\/span><br><small>/);
+  // The new label logic prefers the raw status text over the generic bucket label.
+  assert.match(output, /const label = \(role\.applied \|\| ""\)\.trim\(\) \|\| statusLabels\[role\.statusBucket\] \|\| role\.statusBucket;/);
+});
+
+test("html tracker status badge falls back to the bucket label when there's no raw status text", () => {
+  const roles = [
+    {
+      id: "role-001",
+      company: "Fabrikam AI",
+      title: "Product Manager",
+      location: "Remote",
+      // No application/status/applied field at all.
+    },
+  ];
+
+  const output = renderHtmlTracker(roles);
+
+  // rowsData carries an empty applied string, so the client-side fallback to the bucket label applies.
+  assert.match(output, /"applied": ""/);
+  assert.match(output, /"statusBucket": "not-applied"/);
+});
+
 test("html tracker renders a pipeline funnel section with stage counts", () => {
   const roles = [
     {

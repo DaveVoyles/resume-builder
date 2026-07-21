@@ -34,6 +34,7 @@
     "workspace:tailor": "node src/cli/index.js tailor",
     "workspace:set-status": "node src/cli/index.js set-status",
     "workspace:validate": "node src/cli/index.js validate",
+    "workspace:serve": "node src/cli/index.js serve",
     "sample:quickstart": "node scripts/sample-quickstart.js",
     "test": "node --test",
     "check:privacy": "node scripts/check-privacy.js",

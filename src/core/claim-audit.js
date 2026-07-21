@@ -59,15 +59,30 @@ const CLAIM_PATTERNS = [
     // a metric using a noun outside this list (e.g. "50 stakeholders", "3
     // patents") is not extracted as a claim and so isn't audited — see
     // docs/accuracy-and-claims.md's "Evidence-backed claim audit" section.
+    //
+    // The negative lookbehinds exclude common small-number business idioms
+    // ("Big 4 accounts", "Top 5 markets", "Fortune 500 employees") where the
+    // number is part of a proper-noun phrase, not a literal count claim —
+    // see #115. It's a small denylist, not general idiom detection: an
+    // idiom outside this list can still false-positive. The `(?<!\d)`
+    // lookbehind is required alongside it: without it, excluding a match at
+    // "500" in "Fortune 500" lets the regex retry from inside the number
+    // (e.g. matching a bogus "00 employees"), since \d{1,3} still matches
+    // starting mid-number.
     regex:
-      /(\d{1,3}(?:,\d{3})*)\+?\s+(users|customers|clients|subscribers|downloads|installs|requests|transactions|records|employees|engineers|developers|people|teams|projects|releases|deployments|incidents|tickets|integrations|services|servers|containers|repositories|repos|applications|apps|products|countries|markets|languages|reports|dashboards|stakeholders|vendors|partners|patents|awards|certifications|accounts|sites|locations|offices|regions|campaigns|features|hires|candidates|workshops|sessions|milestones|sprints|contracts|initiatives|programs|pipelines|workflows|alerts)\b/giu,
+      /(?<!\d)(?<!\b(?:big|top|fortune|s&p)\s)(\d{1,3}(?:,\d{3})*)\+?\s+(users|customers|clients|subscribers|downloads|installs|requests|transactions|records|employees|engineers|developers|people|teams|projects|releases|deployments|incidents|tickets|integrations|services|servers|containers|repositories|repos|applications|apps|products|countries|markets|languages|reports|dashboards|stakeholders|vendors|partners|patents|awards|certifications|accounts|sites|locations|offices|regions|campaigns|features|hires|candidates|workshops|sessions|milestones|sprints|contracts|initiatives|programs|pipelines|workflows|alerts)\b/giu,
     format: (value, noun) => `${value} ${noun}`,
     hasQualifier: true,
   },
   {
     id: "scaled-count",
     label: "scaled count",
-    regex: /(\d{1,4}(?:\.\d+)?)\+?\s?(million|thousand|billion|mm|bn|[mbk])\b/giu,
+    // The leading negative lookbehind requires the digit not be immediately
+    // preceded by a letter, so a letter-digit-letter idiom like "B2B"/"M2M"
+    // (no surrounding whitespace) can't be misread as a scaled count ("2
+    // B(illion)") — see #111. Legitimate scaled counts always have a space
+    // or start-of-string before the number ("50M users", "$5MM budget").
+    regex: /(?<![A-Za-z])(\d{1,4}(?:\.\d+)?)\+?\s?(million|thousand|billion|mm|bn|[mbk])\b/giu,
     format: (value, scale) => `${value} ${scale}`,
     hasQualifier: true,
   },
@@ -223,8 +238,16 @@ function collectConfigClaimSites(config) {
   });
 
   (config.skills || []).forEach((row, i) => {
-    if (Array.isArray(row) && isNonBlankString(row[1])) {
-      sites.push({ path: `skills[${i}]`, text: row[1], context: row[0] });
+    if (!Array.isArray(row)) return;
+    // Skill names render onto the resume as literal text just like
+    // descriptions do, so they're claim sites in their own right (e.g. a
+    // skill named "Kubernetes expert" with no supporting evidence should be
+    // flagged) — not merely display context for the description. See #110.
+    if (isNonBlankString(row[0])) {
+      sites.push({ path: `skills[${i}].name`, text: row[0] });
+    }
+    if (isNonBlankString(row[1])) {
+      sites.push({ path: `skills[${i}].description`, text: row[1], context: row[0] });
     }
   });
 

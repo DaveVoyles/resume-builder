@@ -63,7 +63,7 @@ npm run workspace:ingest -- --workspace candidate --resume <file> --notes <file>
 
 ## 🎙️ Do the intake interview
 
-Once your material is ingested, your agent should walk you through **grill intake**: a one-question-at-a-time interview covering your work history, target roles, location, and compensation, written into `profile.json`, `preferences.json`, and `evidence.jsonl`. Follow [`docs/playbooks/grill.md`](playbooks/grill.md) — the onboarding playbook hands off to it automatically once you have real material ingested.
+Once your material is ingested, your agent should walk you through **grill intake**: a one-question-at-a-time interview covering your basic information, work history, education, target roles, location, and compensation, written into `profile.json`, `preferences.json`, and `evidence.jsonl`. Follow [`docs/playbooks/grill.md`](playbooks/grill.md) — the onboarding playbook hands off to it automatically once you have real material ingested.
 
 The more you share here, the better the resumes your agent can generate and the more accurately it can match you to roles.
 
