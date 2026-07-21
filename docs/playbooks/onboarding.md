@@ -80,6 +80,8 @@ Then move straight into State 1's messaging below — the candidate is now in th
 - List portfolio, writing, or talk links in `candidate/inputs/links.md`, one per line.
 - Share your GitHub username, and I'll pull your public profile and repos.
 
+Note: LinkedIn profile pages are login-walled, so there's no automatic LinkedIn pull the way there is for GitHub. If you want your LinkedIn history included, either export your data (LinkedIn Settings > 'Get a copy of your data') and drop the relevant parts into your notes file, or add your LinkedIn URL to `links.md` as a reference link — it'll be recorded, just not scraped for content.
+
 Take your time — let me know when you've added something, or ask 'what should I include?' if you want help deciding."
 
 **Wait** for the candidate to confirm they've dropped material, or to ask for help deciding what to include (in which case, point them at the "before you begin" checklist in [Getting started](../getting-started.md) and wait again).
