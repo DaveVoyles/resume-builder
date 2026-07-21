@@ -1067,7 +1067,7 @@ The validator is intentionally lightweight today. These low-risk v1 checks would
 
 ## Keyword list input (`score-keywords`)
 
-A keyword list is a plain JSON array of strings — the required/preferred skills and technologies an agent extracts from a job posting by reading it. **The CLI never fetches or parses posting text itself**; there is no scraper or keyword extractor anywhere in this codebase. `score-keywords --config <resume-config.json> --keywords <keywords.json>` (and `tailor`'s `--keywords` flag, which runs the same scoring inline — see [`tailor.md`](playbooks/tailor.md#step-31a-keyword-coverage-advisory---keywords)) case-insensitive substring-matches each keyword against the resume config's `summary.text`, job `bullets`, and `skills` values, and reports which are present vs. missing. Advisory only — never blocks, never persisted to a role or the tracker.
+A keyword list is a plain JSON array of strings — the required/preferred skills and technologies an agent extracts from a job posting by reading it. **The CLI never fetches or parses posting text itself**; there is no scraper or keyword extractor anywhere in this codebase. `score-keywords --config <resume-config.json> --keywords <keywords.json>` (and `tailor`'s `--keywords` flag, which runs the same scoring inline — see [`tailor.md`](playbooks/tailor.md#step-31a-keyword-coverage-advisory---keywords)) case-insensitive substring-matches each keyword against the resume config's `summary.text`, job `bullets`, and `skills` entries (both the name and the description of each `[name, description]` pair), and reports which are present vs. missing. Advisory only — never blocks, never persisted to a role or the tracker.
 
 ### Shape
 

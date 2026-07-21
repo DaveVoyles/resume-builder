@@ -193,6 +193,56 @@ describe("extractClaims", () => {
     assert.deepEqual(extractClaims(null), []);
     assert.deepEqual(extractClaims(42), []);
   });
+
+  // #111 — "B2B" (and similarly-shaped letter-digit-letter idioms) must not
+  // be misread as a scaled count ("2 B(illion)").
+  test("does not treat 'B2B' as a scaled-count claim", () => {
+    const claims = extractClaims("Led a leading B2B SaaS platform team.");
+    assert.deepEqual(claims.filter((c) => c.category === "scaled-count"), []);
+  });
+
+  test("does not treat 'P2P' or 'M2M' as scaled-count claims", () => {
+    assert.deepEqual(
+      extractClaims("Built a P2P payments network.").filter((c) => c.category === "scaled-count"),
+      [],
+    );
+    assert.deepEqual(
+      extractClaims("Shipped M2M telemetry firmware.").filter((c) => c.category === "scaled-count"),
+      [],
+    );
+  });
+
+  test("still finds a scaled-count claim with a real space before the shorthand unit", () => {
+    const claims = extractClaims("Reached 50M users worldwide.");
+    assert.equal(claims.length, 1);
+    assert.equal(claims[0].category, "scaled-count");
+    assert.equal(claims[0].scale, "million");
+  });
+
+  // #115 — small-number business idioms ("Big 4", "Top 5", "Fortune 500")
+  // must not be misread as literal counted-noun claims.
+  test("does not treat 'Big 4 accounts' as a counted-noun claim", () => {
+    const claims = extractClaims("Managed relationships across Big 4 accounts.");
+    assert.deepEqual(claims.filter((c) => c.category === "counted-noun"), []);
+  });
+
+  test("does not treat 'Top 5 markets' as a counted-noun claim", () => {
+    const claims = extractClaims("Expanded presence in Top 5 markets this year.");
+    assert.deepEqual(claims.filter((c) => c.category === "counted-noun"), []);
+  });
+
+  test("does not treat 'Fortune 500 employees' as a counted-noun claim", () => {
+    const claims = extractClaims("Presented to Fortune 500 employees at the summit.");
+    assert.deepEqual(claims.filter((c) => c.category === "counted-noun"), []);
+  });
+
+  test("still finds a counted-noun claim for a literal count that isn't an idiom", () => {
+    const claims = extractClaims("Managed 4 accounts across the region.");
+    assert.equal(claims.length, 1);
+    assert.equal(claims[0].category, "counted-noun");
+    assert.equal(claims[0].value, "4");
+    assert.equal(claims[0].qualifier, "accounts");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -357,6 +407,21 @@ describe("auditResumeConfig — unsupported-claim fail", () => {
     const result = auditResumeConfig(config, evidence);
     assert.equal(result.errors.length, 1);
     assert.match(result.errors[0], /skills\[0\]/);
+    assert.match(result.errors[0], /35%/);
+  });
+
+  // #110 — a skill *name* (not just its description) renders onto the
+  // resume verbatim, so a numeric claim baked into the name itself must be
+  // audited too.
+  test("flags a claim inside a skill name, not just its description", () => {
+    const config = resumeConfig({
+      skills: [["Cut costs by 35% year over year", "Cost optimization"]],
+    });
+    const evidence = healthyLedger();
+
+    const result = auditResumeConfig(config, evidence);
+    assert.equal(result.errors.length, 1);
+    assert.match(result.errors[0], /skills\[0\]\.name/);
     assert.match(result.errors[0], /35%/);
   });
 

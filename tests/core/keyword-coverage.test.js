@@ -266,6 +266,23 @@ describe("scoreKeywordCoverage", () => {
       assert.deepEqual(result.present, ["React"]);
     });
 
+    // #110 — a skill's name column renders onto the resume verbatim, so a
+    // keyword matching the name (not just the description) is a real match.
+    test("matches a keyword found only in a skill's name, not its description", () => {
+      const config = {
+        company: "Test",
+        candidate: { name: "Test", contact: [{ text: "Test" }] },
+        summary: { text: "Program leader." },
+        experienceSections: [],
+        skills: [["Enterprise program management", "Roadmaps, stakeholder alignment"]],
+      };
+      const keywords = ["program management"];
+      const result = scoreKeywordCoverage(keywords, config);
+
+      assert.equal(result.percent, 100);
+      assert.deepEqual(result.present, ["program management"]);
+    });
+
     test("ignores skills with missing second element", () => {
       const config = {
         company: "Test",
