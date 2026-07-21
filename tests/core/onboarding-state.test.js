@@ -9,6 +9,7 @@ const {
   SECTIONS,
   defaultOnboardingState,
   isOnboardingComplete,
+  onboardingSteps,
   readOnboardingState,
   updateOnboardingState,
 } = require("../../src/core/onboarding-state");
@@ -69,6 +70,46 @@ describe("isOnboardingComplete", () => {
     state.firstRoleAdded = true;
     SECTIONS.forEach(({ key }) => { state.sections[key] = true; });
     assert.strictEqual(isOnboardingComplete(state), true);
+  });
+
+  test("ignores unrecognized extra keys in the state object", () => {
+    const state = defaultOnboardingState();
+    state.materialIngested = true;
+    state.firstRoleAdded = true;
+    SECTIONS.forEach(({ key }) => { state.sections[key] = true; });
+    state.someFutureFieldNotYetKnownToThisVersion = false;
+    assert.strictEqual(isOnboardingComplete(state), true);
+  });
+});
+
+// design plan 0006 D5 (issue #132): the single canonical step list every
+// checklist renderer AND isOnboardingComplete() itself derive from.
+describe("onboardingSteps", () => {
+  test("produces exactly 10 steps in order: setup, material, 7 sections, first role", () => {
+    const steps = onboardingSteps(defaultOnboardingState());
+    assert.strictEqual(steps.length, 10);
+    assert.deepEqual(
+      steps.map((s) => s.label),
+      ["Workspace created", "Material ingested", ...SECTIONS.map((s) => s.label), "First role added"],
+    );
+  });
+
+  test("isOnboardingComplete is exactly 'every step in onboardingSteps is done' — not a separately-maintained check", () => {
+    const state = defaultOnboardingState();
+    state.materialIngested = true;
+    state.sections.basicInfo = true;
+    // Deliberately NOT complete — proves isOnboardingComplete tracks
+    // onboardingSteps()'s own done flags rather than a hand-duplicated list
+    // that could drift from it.
+    assert.strictEqual(isOnboardingComplete(state), onboardingSteps(state).every((step) => step.done));
+    assert.strictEqual(isOnboardingComplete(state), false);
+  });
+
+  test("tolerates undefined/null/{} onboardingState without throwing", () => {
+    assert.doesNotThrow(() => onboardingSteps(undefined));
+    assert.doesNotThrow(() => onboardingSteps(null));
+    assert.doesNotThrow(() => onboardingSteps({}));
+    assert.strictEqual(onboardingSteps({}).filter((s) => s.done).length, 0);
   });
 });
 

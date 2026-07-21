@@ -23,7 +23,17 @@ function run(options) {
     const title = options.title || (candidateName ? `${candidateName} - Application Tracker` : "Application Tracker");
     // Optional, same as preferences.stalenessThresholds above — older
     // workspaces created before design plan 0006 render exactly as before.
-    const onboardingState = fs.existsSync(paths.onboardingState) ? readJson(paths.onboardingState) : undefined;
+    // A corrupted onboarding-state.json degrades to "absent" rather than
+    // crashing the whole build — this file's job is building the tracker,
+    // not validating the workspace (that's `validate`'s job).
+    let onboardingState;
+    if (fs.existsSync(paths.onboardingState)) {
+      try {
+        onboardingState = readJson(paths.onboardingState);
+      } catch (error) {
+        console.warn(`Warning: ignoring unreadable .onboarding-state.json (${error.message})`);
+      }
+    }
     writeTextIfMissing(output, renderHtmlTracker(roles, { title, stalenessThresholds, onboardingState }), true);
     console.log(`Built html tracker for ${roles.length} tracked role(s): ${output}`);
     return;

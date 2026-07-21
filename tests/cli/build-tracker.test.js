@@ -62,3 +62,13 @@ test("build-tracker shows the completion pill once .onboarding-state.json report
     assert.match(html, /Onboarding complete/);
   });
 });
+
+test("build-tracker degrades a corrupted .onboarding-state.json to 'absent' instead of crashing", () => {
+  withTempWorkspace(({ workspace, paths }) => {
+    fs.writeFileSync(paths.onboardingState, "{not valid json");
+
+    assert.doesNotThrow(() => command.run({ workspace, format: "html" }));
+    const html = fs.readFileSync(paths.htmlTracker, "utf8");
+    assert.match(html, /class="onboarding-section" style="display:none"/, "an unreadable state file must render the normal dashboard, not crash the build");
+  });
+});

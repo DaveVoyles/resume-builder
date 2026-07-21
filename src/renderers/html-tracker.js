@@ -3,7 +3,7 @@
 const { formatNextAction, normalizeRole } = require("../core/role-view");
 const { computeStaleness, DEFAULT_THRESHOLDS } = require("../core/staleness");
 const { STATUS_ENDPOINT } = require("../core/server-config");
-const { SECTIONS, isOnboardingComplete } = require("../core/onboarding-state");
+const { isOnboardingComplete, onboardingSteps } = require("../core/onboarding-state");
 
 const STATUS_LABELS = {
   applied: "Applied",
@@ -42,22 +42,10 @@ function jsonScriptSafe(value) {
   return JSON.stringify(value, null, 2).replace(/<\/(script)/giu, "<\\/$1");
 }
 
-// Shared, reusable checklist source (design plan 0006 D5, issue #132): both
-// build-tracker and init call renderHtmlTracker with an onboardingState
-// option, so this is the one place that turns that file's raw booleans into
-// an ordered, human-labeled step list — every caller and every test reads
-// the same 10 steps in the same order.
-function onboardingSteps(onboardingState) {
-  const state = onboardingState || {};
-  const sections = state.sections || {};
-  return [
-    { label: "Workspace created", done: Boolean(state.setupComplete) },
-    { label: "Material ingested", done: Boolean(state.materialIngested) },
-    ...SECTIONS.map((section) => ({ label: section.label, done: Boolean(sections[section.key]) })),
-    { label: "First role added", done: Boolean(state.firstRoleAdded) },
-  ];
-}
-
+// design plan 0006 D5, issue #132: both build-tracker and init call
+// renderHtmlTracker with an onboardingState option, so this is the one place
+// that turns onboardingSteps()'s canonical list (src/core/onboarding-state.js
+// — the same list isOnboardingComplete() itself derives from) into markup.
 function renderOnboardingChecklist(onboardingState) {
   const steps = onboardingSteps(onboardingState);
   const doneCount = steps.filter((step) => step.done).length;
@@ -104,9 +92,18 @@ function renderHtmlTracker(roles, options = {}) {
   // caller (and every existing test that doesn't pass it) renders exactly
   // as before, with no checklist and no pill.
   const onboardingState = options.onboardingState;
-  const showChecklist = Boolean(onboardingState) && !isOnboardingComplete(onboardingState);
-  const showCompletePill = Boolean(onboardingState) && isOnboardingComplete(onboardingState);
+  const onboardingComplete = Boolean(onboardingState) && isOnboardingComplete(onboardingState);
+  const showChecklist = Boolean(onboardingState) && !onboardingComplete;
+  const showCompletePill = onboardingComplete;
 
+  // The dashboard markup/data below (stats, funnel, role table + its
+  // embedded JSON) is always computed and rendered into the page, even when
+  // showChecklist hides it via display:none — deliberately, to keep the
+  // existing (tested) client script's DOM queries always resolving, rather
+  // than restructuring it to conditionally omit that markup. Cheap in the
+  // common case (onboarding-incomplete workspaces have few or no roles yet),
+  // and correctness > payload size for a single local candidate's own file.
+  //
   // Pair each source role with its normalized view, then sort both in lockstep
   // so `notesHtml(sortedSourceRoles[index])` below stays aligned with `normalized`.
   const paired = roles.map((role) => ({ role, view: normalizeRole(role) })).sort((a, b) => a.view.sortKey.localeCompare(b.view.sortKey));

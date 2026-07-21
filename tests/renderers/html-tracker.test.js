@@ -4,7 +4,7 @@ const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const vm = require("node:vm");
 const { renderHtmlTracker, renderOnboardingChecklist } = require("../../src/renderers/html-tracker");
-const { defaultOnboardingState } = require("../../src/core/onboarding-state");
+const { defaultOnboardingState, isOnboardingComplete } = require("../../src/core/onboarding-state");
 
 // Tests for the HTML tracker renderer, including the Cover Letter column.
 
@@ -860,4 +860,35 @@ test("renderHtmlTracker's dashboard script still works normally when the checkli
   const html = renderHtmlTracker(roles, { onboardingState: state });
   const { tbody } = runClientScript(html);
   assert.match(tbody.innerHTML, /Fabrikam AI/, "the dashboard's own script must still render rows into the (hidden) table, not crash on a missing element");
+});
+
+test("renderHtmlTracker's filter buttons still work normally when the checklist is showing, not just when it's hidden", () => {
+  const roles = [
+    { id: "role-001", company: "Fabrikam AI", title: "PM", application: { status: "applied" } },
+    { id: "role-002", company: "Contoso", title: "Engineer" },
+  ];
+  const state = defaultOnboardingState();
+  const html = renderHtmlTracker(roles, { onboardingState: state });
+  const { tbody, filterButtons } = runClientScript(html);
+
+  clickFilter(filterButtons, "applied");
+
+  assert.match(tbody.innerHTML, /Fabrikam AI/);
+  assert.doesNotMatch(tbody.innerHTML, /Contoso/, "filtering must still correctly narrow rows even while the checklist container is the visible one");
+});
+
+test("renderOnboardingChecklist treats a sections object missing some keys entirely the same as those keys being false", () => {
+  const html = renderOnboardingChecklist({ setupComplete: true, sections: { workHistory: true } });
+  assert.match(html, /Onboarding: 2 of 10 steps/);
+  assert.match(html, /onboarding-check-pending"><\/span><span class="onboarding-item-label onboarding-item-label-pending">Education/);
+});
+
+test("isOnboardingComplete ignores unrecognized extra keys in the state object", () => {
+  const state = defaultOnboardingState();
+  state.materialIngested = true;
+  state.firstRoleAdded = true;
+  Object.keys(state.sections).forEach((key) => { state.sections[key] = true; });
+  state.someFutureFieldNotYetKnownToThisVersion = false;
+
+  assert.strictEqual(isOnboardingComplete(state), true, "an unknown extra key must not block completion — only the recognized steps matter");
 });
