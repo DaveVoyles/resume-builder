@@ -5,10 +5,15 @@ const path = require("path");
 const { execFileSync } = require("child_process");
 const { hash } = require("../core/ids");
 
-function xmlToText(xml) {
+// Strips OOXML markup down to plain text. DOCX (WordprocessingML) and PPTX
+// (DrawingML) use different tag vocabularies for the same two constructs —
+// an explicit tab and a paragraph/line boundary — so those two tags are
+// parameterized; everything else (generic tag stripping, entity decoding,
+// whitespace collapsing) is identical between formats.
+function ooxmlToText(xml, { tabTag, paragraphCloseTag }) {
   return xml
-    .replace(/<w:tab\/>/gu, "\t")
-    .replace(/<\/w:p>/gu, "\n")
+    .replace(new RegExp(`<${tabTag}\\s*/>`, "gu"), "\t")
+    .replace(new RegExp(`<${paragraphCloseTag}>`, "gu"), "\n")
     .replace(/<[^>]+>/gu, " ")
     .replace(/&amp;/gu, "&")
     .replace(/&lt;/gu, "<")
@@ -20,24 +25,12 @@ function xmlToText(xml) {
     .trim();
 }
 
-// PPTX slide XML (DrawingML) uses a different tag vocabulary than DOCX's
-// WordprocessingML: text runs live in <a:t>, paragraphs are <a:p>, and
-// explicit line breaks are <a:br/> rather than <w:tab/>. Same
-// strip-everything-but-text approach as xmlToText, adapted to those tags.
+function xmlToText(xml) {
+  return ooxmlToText(xml, { tabTag: "w:tab", paragraphCloseTag: "/w:p" });
+}
+
 function pptxXmlToText(xml) {
-  return xml
-    .replace(/<a:tab\/>/gu, "\t")
-    .replace(/<a:br\s*\/>/gu, "\n")
-    .replace(/<\/a:p>/gu, "\n")
-    .replace(/<[^>]+>/gu, " ")
-    .replace(/&amp;/gu, "&")
-    .replace(/&lt;/gu, "<")
-    .replace(/&gt;/gu, ">")
-    .replace(/&quot;/gu, "\"")
-    .replace(/&#39;/gu, "'")
-    .replace(/[ \t]+/gu, " ")
-    .replace(/\n\s+/gu, "\n")
-    .trim();
+  return ooxmlToText(xml, { tabTag: "a:tab", paragraphCloseTag: "/a:p" });
 }
 
 // CDFV2 (Compound File Binary Format) magic bytes. Encrypted/IRM-protected
@@ -59,14 +52,21 @@ function isCdfv2Compound(file) {
   }
 }
 
+// Throws a branded error if `file` is an encrypted/IRM-protected compound
+// file rather than a real OOXML zip. Shared by every OOXML-based reader
+// (currently .docx and .pptx) so the check and error shape can't drift
+// between formats.
+function assertNotEncrypted(file, encryptedCode) {
+  if (!isCdfv2Compound(file)) return;
+  const error = new Error(
+    "appears to be encrypted/IRM-protected (CDFV2 compound file signature detected, not a valid OOXML zip)",
+  );
+  error.code = encryptedCode;
+  throw error;
+}
+
 function readDocx(file) {
-  if (isCdfv2Compound(file)) {
-    const error = new Error(
-      "appears to be encrypted/IRM-protected (CDFV2 compound file signature detected, not a valid OOXML zip)",
-    );
-    error.code = "DOCX_ENCRYPTED_OR_IRM";
-    throw error;
-  }
+  assertNotEncrypted(file, "DOCX_ENCRYPTED_OR_IRM");
   const xml = execFileSync("unzip", ["-p", file, "word/document.xml"], {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "ignore"],
@@ -97,13 +97,7 @@ function listPptxSlideParts(file) {
 function readPptx(file) {
   // PPTX is, like DOCX, an OOXML zip — the same CDFV2 compound-file check
   // used for encrypted/IRM-protected .docx applies here.
-  if (isCdfv2Compound(file)) {
-    const error = new Error(
-      "appears to be encrypted/IRM-protected (CDFV2 compound file signature detected, not a valid OOXML zip)",
-    );
-    error.code = "PPTX_ENCRYPTED_OR_IRM";
-    throw error;
-  }
+  assertNotEncrypted(file, "PPTX_ENCRYPTED_OR_IRM");
   const slideParts = listPptxSlideParts(file);
   if (slideParts.length === 0) {
     const error = new Error("no ppt/slides/slideN.xml parts found in archive");
@@ -126,6 +120,39 @@ function readUtf8IfText(file) {
   return buffer.toString("utf8");
 }
 
+// Runs an OOXML reader (readDocx/readPptx) and normalizes every possible
+// outcome into { text, extractionMode, warning }: real extracted text,
+// structurally valid but empty content (e.g. an image-only deck/doc — the
+// same silent-failure shape issue #95 was filed over, so it always gets a
+// warning rather than reading as a normal success), or a caught extraction
+// error. Shared by every OOXML format so the dispatch logic in
+// readTextSource can't drift between formats as more are added.
+function attemptOoxmlExtraction(readFn, file, { label, successMode, encryptedCode, noContentCode }) {
+  try {
+    const text = readFn(file);
+    if (!text) {
+      return {
+        text: "",
+        extractionMode: `${label}-empty`,
+        warning: `no extractable text found in this .${label} file (e.g. image-only content); recorded as metadata-only`,
+      };
+    }
+    return { text, extractionMode: successMode, warning: null };
+  } catch (error) {
+    const reason =
+      error.code === encryptedCode
+        ? "appears to be encrypted/IRM-protected"
+        : noContentCode && error.code === noContentCode
+          ? "a valid archive but no slide content was found"
+          : "corrupt or unsupported";
+    return {
+      text: "",
+      extractionMode: `${label}-metadata-only: ${error.message}`,
+      warning: `could not extract text — ${reason} .${label}; recorded as metadata-only`,
+    };
+  }
+}
+
 function readTextSource(file) {
   const fullPath = path.resolve(file);
   if (!fs.existsSync(fullPath)) throw new Error(`Source file not found: ${file}`);
@@ -138,27 +165,18 @@ function readTextSource(file) {
   let warning = null;
 
   if (extension === ".docx") {
-    try {
-      text = readDocx(fullPath);
-      extractionMode = "docx-document-xml";
-    } catch (error) {
-      extractionMode = `docx-metadata-only: ${error.message}`;
-      warning =
-        error.code === "DOCX_ENCRYPTED_OR_IRM"
-          ? "could not extract text — appears to be encrypted/IRM-protected; recorded as metadata-only"
-          : "could not extract text — corrupt or unsupported .docx; recorded as metadata-only";
-    }
+    ({ text, extractionMode, warning } = attemptOoxmlExtraction(readDocx, fullPath, {
+      label: "docx",
+      successMode: "docx-document-xml",
+      encryptedCode: "DOCX_ENCRYPTED_OR_IRM",
+    }));
   } else if (extension === ".pptx") {
-    try {
-      text = readPptx(fullPath);
-      extractionMode = "pptx-slides-xml";
-    } catch (error) {
-      extractionMode = `pptx-metadata-only: ${error.message}`;
-      warning =
-        error.code === "PPTX_ENCRYPTED_OR_IRM"
-          ? "could not extract text — appears to be encrypted/IRM-protected; recorded as metadata-only"
-          : "could not extract text — corrupt or unsupported .pptx; recorded as metadata-only";
-    }
+    ({ text, extractionMode, warning } = attemptOoxmlExtraction(readPptx, fullPath, {
+      label: "pptx",
+      successMode: "pptx-slides-xml",
+      encryptedCode: "PPTX_ENCRYPTED_OR_IRM",
+      noContentCode: "PPTX_NO_SLIDES",
+    }));
   } else if (extension === ".pdf") {
     // No PDF-parsing dependency exists in this project (and none is added
     // here without a decision to do so) — always record PDFs as
