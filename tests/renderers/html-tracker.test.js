@@ -7,17 +7,6 @@ const { renderHtmlTracker } = require("../../src/renderers/html-tracker");
 
 // Tests for the HTML tracker renderer, including the Cover Letter column.
 
-// Executes the tracker's embedded client-side <script> in a real Node vm
-// sandbox (built-in module, no new dependency) against a minimal DOM stub,
-// so tests can call the actual rendering helpers (companyColor, resumeCell,
-// locationCell, esc, ...) and assert on real computed output — rather than
-// pattern-matching the helpers' own source text, which would pass even if
-// the underlying logic were broken. Top-level `function` declarations in
-// the script become callable properties on the returned context object;
-// top-level `const`/`let` do not (standard JS scoping), so `tbody`/`roles`
-// etc. aren't directly readable here, but the stub objects backing
-// `document.querySelector(...)` are the same references the script mutates,
-// so tbodyStub.innerHTML reflects real output after calling context.render().
 // Builds a stub filter button matching the real markup's
 // `<button data-filter="...">`, capable of storing the click handler
 // render() attaches via addEventListener and actually invoking it — so a
@@ -40,6 +29,17 @@ function makeFilterButtonStub(filterValue, isActive) {
   return stub;
 }
 
+// Executes the tracker's embedded client-side <script> in a real Node vm
+// sandbox (built-in module, no new dependency) against a minimal DOM stub,
+// so tests can call the actual rendering helpers (companyColor, resumeCell,
+// locationCell, esc, ...) and assert on real computed output — rather than
+// pattern-matching the helpers' own source text, which would pass even if
+// the underlying logic were broken. Top-level `function` declarations in
+// the script become callable properties on the returned context object;
+// top-level `const`/`let` do not (standard JS scoping), so `tbody`/`roles`
+// etc. aren't directly readable here, but the stub objects backing
+// `document.querySelector(...)` are the same references the script mutates,
+// so tbodyStub.innerHTML reflects real output after calling context.render().
 function runClientScript(html) {
   const scriptMatch = html.match(/<script>([\s\S]*?)<\/script>/u);
   if (!scriptMatch) throw new Error("runClientScript: no <script> block found in rendered output");
