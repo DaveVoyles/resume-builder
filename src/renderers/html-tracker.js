@@ -455,7 +455,13 @@ function renderHtmlTracker(roles, options = {}) {
       tbody.innerHTML = rows
         .map((role) => {
           const badgeClass = "badge-" + role.statusBucket;
-          const label = statusLabels[role.statusBucket] || role.statusBucket;
+          // Show the specific status text (e.g. "Interested", "Applied
+          // 2026-06-08") when there is one — it's always at least as
+          // informative as the generic bucket label, and showing both
+          // stacked reads as two unrelated pieces of information rather
+          // than one coherent status (see #120). Only fall back to the
+          // bucket label when there's no raw status text to show at all.
+          const label = (role.applied || "").trim() || statusLabels[role.statusBucket] || role.statusBucket;
           return (
             "<tr>" +
             "<td>" + esc(role.company) + "</td>" +
@@ -463,7 +469,7 @@ function renderHtmlTracker(roles, options = {}) {
             "<td>" + esc(role.location) + "</td>" +
             "<td>" + esc(role.compensation || "—") + "</td>" +
             "<td>" + esc(role.fit || "—") + "</td>" +
-            "<td><span class=\\"badge " + badgeClass + "\\">" + esc(label) + "</span><br><small>" + esc(role.applied || "—") + "</small></td>" +
+            "<td><span class=\\"badge " + badgeClass + "\\">" + esc(label) + "</span></td>" +
             "<td>" + linkCell(role) + "</td>" +
             "<td>" + esc(role.resume || "—") + "</td>" +
             "<td>" + esc(role.coverLetterStatus || "—") + "</td>" +
