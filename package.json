@@ -26,6 +26,7 @@
     "workspace:similar": "node src/cli/index.js find-similar",
     "workspace:tracker": "node src/cli/index.js build-tracker",
     "workspace:tracker:html": "node src/cli/index.js build-tracker --format html",
+    "workspace:contacts-tracker": "node src/cli/index.js build-contacts-tracker",
     "workspace:render": "node src/cli/index.js render-resume",
     "workspace:score-keywords": "node src/cli/index.js score-keywords",
     "workspace:gap-report": "node src/cli/index.js gap-report",
