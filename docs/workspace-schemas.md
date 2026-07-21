@@ -401,6 +401,7 @@ The validator flags feedback before output when:
 | `application` | object | `status` (enum above, set by `set-status`), `appliedAt` (date the candidate applied — preserved across later status transitions unless explicitly overridden), referral contact label, and notes. |
 | `fit` | object | Fit level, rationale, matched evidence, and gaps. |
 | `resume` | object | `outputPath` (rendered DOCX path), `configPath` (the resume-config JSON this role was tailored from, set by `tailor` — see below), `status`, and tailored emphasis. |
+| `coverLetter` | object | `configPath` (the cover-letter-config JSON, relative to the workspace), `outputPath` (rendered DOCX path), and `status` — set by `tailor --cover-letter` or standalone `render-cover-letter` (see [Cover letter render config](#cover-letter-render-config-render-cover-letter)). Absent when no cover letter has been generated for this role. |
 | `evidenceMap` | array | Role requirements mapped to evidence IDs. |
 | `nextAction` | object | Next action type, owner, and due date. |
 | `updatedAt` | string | Last update date. |
@@ -757,6 +758,62 @@ This writes `outputs/resumes/<Company>/<file>.docx` and throws a validation erro
 
 `render-resume` only checks schema validity. Before treating a config as ready to send, run `validate` (`npm run workspace:validate -- --workspace <workspace>`) — it additionally runs the evidence-backed claim audit against every config under `resume-configs/`, blocking on any metric claim (a percentage, dollar amount, count, team size, or years of experience) with no supporting `evidence.jsonl` entry. See [Accuracy and claims](accuracy-and-claims.md#evidence-backed-claim-audit-blocking).
 
+## Cover letter render config (`render-cover-letter`)
+
+A cover-letter render config is a schema-validated JSON file, structurally simpler than a resume config since it's just company/candidate identity plus salutation, body paragraphs, and a closing. Validated by `src/core/cover-letter-config.js`; rendered by `src/renderers/docx-cover-letter.js`.
+
+Store per-role cover-letter configs under `<workspace>/cover-letter-configs/<role-slug>.json`. Keep real candidate configs private by default, same as resume configs.
+
+### Required fields
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `company` | string | Company or organization name. Becomes the literal directory name under `outputs/cover-letters/<Company>/`. |
+| `candidate` | object | Candidate identity used for the letterhead. |
+| `candidate.name` | string | Full name. |
+| `candidate.contact` | array | Non-empty array of `{ text, link? }` entries, same shape as the resume config's contact line. |
+| `salutation` | string | e.g. `"Dear Hiring Manager,"`. |
+| `bodyParagraphs` | array | Non-empty array of non-empty paragraph strings. |
+| `closing` | string | e.g. `"Sincerely,"`. |
+
+### Optional fields
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `schemaVersion` | string | Must be `"1.0"` when present. |
+| `outputFileName` | string | File name written under `outputs/cover-letters/<Company>/`. Defaults to `<slug(candidate.name)>-<slug(company)>-cover-letter.docx`. |
+
+### Example (fictional)
+
+```json
+{
+  "schemaVersion": "1.0",
+  "company": "Northwind Tools",
+  "candidate": {
+    "name": "Alex Rivera",
+    "contact": [
+      { "text": "Raleigh, NC" },
+      { "text": "alex.rivera@example.invalid", "link": "mailto:alex.rivera@example.invalid" }
+    ]
+  },
+  "salutation": "Dear Hiring Manager,",
+  "bodyParagraphs": [
+    "I'm writing to express my interest in the Senior Product Manager role at Northwind Tools. Your focus on AI-assisted developer workflows aligns closely with the platform work I've led over the past three years.",
+    "At Contoso Labs, I led launch coordination for an internal developer platform used across multiple product teams — the kind of cross-functional, high-stakes rollout your posting describes.",
+    "I'd welcome the chance to talk through how that experience translates to Northwind Tools' roadmap."
+  ],
+  "closing": "Sincerely,"
+}
+```
+
+Render it on its own with:
+
+```bash
+npm run workspace:render-cover-letter -- --workspace <workspace> --config <workspace>/cover-letter-configs/<role-slug>.json
+```
+
+...or together with a resume in one pass via `tailor --cover-letter <config>` — see [`cover-letter.md`](playbooks/cover-letter.md). Either path writes `outputs/cover-letters/<Company>/<file>.docx` and runs the same evidence-backed claim audit as the resume path (`auditCoverLetterConfig` in `src/core/claim-audit.js`), blocking on any unsupported metric claim in the body paragraphs. Unlike the resume path, this audit is enforced only at render time (`render-cover-letter`/`tailor --cover-letter`) — the standalone `validate` command's claim-audit sweep currently scans `resume-configs/` only, not `cover-letter-configs/`. See [Accuracy and claims](accuracy-and-claims.md#evidence-backed-claim-audit-blocking).
+
 ## Tailor workflow (`tailor`)
 
 `tailor` (design plan 0001, D4) composes `render-resume`'s schema validation, the evidence-backed claim audit (D3), DOCX rendering (D2), and `add-role`/`set-status` (D6/D7) into one command: point it at a drafted resume config and job-posting details, and it validates, audits, renders, and registers a tracked role in a single pass. See [`docs/playbooks/tailor.md`](playbooks/tailor.md) for the full agent workflow.
@@ -768,15 +825,17 @@ npm run workspace:tailor -- --workspace <workspace> \
   --title <role-title>
 ```
 
-`--company` is optional and defaults to the resume config's own `company` field (an explicit `--company` that disagrees with the config's `company` is a hard error, not a silent mismatch). `--applyUrl`, `--location`, `--compensation`, `--fit`, and `--notes` behave the same as they do for `add-role`.
+`--company` is optional and defaults to the resume config's own `company` field (an explicit `--company` that disagrees with the config's `company` is a hard error, not a silent mismatch). `--applyUrl`, `--location`, `--compensation`, `--fit`, and `--notes` behave the same as they do for `add-role`. `--cover-letter <cover-letter-config.json>` is optional — see [`cover-letter.md`](playbooks/cover-letter.md).
 
 `tailor` always:
 
 1. Validates the config against the resume-config schema above (`src/core/resume-config.js`) — blocking, with an itemized error.
 2. Runs the evidence-backed claim audit (`src/core/claim-audit.js`) against the config and `evidence.jsonl` — blocking on any unsupported claim, non-blocking-warns on a thin ledger.
-3. Renders the DOCX via `render-resume`'s own command.
-4. Registers (or finds the existing) tracked role via `add-role`'s own command, then sets `resume.configPath` and `resume.outputPath` on it (relative to the workspace root) so the role carries an explicit link back to the exact config and DOCX it was tailored from — this is also what `study-guide-bundle` (D8) now prefers over its content-matching fallback, when the link is present.
-5. Sets `application.status` to `interested` — the D7 enum's not-yet-applied value (buckets to `not-applied` in the tracker) — via `set-status`, unless the role already has a real `application.status` (a re-run never reverts genuine progress), and rebuilds the tracker.
+3. Runs the [de-AI style lint](style-lint.md) against the resume text — advisory only, never blocks.
+4. Renders the DOCX via `render-resume`'s own command.
+5. If `--cover-letter` was passed: validates and audits the cover-letter config the same way (blocking on an unsupported claim), lints its text, renders its DOCX, and sets `role.coverLetter.configPath`/`outputPath`/`status` (`review-needed`) on the tracked role.
+6. Registers (or finds the existing) tracked role via `add-role`'s own command, then sets `resume.configPath` and `resume.outputPath` on it (relative to the workspace root) so the role carries an explicit link back to the exact config and DOCX it was tailored from — this is also what `study-guide-bundle` (D8) now prefers over its content-matching fallback, when the link is present.
+7. Sets `application.status` to `interested` — the D7 enum's not-yet-applied value (buckets to `not-applied` in the tracker) — via `set-status`, unless the role already has a real `application.status` (a re-run never reverts genuine progress), and rebuilds the tracker.
 
 ## Study guide bundle (`study-guide-bundle`)
 
