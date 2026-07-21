@@ -5,10 +5,10 @@
  * docs/design-plans.md for full context).
  *
  * Walks the same claim-bearing text fields as collectConfigClaimSites
- * (summary, experience bullets, skills) and performs case-insensitive
- * substring matching against a list of target keywords. Returns a coverage
- * report: the percentage of keywords found, plus the lists of present and
- * missing keywords.
+ * (summary, experience bullets, skills — both the name and description of
+ * each skill row) and performs case-insensitive substring matching against a
+ * list of target keywords. Returns a coverage report: the percentage of
+ * keywords found, plus the lists of present and missing keywords.
  *
  * Deliberately no stemming or fuzzy matching — exact substring only.
  * This ensures keywords like "React" match exactly, avoiding false positives
@@ -42,7 +42,15 @@ function collectSearchText(config) {
   });
 
   (config.skills || []).forEach((row) => {
-    if (Array.isArray(row) && isNonBlankString(row[1])) {
+    if (!Array.isArray(row)) return;
+    // Skill names (row[0]) render onto the resume as literal text, so a
+    // keyword matching the name alone (e.g. "program management" against a
+    // skill named "Enterprise program management") is a real, visible match
+    // — not just the description column. See #110.
+    if (isNonBlankString(row[0])) {
+      textParts.push(row[0]);
+    }
+    if (isNonBlankString(row[1])) {
       textParts.push(row[1]);
     }
   });
