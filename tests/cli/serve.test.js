@@ -85,3 +85,59 @@ test("serve blocks path traversal outside the workspace's outputs/ directory", a
     cleanupWorkspace(tmpDir);
   }
 });
+
+// Coverage for design plan 0006 D4 (issue #131): the /__status change-
+// detection endpoint the tracker page's client script polls.
+
+test("serve's /__status endpoint reports tracker.html's real mtime as JSON", async () => {
+  const tmpDir = createFixtureWorkspace();
+  const server = await run({ workspace: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    const expectedMtime = fs.statSync(workspacePaths(tmpDir).htmlTracker).mtimeMs;
+    const response = await get(port, "/__status");
+    assert.equal(response.status, 200);
+    const body = JSON.parse(response.body);
+    assert.strictEqual(body.path, "tracker.html");
+    assert.strictEqual(body.mtimeMs, expectedMtime);
+  } finally {
+    server.close();
+    cleanupWorkspace(tmpDir);
+  }
+});
+
+test("serve's /__status endpoint reflects a real rebuild — mtime actually changes after tracker.html is rewritten", async () => {
+  const tmpDir = createFixtureWorkspace();
+  const server = await run({ workspace: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    const before = JSON.parse((await get(port, "/__status")).body);
+
+    fs.writeFileSync(workspacePaths(tmpDir).htmlTracker, "<html><body>Rebuilt</body></html>");
+    // Force the mtime forward explicitly rather than relying on real clock
+    // elapsed time — some filesystems report mtime at whole-second
+    // resolution, which a fast test run could land within the same tick of.
+    fs.utimesSync(workspacePaths(tmpDir).htmlTracker, new Date(), new Date(Date.now() + 5000));
+
+    const after = JSON.parse((await get(port, "/__status")).body);
+    assert.notStrictEqual(after.mtimeMs, before.mtimeMs, "a real rebuild must produce a different mtime the client can detect");
+  } finally {
+    server.close();
+    cleanupWorkspace(tmpDir);
+  }
+});
+
+test("serve's /__status endpoint reports mtimeMs: null when tracker.html doesn't exist yet, rather than erroring", async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "resume-builder-serve-nohtml-"));
+  ensureDir(workspacePaths(tmpDir).outputs);
+  const server = await run({ workspace: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    const response = await get(port, "/__status");
+    assert.equal(response.status, 200);
+    assert.strictEqual(JSON.parse(response.body).mtimeMs, null);
+  } finally {
+    server.close();
+    cleanupWorkspace(tmpDir);
+  }
+});

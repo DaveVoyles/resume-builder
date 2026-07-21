@@ -5,6 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const { execFile } = require("child_process");
 const { resolveWorkspace, workspacePaths } = require("../../core/workspace");
+const { STATUS_ENDPOINT } = require("../../core/server-config");
 
 const CONTENT_TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -19,6 +20,20 @@ const CONTENT_TYPES = {
 };
 
 const DEFAULT_PORT = 4321;
+
+// Read-only change-detection signal (design plan 0006 D4, permitted by ADR
+// 0003): reports tracker.html's own mtime so the tracker page's embedded
+// client script can poll and reload itself when it changes, without adding
+// any new persistent server-side state or a write endpoint.
+function trackerStatus(root) {
+  let mtimeMs = null;
+  try {
+    mtimeMs = fs.statSync(path.join(root, "tracker.html")).mtimeMs;
+  } catch (error) {
+    // tracker.html doesn't exist yet — reported as null, not an error.
+  }
+  return { path: "tracker.html", mtimeMs };
+}
 
 function openInBrowser(url) {
   const opener = process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
@@ -47,6 +62,13 @@ async function run(options) {
 
   const server = http.createServer((req, res) => {
     const requestedPath = decodeURIComponent(req.url.split("?")[0]);
+
+    if (requestedPath === STATUS_ENDPOINT) {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(trackerStatus(root)));
+      return;
+    }
+
     const relativePath = requestedPath === "/" ? "/tracker.html" : requestedPath;
     const filePath = path.resolve(path.join(root, relativePath));
 
@@ -91,4 +113,4 @@ async function run(options) {
   });
 }
 
-module.exports = { run, openInBrowser, trackerUrl, resolvePort, DEFAULT_PORT };
+module.exports = { run, openInBrowser, trackerUrl, resolvePort, trackerStatus, DEFAULT_PORT, STATUS_ENDPOINT };

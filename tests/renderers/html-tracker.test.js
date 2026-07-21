@@ -40,7 +40,7 @@ function makeFilterButtonStub(filterValue, isActive) {
 // etc. aren't directly readable here, but the stub objects backing
 // `document.querySelector(...)` are the same references the script mutates,
 // so tbodyStub.innerHTML reflects real output after calling context.render().
-function runClientScript(html) {
+function runClientScript(html, { fetchImpl, location } = {}) {
   const scriptMatch = html.match(/<script>([\s\S]*?)<\/script>/u);
   if (!scriptMatch) throw new Error("runClientScript: no <script> block found in rendered output");
 
@@ -72,7 +72,16 @@ function runClientScript(html) {
     },
   };
 
-  const context = vm.createContext({ document: documentStub });
+  // fetch/location are only injected when a test opts in — by default the
+  // vm context has neither, matching a real un-served page opened directly
+  // from disk (typeof fetch !== "function" there too), so the embedded
+  // poll-for-changes call safely no-ops for every test that doesn't care
+  // about it, exactly as it does in that real no-server scenario.
+  const contextGlobals = { document: documentStub };
+  if (fetchImpl) contextGlobals.fetch = fetchImpl;
+  if (location) contextGlobals.location = location;
+
+  const context = vm.createContext(contextGlobals);
   vm.runInContext(scriptMatch[1], context);
   return { context, tbody, emptyState, searchInput, filterButtons };
 }
@@ -623,4 +632,154 @@ test("html tracker table has sortable stale column with data attributes", () => 
   assert.match(output, /"isStale":/);
   assert.match(output, /"daysSinceTouch":/);
   assert.match(output, /"suggestedNextAction":/);
+});
+
+// Coverage for design plan 0006 D4 (issue #131): live reload via polling.
+// Executes the real embedded pollForTrackerChanges() function against a
+// stubbed fetch/location — not just pattern-matching the script's source
+// text — so a broken poll-vs-reload comparison would actually fail here.
+
+function fetchStub(responses) {
+  let callIndex = 0;
+  return async () => {
+    const response = responses[Math.min(callIndex, responses.length - 1)];
+    callIndex += 1;
+    return response;
+  };
+}
+
+test("pollForTrackerChanges is a no-op when fetch is unavailable (e.g. opened directly from disk)", async () => {
+  const html = renderHtmlTracker([]);
+  const { context } = runClientScript(html);
+  assert.strictEqual(typeof context.fetch, "undefined");
+  await assert.doesNotReject(context.pollForTrackerChanges());
+});
+
+test("pollForTrackerChanges establishes a baseline on the first poll without reloading", async () => {
+  const html = renderHtmlTracker([]);
+  let reloaded = false;
+  const { context } = runClientScript(html, {
+    fetchImpl: fetchStub([{ ok: true, json: async () => ({ path: "tracker.html", mtimeMs: 1000 }) }]),
+    location: { reload: () => { reloaded = true; } },
+  });
+
+  await context.pollForTrackerChanges();
+  assert.strictEqual(reloaded, false, "the first poll only records a baseline, nothing to compare against yet");
+});
+
+test("pollForTrackerChanges reloads the page once the tracker's mtime actually changes", async () => {
+  const html = renderHtmlTracker([]);
+  let reloaded = false;
+  const { context } = runClientScript(html, {
+    fetchImpl: fetchStub([
+      { ok: true, json: async () => ({ path: "tracker.html", mtimeMs: 1000 }) },
+      { ok: true, json: async () => ({ path: "tracker.html", mtimeMs: 1000 }) },
+      { ok: true, json: async () => ({ path: "tracker.html", mtimeMs: 2000 }) },
+    ]),
+    location: { reload: () => { reloaded = true; } },
+  });
+
+  await context.pollForTrackerChanges(); // baseline: 1000
+  await context.pollForTrackerChanges(); // unchanged: 1000 — no reload
+  assert.strictEqual(reloaded, false, "an unchanged mtime between polls must not trigger a reload");
+
+  await context.pollForTrackerChanges(); // changed: 2000 — reload
+  assert.strictEqual(reloaded, true, "a changed mtime must trigger exactly one reload");
+});
+
+test("pollForTrackerChanges fails silently on a fetch error (server not running) rather than throwing", async () => {
+  const html = renderHtmlTracker([]);
+  let reloaded = false;
+  const { context } = runClientScript(html, {
+    fetchImpl: async () => {
+      throw new Error("ECONNREFUSED");
+    },
+    location: { reload: () => { reloaded = true; } },
+  });
+
+  await assert.doesNotReject(context.pollForTrackerChanges());
+  assert.strictEqual(reloaded, false);
+});
+
+test("pollForTrackerChanges ignores a non-ok response instead of treating it as a change", async () => {
+  const html = renderHtmlTracker([]);
+  let reloaded = false;
+  const { context } = runClientScript(html, {
+    fetchImpl: fetchStub([{ ok: false, json: async () => ({}) }]),
+    location: { reload: () => { reloaded = true; } },
+  });
+
+  await context.pollForTrackerChanges();
+  assert.strictEqual(reloaded, false);
+});
+
+test("pollForTrackerChanges fails silently when the response body isn't valid JSON", async () => {
+  const html = renderHtmlTracker([]);
+  let reloaded = false;
+  const { context } = runClientScript(html, {
+    fetchImpl: fetchStub([
+      {
+        ok: true,
+        json: async () => {
+          throw new SyntaxError("Unexpected token in JSON");
+        },
+      },
+    ]),
+    location: { reload: () => { reloaded = true; } },
+  });
+
+  await assert.doesNotReject(context.pollForTrackerChanges());
+  assert.strictEqual(reloaded, false);
+});
+
+test("pollForTrackerChanges detects tracker.html appearing after starting out absent (mtimeMs: null is not mistaken for 'no baseline yet')", async () => {
+  // Regression: an earlier version used `lastKnownTrackerMtime === null` as
+  // both the "haven't polled yet" sentinel AND a legitimate value (serve.js
+  // reports mtimeMs: null when tracker.html doesn't exist), so a file that
+  // appeared after the page loaded could never be detected — every poll
+  // would keep re-establishing "no baseline yet" instead of comparing.
+  const html = renderHtmlTracker([]);
+  let reloaded = false;
+  const { context } = runClientScript(html, {
+    fetchImpl: fetchStub([
+      { ok: true, json: async () => ({ path: "tracker.html", mtimeMs: null }) },
+      { ok: true, json: async () => ({ path: "tracker.html", mtimeMs: null }) },
+      { ok: true, json: async () => ({ path: "tracker.html", mtimeMs: 1000 }) },
+    ]),
+    location: { reload: () => { reloaded = true; } },
+  });
+
+  await context.pollForTrackerChanges(); // baseline: absent (null)
+  await context.pollForTrackerChanges(); // still absent: null === null — no reload
+  assert.strictEqual(reloaded, false);
+
+  await context.pollForTrackerChanges(); // now exists: 1000 !== null — reload
+  assert.strictEqual(reloaded, true, "tracker.html appearing for the first time must be detected as a change");
+});
+
+test("pollForTrackerChanges ignores an overlapping poll started while one is already in flight", async () => {
+  // Regression: with no re-entrancy guard, a slow poll (still awaiting
+  // fetch) overlapping with a second poll firing on the next interval tick
+  // could race on the shared lastKnownTrackerMtime/hasBaseline state.
+  let resolveFirstFetch;
+  let fetchCallCount = 0;
+  const html = renderHtmlTracker([]);
+  let reloaded = false;
+  const { context } = runClientScript(html, {
+    fetchImpl: () => {
+      fetchCallCount += 1;
+      return new Promise((resolve) => {
+        resolveFirstFetch = () => resolve({ ok: true, json: async () => ({ path: "tracker.html", mtimeMs: 1000 }) });
+      });
+    },
+    location: { reload: () => { reloaded = true; } },
+  });
+
+  const firstPoll = context.pollForTrackerChanges(); // still pending — fetch hasn't resolved yet
+  await context.pollForTrackerChanges(); // fires while the first is in flight — should be a no-op
+  assert.strictEqual(fetchCallCount, 1, "an overlapping call must not start a second fetch while one is already in flight");
+
+  resolveFirstFetch();
+  await firstPoll;
+  assert.strictEqual(reloaded, false, "a single in-flight poll establishing the baseline must not itself trigger a reload");
 });
