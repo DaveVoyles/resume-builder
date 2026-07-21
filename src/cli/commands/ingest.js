@@ -29,6 +29,9 @@ async function ingestLocalSources(options, workspace, paths, profile) {
   for (const source of collectSources(options)) {
     const read = readTextSource(source.file);
     const relativePath = relativeToWorkspace(workspace, read.path);
+    if (read.warning) {
+      console.warn(`⚠ ${relativePath}: ${read.warning}`);
+    }
     const sourceInfo = {
       kind: source.kind,
       path: relativePath,
