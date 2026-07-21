@@ -8,7 +8,7 @@
 
 A new candidate has no visible sign the tool is "working" until the entire
 grill interview is done and `build-tracker` produces a dashboard. `serve`
-exists but is manual, and 404s until a tracker file exists. Grill's five
+exists but is manual, and 404s until a tracker file exists. Grill's seven
 sections carry no "how much is left" signal anywhere — not in chat, not on
 any page. This plan makes onboarding feel alive from the first command: a
 browser tab opens automatically at setup, fills in as the candidate
@@ -48,8 +48,8 @@ stance both hold.
 
 | Deliverable | Size | Acceptance Criteria | Dependencies | Status |
 |---|---|---|---|---|
-| D1 — Onboarding-state tracking | S | A new onboarding-state file is created at setup with every step pending. Material ingestion marks its step complete. Each of grill's five per-section write instructions is extended to also mark that section complete and trigger a tracker rebuild, so the checklist reflects progress promptly rather than only at the very end. The first role being added marks the final step complete, piggybacking on the existing rebuild that already happens at that point. The new file's shape is schema-validated. The onboarding playbook references the file as the mechanical backing for its existing manual state checks, without replacing them. | None | Not started |
-| D2 — Chat narration | XS | Each of grill's five sections gains an explicit "Section N of 5: <name>" marker at its start. The sample transcript shows at least one example of it in context. | None | Not started |
+| D1 — Onboarding-state tracking | S | A new onboarding-state file is created at setup with every step pending. Material ingestion marks its step complete. Each of grill's seven per-section write instructions is extended to also mark that section complete and trigger a tracker rebuild, so the checklist reflects progress promptly rather than only at the very end. The first role being added marks the final step complete, piggybacking on the existing rebuild that already happens at that point. The new file's shape is schema-validated. The onboarding playbook references the file as the mechanical backing for its existing manual state checks, without replacing them. | None | Not started |
+| D2 — Chat narration | XS | Each of grill's seven sections gains an explicit "Section N of 7: <name>" marker at its start. The sample transcript shows at least one example of it in context. | None | Done |
 | D3 — Early server + empty tracker.html | S | Setup writes an initial tracker page (all onboarding steps pending, via D5's shared render path) instead of leaving it absent, and automatically launches the local server, opening a browser tab. If a server is already running on the configured port, it is detected and reused rather than erroring. A flag exists to skip the auto-open for CI/automation contexts. | — | Not started |
 | D4 — Live reload via polling | S | The local server exposes a small, read-only signal reflecting whether generated output has changed since last checked. The tracker page's existing embedded client script polls it periodically and reloads the page when it has, without requiring a manual refresh. Mechanism is polling (not push/SSE), per ADR 0003. | D3 | Not started |
 | D5 — Onboarding checklist view | M | A shared, reusable render function produces the onboarding checklist (each step's status plus an overall completion count) from the onboarding-state file, and is used both by the tracker build step and by initial setup. While onboarding is incomplete, the tracker page shows this checklist in place of the roles table and stat cards. Once every step is complete, the page shows today's normal dashboard, with the checklist collapsed into a small persistent progress indicator in the page header. New visual elements follow the tracker's existing color palette and badge/pill conventions rather than introducing a new style language. | D1, D3 | Not started |
