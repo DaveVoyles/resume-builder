@@ -59,7 +59,7 @@ This is a fictional transcript of a complete grill intake interview. It demonstr
 
 ## Section 2: Work history
 
-**Agent:** "Section 1 of 5: Work history"
+**Agent:** "Section 2 of 7: Work history"
 
 ### Q2.1: Most recent role
 
