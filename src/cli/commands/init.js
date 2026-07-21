@@ -6,6 +6,7 @@ const { createDefaultProfile } = require("../../core/candidate-profile");
 const { renderTracker } = require("../../renderers/markdown-tracker");
 const { renderHtmlTracker } = require("../../renderers/html-tracker");
 const { renderSimilarRoles } = require("../../renderers/markdown-similar-roles");
+const { defaultOnboardingState } = require("../../core/onboarding-state");
 const serve = require("./serve");
 const {
   ensureDir,
@@ -86,6 +87,7 @@ async function run(options, { serveRunner = serve.run, openInBrowser = serve.ope
   writeJsonIfMissing(paths.rolesSeed, [], force);
   writeJsonIfMissing(paths.rolesTracked, [], force);
   writeJsonIfMissing(paths.claimPolicy, defaultClaimPolicy(), force);
+  writeJsonIfMissing(paths.onboardingState, defaultOnboardingState(), force);
   writeTextIfMissing(paths.evidence, "", force);
   writeTextIfMissing(path.join(paths.notes, "intake.md"), intakeText, force);
   writeTextIfMissing(paths.links, linksTemplate(), force);

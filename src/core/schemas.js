@@ -1,5 +1,7 @@
 "use strict";
 
+const { SECTIONS } = require("./onboarding-state");
+
 function requireObject(value, label, errors) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     errors.push(`${label} must be an object`);
@@ -20,6 +22,14 @@ function requireString(value, label, errors) {
   if (typeof value !== "string" || value.trim() === "") {
     const parts = label.split(".");
     errors.push(`${label}: missing ${parts[parts.length - 1]}`);
+    return false;
+  }
+  return true;
+}
+
+function requireBoolean(value, label, errors) {
+  if (typeof value !== "boolean") {
+    errors.push(`${label} must be a boolean`);
     return false;
   }
   return true;
@@ -137,4 +147,21 @@ function validateFeedback(entries) {
   return errors;
 }
 
-module.exports = { validateEvidence, validateProfile, validateRoles, validateFeedback };
+function validateOnboardingState(state) {
+  const errors = [];
+  if (!requireObject(state, "onboarding-state", errors)) return errors;
+  if (requireString(state.schemaVersion, "onboarding-state.schemaVersion", errors) && state.schemaVersion !== "1.0") {
+    errors.push('onboarding-state.schemaVersion: must be "1.0"');
+  }
+  requireBoolean(state.setupComplete, "onboarding-state.setupComplete", errors);
+  requireBoolean(state.materialIngested, "onboarding-state.materialIngested", errors);
+  requireBoolean(state.firstRoleAdded, "onboarding-state.firstRoleAdded", errors);
+  if (requireObject(state.sections, "onboarding-state.sections", errors)) {
+    SECTIONS.forEach(({ key }) => {
+      requireBoolean(state.sections[key], `onboarding-state.sections.${key}`, errors);
+    });
+  }
+  return errors;
+}
+
+module.exports = { validateEvidence, validateOnboardingState, validateProfile, validateRoles, validateFeedback };

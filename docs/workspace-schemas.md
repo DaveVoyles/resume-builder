@@ -277,6 +277,60 @@ The validator flags evidence before output when:
 - Source-backed evidence has no `snippet` or `quote`.
 - `metadata-only` evidence tries to state a separate fact instead of matching `summary`.
 
+## `.onboarding-state.json`
+
+`.onboarding-state.json` tracks onboarding progress as an explicit marker file (design plan 0006 D1) rather than inferring it from `profile.json`/`preferences.json`'s own shape — `compensation` is an optional `preferences.json` field, and an empty `dealBreakers` array is a valid *complete* answer ("no deal breakers"), not "not asked yet," so data shape alone can't tell those apart. `npm run setup` creates it with every step pending except `setupComplete`; [`grill.md`](playbooks/grill.md) flips each `sections.<name>` key as its section is confirmed; `ingest` flips `materialIngested`; `tailor` flips `firstRoleAdded` once the first role is tracked. A future deliverable renders this as a visual checklist on the tracker page; it's a mechanical record only for now. It's optional — a workspace created before this feature existed validates fine without it.
+
+### Required fields
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `schemaVersion` | string | Must be `"1.0"`. |
+| `setupComplete` | boolean | Always `true` from the moment `npm run setup` creates the file. |
+| `materialIngested` | boolean | Set once `ingest` runs with at least one real source. |
+| `sections` | object | One boolean per `grill.md` section — see below. |
+| `firstRoleAdded` | boolean | Set once the first role lands in `roles.tracked.json`. |
+
+### `sections` fields
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `basicInfo` | boolean | grill.md Section 1: Basic information. |
+| `workHistory` | boolean | grill.md Section 2: Work history. |
+| `education` | boolean | grill.md Section 3: Education. |
+| `targetRole` | boolean | grill.md Section 4: Target role. |
+| `location` | boolean | grill.md Section 5: Location and work mode. |
+| `compensation` | boolean | grill.md Section 6: Salary and compensation. |
+| `dealBreakers` | boolean | grill.md Section 7: Constraints and deal breakers. |
+
+### Example
+
+```json
+{
+  "schemaVersion": "1.0",
+  "setupComplete": true,
+  "materialIngested": true,
+  "sections": {
+    "basicInfo": true,
+    "workHistory": true,
+    "education": false,
+    "targetRole": false,
+    "location": false,
+    "compensation": false,
+    "dealBreakers": false
+  },
+  "firstRoleAdded": false
+}
+```
+
+### Validation rules
+
+The validator flags the onboarding state, when present, before output when:
+
+- The entry is not an object.
+- `setupComplete`, `materialIngested`, or `firstRoleAdded` is missing or not a boolean.
+- `sections` is missing, not an object, or any of its 7 keys is missing or not a boolean.
+
 ## `feedback.jsonl`
 
 `feedback.jsonl` is a JSON Lines ledger. Each non-empty line must be a standalone JSON object. The debrief playbook writes `schemaVersion`, `id`, `context`, `question`, `answer`, `sentiment`, `sentimentNote`, `proposedAnswer`, and `createdAt`. This ledger is private by default and stays separate from the evidence ledger.

@@ -7,6 +7,7 @@ const os = require("os");
 const path = require("path");
 const command = require("../../src/cli/commands/init");
 const { workspacePaths } = require("../../src/core/workspace");
+const { defaultOnboardingState } = require("../../src/core/onboarding-state");
 
 // Coverage for `init`'s workspace scaffolding (previously untested), focused
 // on the links.md deliverable from design plan 0003 D1: scaffolded content
@@ -165,6 +166,34 @@ test("init does not overwrite an existing tracker.html on re-run (idempotent)", 
     await command.run({ workspace, noServe: true });
 
     assert.strictEqual(fs.readFileSync(paths.htmlTracker, "utf8"), customContent);
+  });
+});
+
+// Coverage for design plan 0006 D1 (issue #128): setup scaffolds the
+// onboarding-state marker file every step keys off of.
+
+test("init scaffolds .onboarding-state.json with every step pending except setupComplete", async () => {
+  await withTempWorkspaceAsync(async (workspace) => {
+    await command.run({ workspace, noServe: true });
+    const paths = workspacePaths(workspace);
+    assert.ok(fs.existsSync(paths.onboardingState));
+    const state = JSON.parse(fs.readFileSync(paths.onboardingState, "utf8"));
+    assert.deepEqual(state, defaultOnboardingState());
+  });
+});
+
+test("init does not overwrite an existing .onboarding-state.json on re-run (idempotent)", async () => {
+  await withTempWorkspaceAsync(async (workspace) => {
+    await command.run({ workspace, noServe: true });
+    const paths = workspacePaths(workspace);
+
+    const state = defaultOnboardingState();
+    state.materialIngested = true;
+    fs.writeFileSync(paths.onboardingState, JSON.stringify(state));
+
+    await command.run({ workspace, noServe: true });
+
+    assert.strictEqual(JSON.parse(fs.readFileSync(paths.onboardingState, "utf8")).materialIngested, true);
   });
 });
 

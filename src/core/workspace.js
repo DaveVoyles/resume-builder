@@ -23,6 +23,11 @@ function workspacePaths(workspace) {
     similarRoles: path.join(workspace, "outputs", "similar-roles.md"),
     profile: path.join(workspace, "profile.json"),
     preferences: path.join(workspace, "preferences.json"),
+    // Dot-prefixed, unlike every other data file here: this is mechanical
+    // tooling state (progress bookkeeping the CLI reads/writes), not
+    // candidate-authored content — the same distinction .gitignore already
+    // draws from the rest of this list.
+    onboardingState: path.join(workspace, ".onboarding-state.json"),
     evidence: path.join(workspace, "evidence.jsonl"),
     feedback: path.join(workspace, "feedback.jsonl"),
     rolesSeed: path.join(workspace, "roles.seed.json"),
