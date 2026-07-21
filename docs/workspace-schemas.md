@@ -265,6 +265,16 @@ Use these conventions across all workspace files:
 {"id":"ev-002","type":"notes","fact":"notes source ingested from inputs/notes/project-notes.md","summary":"notes source ingested from inputs/notes/project-notes.md","source":{"kind":"notes","path":"inputs/notes/project-notes.md","ingestedAt":"2026-06-08T12:00:00.000Z"},"snippet":"","confidence":"metadata-only","metadata":{"sha256":"example","extractionMode":"metadata-only"},"status":"needs-confirmation","restrictions":[{"type":"candidate-review","note":"Capture source text before using this as a resume claim."}],"createdAt":"2026-06-08T12:00:00.000Z"}
 ```
 
+### Live, non-ingested evidence (no source file)
+
+Not every evidence record traces back to an ingested file — the `grill` playbook writes evidence directly from what the candidate says during the intake conversation, with nothing under `candidate/inputs/` to point at. `source` still requires `kind` and either `path` or `url`, so use `"kind": "intake"` with `path` self-referencing the evidence ledger itself (`"path": "candidate/evidence.jsonl"`) rather than inventing a file that doesn't exist:
+
+```json
+{"kind": "intake", "path": "candidate/evidence.jsonl", "note": "Candidate-provided during grill intake"}
+```
+
+Also set `metadata` to `{}` (there's no adapter metadata for a live answer) and `createdAt` to the current timestamp — both fields are required on every evidence entry regardless of source.
+
 ### Validation rules
 
 The validator flags evidence before output when:

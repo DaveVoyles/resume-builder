@@ -69,10 +69,12 @@ When ingested material already answers the question, skip the blind "Ask" and go
   - `type`: "resume"
   - `fact`: "[Title] at [Company], [Start]–[End]"
   - `summary`: "Work history from candidate intake"
-  - `source`: `{"kind": "intake", "note": "Candidate-provided during grill intake"}`
+  - `source`: `{"kind": "intake", "path": "candidate/evidence.jsonl", "note": "Candidate-provided during grill intake"}` — a live answer has no ingested file behind it, so `path` self-references the evidence ledger rather than a real source file
   - `snippet`: The candidate's own words about the role
   - `confidence`: "source-text"
   - `category`: "employment"
+  - `metadata`: `{}` (no adapter metadata for a live answer)
+  - `createdAt`: The current ISO 8601 timestamp (e.g., `2026-07-21T14:30:00.000Z`)
 
 ### Question 1.2: Responsibilities and impact
 
@@ -99,10 +101,12 @@ When ingested material already answers the question, skip the blind "Ask" and go
   - `type`: "resume"
   - `fact`: The specific achievement or metric
   - `summary`: "Impact from intake discussion"
-  - `source`: `{"kind": "intake", "note": "..."}`
+  - `source`: `{"kind": "intake", "path": "candidate/evidence.jsonl", "note": "..."}` — self-referential `path`, since this is a live answer with no ingested file behind it
   - `snippet`: The candidate's own description
   - `confidence`: "source-text"
   - `category`: "metric" or "project" as appropriate
+  - `metadata`: `{}` (no adapter metadata for a live answer)
+  - `createdAt`: The current ISO 8601 timestamp (e.g., `2026-07-21T14:30:00.000Z`)
 
 ### Repeat for other roles
 

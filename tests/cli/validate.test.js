@@ -56,6 +56,25 @@ function sourceBackedEntry(id, text) {
   };
 }
 
+// Matches grill.md's documented "Also create an evidence record" shape
+// verbatim (issue #103): live, candidate-stated evidence with no ingested
+// file behind it, using the self-referential `source.path` convention
+// grill.md and workspace-schemas.md now document.
+function intakeEvidenceEntry(id, text) {
+  return {
+    id,
+    type: "resume",
+    fact: text,
+    summary: "Work history from candidate intake",
+    source: { kind: "intake", path: "candidate/evidence.jsonl", note: "Candidate-provided during grill intake" },
+    snippet: text,
+    confidence: "source-text",
+    category: "employment",
+    metadata: {},
+    createdAt: "2026-07-21T14:30:00.000Z",
+  };
+}
+
 /**
  * Builds a minimal, otherwise-valid fixture workspace so the claim-audit
  * seam can be tested in isolation.
@@ -139,6 +158,17 @@ test("validate passes when every claim in a resume config is backed by evidence"
       sourceBackedEntry("ev-002", "Documented pipeline caching architecture for the platform team."),
       sourceBackedEntry("ev-003", "Presented build-time improvements at a quarterly engineering review."),
     ],
+  });
+  try {
+    assert.doesNotThrow(() => run({ workspace: tmpDir }));
+  } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
+test("validate passes on grill.md's documented intake evidence-source shape (issue #103 regression)", () => {
+  const tmpDir = createFixtureWorkspace({
+    evidenceEntries: [intakeEvidenceEntry("ev-work-001", "Senior Engineer at Contoso Labs, 2022-04–present")],
   });
   try {
     assert.doesNotThrow(() => run({ workspace: tmpDir }));

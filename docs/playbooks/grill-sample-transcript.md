@@ -50,7 +50,7 @@ This is a fictional transcript of a complete grill intake interview. It demonstr
 **Agent also writes to `candidate/evidence.jsonl`:**
 
 ```jsonl
-{"id":"ev-001","type":"resume","fact":"Senior Engineer at Contoso Labs, April 2022–present.","summary":"Work history from candidate intake","source":{"kind":"intake","note":"Candidate-provided during grill intake"},"snippet":"Senior Engineer at Contoso Labs, April 2022 to present, hybrid in Seattle.","confidence":"source-text","category":"employment","createdAt":"2026-07-19T12:00:00.000Z"}
+{"id":"ev-001","type":"resume","fact":"Senior Engineer at Contoso Labs, April 2022–present.","summary":"Work history from candidate intake","source":{"kind":"intake","path":"candidate/evidence.jsonl","note":"Candidate-provided during grill intake"},"snippet":"Senior Engineer at Contoso Labs, April 2022 to present, hybrid in Seattle.","confidence":"source-text","category":"employment","metadata":{},"createdAt":"2026-07-19T12:00:00.000Z"}
 ```
 
 ### Q1.2: Responsibilities and impact
@@ -95,8 +95,8 @@ This is a fictional transcript of a complete grill intake interview. It demonstr
 **Agent writes to `candidate/evidence.jsonl`:**
 
 ```jsonl
-{"id":"ev-impact-001","type":"resume","fact":"Led platform team that built an internal SDK, reducing deployment times by 40%.","summary":"Impact from intake discussion","source":{"kind":"intake","note":"Candidate-provided during grill intake"},"snippet":"We built an internal SDK that reduced deployment times by 40% for the product teams.","confidence":"source-text","category":"metric","createdAt":"2026-07-19T12:00:00.000Z"}
-{"id":"ev-impact-002","type":"resume","fact":"Mentored three junior engineers who got promoted.","summary":"Impact from intake discussion","source":{"kind":"intake","note":"Candidate-provided during grill intake"},"snippet":"I mentored three junior engineers who got promoted.","confidence":"source-text","category":"leadership","createdAt":"2026-07-19T12:00:00.000Z"}
+{"id":"ev-impact-001","type":"resume","fact":"Led platform team that built an internal SDK, reducing deployment times by 40%.","summary":"Impact from intake discussion","source":{"kind":"intake","path":"candidate/evidence.jsonl","note":"Candidate-provided during grill intake"},"snippet":"We built an internal SDK that reduced deployment times by 40% for the product teams.","confidence":"source-text","category":"metric","metadata":{},"createdAt":"2026-07-19T12:00:00.000Z"}
+{"id":"ev-impact-002","type":"resume","fact":"Mentored three junior engineers who got promoted.","summary":"Impact from intake discussion","source":{"kind":"intake","path":"candidate/evidence.jsonl","note":"Candidate-provided during grill intake"},"snippet":"I mentored three junior engineers who got promoted.","confidence":"source-text","category":"leadership","metadata":{},"createdAt":"2026-07-19T12:00:00.000Z"}
 ```
 
 ### Q1.3: Previous role
