@@ -1,6 +1,6 @@
 # Static generated HTML remains the only UI surface
 
-- Status: accepted
+- Status: superseded by [ADR 0003](0003-optional-local-server-supersedes-0002.md) (narrowly — see that ADR for scope)
 - Date: 2026-07-20
 - Deciders: Dave Voyles
 
