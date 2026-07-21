@@ -1,0 +1,82 @@
+"use strict";
+
+const http = require("http");
+const fs = require("fs");
+const path = require("path");
+const { execFile } = require("child_process");
+const { resolveWorkspace, workspacePaths } = require("../../core/workspace");
+
+const CONTENT_TYPES = {
+  ".html": "text/html; charset=utf-8",
+  ".md": "text/plain; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".svg": "image/svg+xml",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+};
+
+function openInBrowser(url) {
+  const opener = process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
+  execFile(opener, [url], () => {});
+}
+
+async function run(options) {
+  const workspace = resolveWorkspace(options.workspace);
+  const paths = workspacePaths(workspace);
+  const root = path.resolve(paths.outputs);
+
+  if (!fs.existsSync(root)) {
+    throw new Error(`No outputs/ directory found at ${root} — run build-tracker or tailor first.`);
+  }
+
+  const parsedPort = Number.parseInt(options.port, 10);
+  const port = Number.isNaN(parsedPort) ? 4321 : parsedPort;
+
+  const server = http.createServer((req, res) => {
+    const requestedPath = decodeURIComponent(req.url.split("?")[0]);
+    const relativePath = requestedPath === "/" ? "/tracker.html" : requestedPath;
+    const filePath = path.resolve(path.join(root, relativePath));
+
+    if (!filePath.startsWith(root)) {
+      res.writeHead(403);
+      res.end("Forbidden");
+      return;
+    }
+
+    fs.readFile(filePath, (error, data) => {
+      if (error) {
+        res.writeHead(404, { "Content-Type": "text/plain" });
+        res.end(`Not found: ${relativePath}`);
+        return;
+      }
+      const contentType = CONTENT_TYPES[path.extname(filePath)] || "application/octet-stream";
+      res.writeHead(200, { "Content-Type": contentType });
+      res.end(data);
+    });
+  });
+
+  return new Promise((resolve, reject) => {
+    server.on("error", (error) => {
+      if (error.code === "EADDRINUSE") {
+        reject(new Error(`Port ${port} is already in use — pass --port <n> to use a different one.`));
+        return;
+      }
+      reject(error);
+    });
+
+    server.listen(port, () => {
+      const url = `http://localhost:${server.address().port}/tracker.html`;
+      console.log(`Serving ${root} at ${url}`);
+      console.log("Press Ctrl+C to stop.");
+      if (!options.noOpen) {
+        openInBrowser(url);
+      }
+      resolve(server);
+    });
+  });
+}
+
+module.exports = { run };

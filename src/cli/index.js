@@ -20,6 +20,7 @@ const COMMANDS = {
   "study-guide-bundle": () => require("./commands/study-guide-bundle"),
   tailor: () => require("./commands/tailor"),
   validate: () => require("./commands/validate"),
+  serve: () => require("./commands/serve"),
 };
 
 function help() {
@@ -46,6 +47,7 @@ function help() {
     "  study-guide-bundle --workspace <dir> (--id <role-id> | --company <name> --title <name>)",
     "  tailor --workspace <dir> --config <resume-config.json> (--url <url> | --title <title> [--company <name>]) [--applyUrl <url>] [--location <text>] [--compensation <text>] [--fit <text>] [--notes <text>] [--keywords <keywords.json>] [--cover-letter <cover-letter-config.json>]",
     "  validate --workspace <dir>",
+    "  serve --workspace <dir> [--port <n>] [--noOpen]",
     "",
     "Common options:",
     "  --workspace <dir>   Candidate workspace directory (default: candidate)",
