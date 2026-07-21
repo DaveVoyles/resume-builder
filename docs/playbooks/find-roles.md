@@ -72,6 +72,7 @@ For each role you find, vet it against the candidate's preferences **before** yo
 **Check:**
 - Is the work mode (remote, hybrid, on-site) in the candidate's `locations.workModes`?
 - If on-site or hybrid, is the location in the `locations.preferredRegions`, or excluded from `locations.excludedRegions`?
+- **Note the match strength, not just in/out.** `preferredRegions` is ordered by priority — the first entry is the candidate's most preferred region. A posting matching an earlier entry is a stronger location fit than one matching a later entry; reflect that in the lead's `fit.level` and `fit.rationale` (e.g., "matches top-priority region" vs. "matches a lower-priority but still acceptable region") rather than treating every in-list match the same.
 
 **If no → Skip this posting.**
 

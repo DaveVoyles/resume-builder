@@ -138,6 +138,15 @@ Use these conventions across all workspace files:
 | `travel` | `none`, `limited`, `moderate`, `frequent` |
 | `priority` | `must`, `should`, `could`, `avoid` |
 
+### `locations` fields
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `workModes` | array | Acceptable work modes — see enum values above. |
+| `preferredRegions` | array | Preferred locations, ordered by priority: the first entry is the most preferred region, and each later entry is progressively less preferred. Use `[]` if flexible. |
+| `excludedRegions` | array | Locations to exclude. A flat set with no ranking — every entry is an equal deal-breaker, so order doesn't matter. Use `[]` if none. |
+| `priority` | string | How strongly `locations` overall should weigh in role fit — one of `must`, `should`, `could` (see enum values above). |
+
 ### Optional fields
 
 | Field | Type | Description |
