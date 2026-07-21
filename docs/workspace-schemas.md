@@ -148,6 +148,7 @@ Use these conventions across all workspace files:
 | `compensation` | object | Candidate-provided range and currency. |
 | `availability` | object | Start date, notice period, and interview windows. |
 | `resumeStyle` | object | Tone, length, and emphasis preferences. |
+| `stalenessThresholds` | object | Overrides the tracker's per-status-bucket stale-flag day thresholds (see [Staleness computation](#staleness-computation) under `roles.tracked.json`). Any subset of `not-applied`, `applied`, `interview`, `offer`, `other`; omitted keys keep the built-in default. |
 | `notes` | string | Candidate-approved notes for agents. |
 
 ### Example
@@ -386,7 +387,7 @@ The validator flags feedback before output when:
 | Field | Values |
 | --- | --- |
 | `status` | `seed`, `tracked` |
-| `application.status` | `interested`, `applied`, `interview`, `offer`, `rejected`, `withdrawn` (set via the `set-status` CLI command; deterministic, replaces free-text status strings) |
+| `application.status` | `interested`, `applied`, `interview`, `offer`, `rejected`, `withdrawn`, `ghosted` (set via the `set-status` CLI command; deterministic, replaces free-text status strings). `ghosted` is a terminal status for a role whose employer went silent — set manually only; staleness detection (below) may suggest it, but no code path auto-transitions to it. |
 | `fit.level` | `strong`, `moderate`, `stretch`, `poor`, `unknown` |
 | `resume.status` | `not-started`, `drafting`, `review-needed`, `ready`, `submitted`, `archived` |
 | `nextAction.type` | `research`, `tailor-resume`, `candidate-review`, `apply`, `follow-up`, `close` |
@@ -466,7 +467,35 @@ The `set-status` CLI command automatically sets `nextAction` when a role's appli
 | `offer` | `follow-up` | Due in 2 days | "respond to offer" |
 | `rejected` | `close` | — (no dueDate for close) | — (no note) |
 | `withdrawn` | `close` | — (no dueDate for close) | — (no note) |
+| `ghosted` | `close` | — (no dueDate for close) | "follow up or consider moving on" |
 | `interested` | (unchanged) | — (leave `nextAction` untouched) | — (no note) |
+
+### Staleness computation
+
+Rendering the tracker (`build-tracker`, either format) computes a **stale flag** for every
+tracked role, purely at render time — nothing is written back to `roles.tracked.json` or any
+other state file. A role is stale when its last-touch date (`application.appliedAt`, or
+`updatedAt` if more recent) is at or past its status bucket's day threshold. Terminal statuses
+(`rejected`, `withdrawn`, `ghosted`) are always exempt — they're already closed out, so staleness
+has nothing left to flag.
+
+Default thresholds (days since last touch), defined in `src/core/staleness.js`:
+
+| Status bucket | Default threshold | Suggested action when stale |
+| --- | --- | --- |
+| `not-applied` | 30 days | Consider applying if interested |
+| `applied` | 14 days | Follow up on application status |
+| `interview` | 7 days | Follow up on interview process |
+| `offer` | 3 days | Respond to offer or clarify timeline |
+| `other` | 21 days | Follow up or clarify next steps |
+
+Override any threshold via an optional `stalenessThresholds` object in `preferences.json` (see
+below) — only the keys you set are overridden, the rest fall back to the defaults above.
+
+Each stale role's computed data (`isStale`, `daysSinceTouch`, `suggestedNextAction`) appears in
+both tracker renderers: a "Stale" column in the markdown tracker, and a sortable/filterable
+"Stale" badge column plus a pipeline funnel section (counts per active stage and terminal
+outcome, including `ghosted`) in the HTML tracker.
 
 Each status transition always **overwrites** any existing `nextAction` (except when transitioning to `interested`, which leaves `nextAction` completely untouched). The `dueDate` is computed as an ISO 8601 date relative to the date the status was set (using the `--date` override if provided, or today's date otherwise). The `owner` is always set to `"candidate"` for auto-generated follow-ups.
 
