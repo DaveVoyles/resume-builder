@@ -72,3 +72,26 @@ test("build-tracker degrades a corrupted .onboarding-state.json to 'absent' inst
     assert.match(html, /class="onboarding-section" style="display:none"/, "an unreadable state file must render the normal dashboard, not crash the build");
   });
 });
+
+test("build-tracker with --notice flag includes the notice banner in the rendered HTML", () => {
+  withTempWorkspace(({ workspace, paths }) => {
+    const noticeText = "This is a test notice with <special> & characters";
+    command.run({ workspace, format: "html", notice: noticeText });
+    const html = fs.readFileSync(paths.htmlTracker, "utf8");
+
+    // The notice banner should be present
+    assert.match(html, /class="notice-banner"/, "notice banner must be rendered");
+    // The notice text should be escaped and present
+    assert.match(html, /This is a test notice with &lt;special&gt; &amp; characters/, "notice text must be HTML-escaped in the output");
+  });
+});
+
+test("build-tracker without --notice flag renders no banner, preserving backward compatibility", () => {
+  withTempWorkspace(({ workspace, paths }) => {
+    command.run({ workspace, format: "html" });
+    const html = fs.readFileSync(paths.htmlTracker, "utf8");
+
+    // The notice banner must not appear
+    assert.doesNotMatch(html, /class="notice-banner"/, "no notice banner should appear when --notice flag is not provided");
+  });
+});

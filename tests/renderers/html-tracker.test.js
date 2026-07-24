@@ -892,3 +892,28 @@ test("isOnboardingComplete ignores unrecognized extra keys in the state object",
 
   assert.strictEqual(isOnboardingComplete(state), true, "an unknown extra key must not block completion — only the recognized steps matter");
 });
+
+// Coverage for design plan 0007 D2 (issue #144): the notice option is opt-in
+// so every pre-plan-0007 caller (and every existing test that doesn't pass it)
+// renders exactly as before, with no notice banner.
+
+test("renderHtmlTracker with notice option renders a visible banner with escaped HTML", () => {
+  const noticeText = "Warning: Do not use <script> & 'dangerous' files";
+  const html = renderHtmlTracker([], { notice: noticeText });
+
+  // The notice banner should be present and contain the escaped notice text.
+  assert.match(html, /<div class="notice-banner">/, "notice banner div must be present");
+  assert.match(html, /Warning: Do not use &lt;script&gt; &amp; 'dangerous' files/, "notice text must have special chars escaped (< and &), single quotes unescaped");
+  assert.match(html, /class="notice-banner".*?Warning.*?&lt;script&gt;/s, "notice text must be inside the banner div");
+});
+
+test("renderHtmlTracker without notice option renders no banner and is byte-identical to previous behavior", () => {
+  const htmlWithoutNotice = renderHtmlTracker([], {});
+  const htmlWithoutOption = renderHtmlTracker([]);
+
+  // Both calls should produce identical output (no notice banner added, no whitespace differences).
+  assert.strictEqual(htmlWithoutNotice, htmlWithoutOption, "output must be identical whether notice is undefined or an empty options object");
+
+  // The notice banner must not appear anywhere in the output.
+  assert.doesNotMatch(htmlWithoutNotice, /class="notice-banner"/, "no notice-banner div should appear when notice is not provided");
+});
