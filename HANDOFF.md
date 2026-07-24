@@ -23,7 +23,7 @@ Actions") mid-execution, in response to the orchestrator's in-chat question. D3'
 push-triggered deploy run went green (`gh run watch`), and the live demo is confirmed reachable
 at **https://DaveVoyles.github.io/resume-builder/** (200, correct Troy McClure content). Note
 the capitalized-casing URL — `check-privacy.js`'s deny-list is case-sensitive on the lowercase
-`davevoyles` handle, and GitHub Pages hostnames are case-insensitive, so both the plan doc
+handle (see `DENY_TERMS` in that script), and GitHub Pages hostnames are case-insensitive, so both the plan doc
 (commit 60a7bc5, during planning) and the README link (D5, during execution) intentionally
 spell the URL as `DaveVoyles.github.io` to satisfy the check — hit and fixed twice across this
 plan's lifecycle.
