@@ -1,5 +1,30 @@
 # Handoff
 
+## Design plan 0007 — live GitHub Pages demo page: plan approved, frontier open (D1/D2/D3/D5)
+
+Dave asked for a live sample/demo dashboard (fictional "Troy McClure" candidate, engineering-
+leadership roles, placeholder salaries in the style of Dave's real search) linked from the
+README, hosted on GitHub Pages. Ran via `grilling` → `design-plans`; plan doc
+[`docs/design/0007-live-demo-github-pages.md`](docs/design/0007-live-demo-github-pages.md) and
+companion [ADR 0004](docs/decisions/0004-github-pages-demo-hosting.md) merged via
+[PR #142](https://github.com/DaveVoyles/resume-builder/pull/142) +
+[PR #147](https://github.com/DaveVoyles/resume-builder/pull/147) (Execution Tracking links).
+
+D4 (the ADR) needed no issue — persisted alongside the plan doc. D1/D2/D3/D5 exported and open on
+the Agent Work board (Todo column), `plan:0007` label:
+
+- D1 demo fixture data ("Troy McClure") — [#143](https://github.com/DaveVoyles/resume-builder/issues/143), unblocked
+- D2 `--notice` banner option on the HTML tracker renderer — [#144](https://github.com/DaveVoyles/resume-builder/issues/144), unblocked
+- D3 GitHub Actions Pages deploy workflow — [#145](https://github.com/DaveVoyles/resume-builder/issues/145), blocked by #143 + #144 (native `blocked_by` registered)
+- D5 README live-demo CTA — [#146](https://github.com/DaveVoyles/resume-builder/issues/146), blocked by #145
+
+**Caveat the next orchestrator must not skip:** GitHub Pages is **not yet enabled** in this
+repo's Settings → Pages. D3's workflow can't actually publish anything until Pages is turned on
+(Source: "GitHub Actions"), and per the plan's ⚠️ Irreversible Steps section that toggle is a
+repo-settings change **not** pre-authorized by the plan's approval — it needs explicit in-chat
+confirmation from Dave (or Dave flipping it on himself) before D3 is considered done. D3's issue
+body carries this same warning.
+
 ## Design plan 0005 — selective lucidRESUME adoption: COMPLETE (all 9 deliverables merged)
 
 Plan 0005 (ghosted + stale pipeline tracking, gap taxonomy, de-AI lint + semantic compression,
