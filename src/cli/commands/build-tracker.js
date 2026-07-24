@@ -34,7 +34,7 @@ function run(options) {
         console.warn(`Warning: ignoring unreadable .onboarding-state.json (${error.message})`);
       }
     }
-    writeTextIfMissing(output, renderHtmlTracker(roles, { title, stalenessThresholds, onboardingState }), true);
+    writeTextIfMissing(output, renderHtmlTracker(roles, { title, stalenessThresholds, onboardingState, notice: options.notice }), true);
     console.log(`Built html tracker for ${roles.length} tracked role(s): ${output}`);
     return;
   }

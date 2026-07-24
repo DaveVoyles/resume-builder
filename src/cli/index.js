@@ -38,7 +38,7 @@ function help() {
     "  find-similar --workspace <dir> [--candidates <file>] [--max <count>]",
     "  set-status --workspace <dir> (--id <role-id> | --company <name> --title <name>) --status <status> [--date <YYYY-MM-DD>]",
     "  set-contact-status --workspace <dir> --id <contact-id> --status <status> [--date <YYYY-MM-DD>]",
-    "  build-tracker --workspace <dir> [--format md|html] [--output <file>] [--title <text>]",
+    "  build-tracker --workspace <dir> [--format md|html] [--output <file>] [--title <text>] [--notice <text>]",
     "  build-contacts-tracker --workspace <dir> [--format md|html] [--output <file>] [--title <text>]",
     "  render-resume --workspace <dir> --config <resume-config.json>",
     "  render-cover-letter --workspace <dir> --config <cover-letter-config.json>",

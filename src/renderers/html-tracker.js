@@ -96,6 +96,11 @@ function renderHtmlTracker(roles, options = {}) {
   const showChecklist = Boolean(onboardingState) && !onboardingComplete;
   const showCompletePill = onboardingComplete;
 
+  // Notice is opt-in via options.notice so every pre-plan-0007 caller
+  // (and every existing test that doesn't pass it) renders exactly
+  // as before, with no notice banner.
+  const notice = options.notice;
+
   // The dashboard markup/data below (stats, funnel, role table + its
   // embedded JSON) is always computed and rendered into the page, even when
   // showChecklist hides it via display:none — deliberately, to keep the
@@ -478,10 +483,21 @@ function renderHtmlTracker(roles, options = {}) {
     color: #0369a1;
     text-decoration: underline;
   }
+  .notice-banner {
+    background: #fef3c7;
+    border-left: 4px solid #ca8a04;
+    border-radius: 0.5rem;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    color: #78350f;
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
 </style>
 </head>
 <body>
   <h1>${escapeHtml(title)}</h1>
+  ${notice ? `<div class="notice-banner">${escapeHtml(notice)}</div>` : ""}
   ${showCompletePill ? '<div class="onboarding-progress-pill onboarding-progress-pill-complete">✓ Onboarding complete</div>' : ""}
   <p class="subtitle">Generated ${escapeHtml(generatedAt)} from <code>roles.tracked.json</code>. Rebuild with <code>build-tracker --format html</code>; do not hand-edit.</p>
 
