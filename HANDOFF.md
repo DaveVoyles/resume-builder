@@ -1,6 +1,6 @@
 # Handoff
 
-## Design plan 0007 — live GitHub Pages demo page: plan approved, frontier open (D1/D2/D3/D5)
+## Design plan 0007 — live GitHub Pages demo page: COMPLETE (all deliverables merged, demo live)
 
 Dave asked for a live sample/demo dashboard (fictional "Troy McClure" candidate, engineering-
 leadership roles, placeholder salaries in the style of Dave's real search) linked from the
@@ -10,20 +10,27 @@ companion [ADR 0004](docs/decisions/0004-github-pages-demo-hosting.md) merged vi
 [PR #142](https://github.com/DaveVoyles/resume-builder/pull/142) +
 [PR #147](https://github.com/DaveVoyles/resume-builder/pull/147) (Execution Tracking links).
 
-D4 (the ADR) needed no issue — persisted alongside the plan doc. D1/D2/D3/D5 exported and open on
-the Agent Work board (Todo column), `plan:0007` label:
+D4 (the ADR) needed no issue — persisted alongside the plan doc. All four issues merged and
+closed via the orchestrator's frontier loop:
 
-- D1 demo fixture data ("Troy McClure") — [#143](https://github.com/DaveVoyles/resume-builder/issues/143), unblocked
-- D2 `--notice` banner option on the HTML tracker renderer — [#144](https://github.com/DaveVoyles/resume-builder/issues/144), unblocked
-- D3 GitHub Actions Pages deploy workflow — [#145](https://github.com/DaveVoyles/resume-builder/issues/145), blocked by #143 + #144 (native `blocked_by` registered)
-- D5 README live-demo CTA — [#146](https://github.com/DaveVoyles/resume-builder/issues/146), blocked by #145
+- D1 demo fixture data ("Troy McClure") — [#143](https://github.com/DaveVoyles/resume-builder/issues/143) → [PR #149](https://github.com/DaveVoyles/resume-builder/pull/149)
+- D2 `--notice` banner option on the HTML tracker renderer — [#144](https://github.com/DaveVoyles/resume-builder/issues/144) → [PR #150](https://github.com/DaveVoyles/resume-builder/pull/150)
+- D3 GitHub Actions Pages deploy workflow — [#145](https://github.com/DaveVoyles/resume-builder/issues/145) → [PR #152](https://github.com/DaveVoyles/resume-builder/pull/152)
+- D5 README live-demo CTA — [#146](https://github.com/DaveVoyles/resume-builder/issues/146) → [PR #153](https://github.com/DaveVoyles/resume-builder/pull/153)
 
-**Caveat the next orchestrator must not skip:** GitHub Pages is **not yet enabled** in this
-repo's Settings → Pages. D3's workflow can't actually publish anything until Pages is turned on
-(Source: "GitHub Actions"), and per the plan's ⚠️ Irreversible Steps section that toggle is a
-repo-settings change **not** pre-authorized by the plan's approval — it needs explicit in-chat
-confirmation from Dave (or Dave flipping it on himself) before D3 is considered done. D3's issue
-body carries this same warning.
+**GitHub Pages gate resolved:** Dave enabled Pages himself (Settings → Pages, Source: "GitHub
+Actions") mid-execution, in response to the orchestrator's in-chat question. D3's first
+push-triggered deploy run went green (`gh run watch`), and the live demo is confirmed reachable
+at **https://DaveVoyles.github.io/resume-builder/** (200, correct Troy McClure content). Note
+the capitalized-casing URL — `check-privacy.js`'s deny-list is case-sensitive on the lowercase
+`davevoyles` handle, and GitHub Pages hostnames are case-insensitive, so both the plan doc
+(commit 60a7bc5, during planning) and the README link (D5, during execution) intentionally
+spell the URL as `DaveVoyles.github.io` to satisfy the check — hit and fixed twice across this
+plan's lifecycle.
+
+Loose end from planning also closed out: `docs/plan-0007-handoff` branch (pushed but stuck on a
+transient GitHub PR-creation 500) opened and merged as
+[PR #151](https://github.com/DaveVoyles/resume-builder/pull/151).
 
 ## Design plan 0005 — selective lucidRESUME adoption: COMPLETE (all 9 deliverables merged)
 
