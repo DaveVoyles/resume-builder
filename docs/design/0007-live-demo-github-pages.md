@@ -83,4 +83,13 @@ this plan is pre-authorized by approval.
 
 ## Execution Tracking
 
-_Populated by `plan-to-issues` after this plan is persisted._
+- Issues: [`plan:0007` open issues](https://github.com/DaveVoyles/resume-builder/issues?q=is%3Aissue+state%3Aopen+label%3Aplan%3A0007)
+- Board: [Agent Work](https://github.com/users/DaveVoyles/projects/2)
+
+D4 (the ADR) needed no issue — it was persisted alongside this plan doc in
+[PR #142](https://github.com/DaveVoyles/resume-builder/pull/142). D1/D2/D3/D5 are exported as
+issues [#143](https://github.com/DaveVoyles/resume-builder/issues/143),
+[#144](https://github.com/DaveVoyles/resume-builder/issues/144),
+[#145](https://github.com/DaveVoyles/resume-builder/issues/145), and
+[#146](https://github.com/DaveVoyles/resume-builder/issues/146) respectively, all seeded onto the
+Agent Work board's Todo column.
