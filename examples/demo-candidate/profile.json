@@ -1,0 +1,70 @@
+{
+  "schemaVersion": "1.0",
+  "candidate": {
+    "id": "demo-candidate",
+    "preferredName": "Troy McClure",
+    "name": "Troy McClure",
+    "headline": "Engineering leader focused on team scale and technical excellence",
+    "location": "Seattle, WA",
+    "email": "troy.mcclure@example.invalid",
+    "links": [
+      "https://portfolio.example.invalid/troy-mcclure",
+      "https://github.example.invalid/troy-mcclure"
+    ]
+  },
+  "summary": "Fictional engineering leader with experience building and scaling high-performing teams, driving architectural improvements, and mentoring engineering managers. Focused on technical excellence, career development, and organizational health.",
+  "skills": [
+    "Engineering team leadership",
+    "Architectural decision-making",
+    "Staff mentorship",
+    "Technical hiring",
+    "Organizational scaling"
+  ],
+  "experience": [
+    {
+      "id": "exp-001",
+      "organization": "Trey Research",
+      "title": "Senior Engineering Manager",
+      "startDate": "2021-06",
+      "endDate": null,
+      "location": "Remote",
+      "highlights": [
+        {
+          "text": "Led a team of 12 engineers across platform and infrastructure, shipping critical reliability improvements that reduced incident response time by 40%.",
+          "evidenceIds": ["ev-001"]
+        },
+        {
+          "text": "Mentored 3 engineering managers through their first management roles, establishing a structured feedback and career development process.",
+          "evidenceIds": ["ev-002"]
+        }
+      ]
+    },
+    {
+      "id": "exp-002",
+      "organization": "Wide World Importers",
+      "title": "Engineering Manager",
+      "startDate": "2018-01",
+      "endDate": "2021-05",
+      "location": "Seattle, WA",
+      "highlights": []
+    }
+  ],
+  "projects": [
+    {
+      "id": "proj-001",
+      "name": "Team Scaling Initiative",
+      "summary": "Fictional project demonstrating growth of engineering team from 6 to 12 people with focus on hiring quality and onboarding effectiveness.",
+      "evidenceIds": ["ev-001"]
+    }
+  ],
+  "education": [
+    {
+      "id": "edu-001",
+      "institution": "Example University",
+      "degree": "B.S. Computer Science",
+      "graduationDate": "2014"
+    }
+  ],
+  "sources": [],
+  "updatedAt": "2026-07-24"
+}
