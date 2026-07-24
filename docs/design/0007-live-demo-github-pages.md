@@ -70,7 +70,9 @@ this plan is pre-authorized by approval.
   gap rather than silently skipping it. Self-review performed instead: the plan doesn't
   reintroduce a server dependency (stays consistent with ADR 0002/0003's static-HTML-only line —
   `deploy-pages` publishes static output only), the GitHub Pages project-page URL
-  (`https://davevoyles.github.io/resume-builder/`) is the standard default for a project (not
+  (`https://DaveVoyles.github.io/resume-builder/` — GitHub Pages hostnames are case-insensitive,
+  and this repo's convention is to spell its own org/repo references capitalized) is the
+  standard default for a project (not
   user/org) repo once Pages is enabled with an Actions source, and `check-privacy.js` running
   against the new fixture data is the existing backstop against accidental PII in placeholder
   data.
