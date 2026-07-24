@@ -1,0 +1,299 @@
+[
+  {
+    "id": "role-tracked-001",
+    "company": "Adventure Works",
+    "title": "Director of Engineering",
+    "status": "applied",
+    "urls": {
+      "job": "https://jobs.example.invalid/adventure-works/director-engineering",
+      "apply": "https://apply.example.invalid/adventure-works/director-engineering"
+    },
+    "posting": {
+      "location": "Remote, US",
+      "workMode": "remote",
+      "compensation": {
+        "currency": "USD",
+        "minimum": 220000,
+        "maximum": 300000
+      }
+    },
+    "fit": {
+      "level": "strong",
+      "rationale": "Focuses on engineering team leadership and organizational scaling, direct match to candidate experience.",
+      "matchedEvidenceIds": ["ev-001", "ev-002"]
+    },
+    "notes": [],
+    "followUpQuestions": [],
+    "updatedAt": "2026-07-20"
+  },
+  {
+    "id": "role-tracked-002",
+    "company": "Litware",
+    "title": "Senior Engineering Manager, Platform",
+    "status": "interview",
+    "urls": {
+      "job": "https://jobs.example.invalid/litware/senior-engineering-manager",
+      "apply": "https://apply.example.invalid/litware/senior-engineering-manager"
+    },
+    "posting": {
+      "location": "Seattle, WA",
+      "workMode": "hybrid",
+      "compensation": {
+        "currency": "USD",
+        "minimum": 210000,
+        "maximum": 280000
+      }
+    },
+    "fit": {
+      "level": "strong",
+      "rationale": "Strong match for platform team leadership with mentorship focus.",
+      "matchedEvidenceIds": ["ev-001", "ev-002", "ev-003"]
+    },
+    "notes": ["First phone screen completed. Awaiting technical interview scheduling."],
+    "followUpQuestions": [],
+    "updatedAt": "2026-07-22"
+  },
+  {
+    "id": "role-tracked-003",
+    "company": "Woodgrove Bank",
+    "title": "VP of Engineering",
+    "status": "offer",
+    "urls": {
+      "job": "https://jobs.example.invalid/woodgrove/vp-engineering",
+      "apply": "https://apply.example.invalid/woodgrove/vp-engineering"
+    },
+    "posting": {
+      "location": "New York, NY",
+      "workMode": "hybrid",
+      "compensation": {
+        "currency": "USD",
+        "minimum": 250000,
+        "maximum": 350000
+      }
+    },
+    "fit": {
+      "level": "very-strong",
+      "rationale": "VP-level role aligns with candidate aspirations and experience in scaling teams.",
+      "matchedEvidenceIds": ["ev-001", "ev-003"]
+    },
+    "notes": ["Verbal offer received 2026-07-23. Compensation details: $270k base, $80k bonus, $30k equity/year."],
+    "followUpQuestions": ["Timeline for equity vesting schedule?"],
+    "updatedAt": "2026-07-23"
+  },
+  {
+    "id": "role-tracked-004",
+    "company": "Proseware",
+    "title": "Engineering Manager, Backend",
+    "status": "rejected",
+    "urls": {
+      "job": "https://jobs.example.invalid/proseware/engineering-manager-backend",
+      "apply": "https://apply.example.invalid/proseware/engineering-manager-backend"
+    },
+    "posting": {
+      "location": "San Francisco, CA",
+      "workMode": "on-site",
+      "compensation": {
+        "currency": "USD",
+        "minimum": 200000,
+        "maximum": 260000
+      }
+    },
+    "fit": {
+      "level": "moderate",
+      "rationale": "Role is strong fit but on-site requirement outside candidate preferences.",
+      "matchedEvidenceIds": ["ev-001"]
+    },
+    "notes": ["Rejection feedback: Role phased to IC track rather than management progression. Team restructuring underway."],
+    "followUpQuestions": [],
+    "updatedAt": "2026-07-19"
+  },
+  {
+    "id": "role-tracked-005",
+    "company": "Blue Yonder Airlines",
+    "title": "Director of Infrastructure Engineering",
+    "status": "ghosted",
+    "urls": {
+      "job": "https://jobs.example.invalid/blue-yonder/director-infrastructure",
+      "apply": "https://apply.example.invalid/blue-yonder/director-infrastructure"
+    },
+    "posting": {
+      "location": "Chicago, IL",
+      "workMode": "hybrid",
+      "compensation": {
+        "currency": "USD",
+        "minimum": 230000,
+        "maximum": 310000
+      }
+    },
+    "fit": {
+      "level": "strong",
+      "rationale": "Infrastructure focus less aligned but director-level responsibility matches.",
+      "matchedEvidenceIds": ["ev-001"]
+    },
+    "notes": ["Last contact: initial screening 2026-07-10. No follow-up after submission of take-home exercise."],
+    "followUpQuestions": [],
+    "updatedAt": "2026-07-15"
+  },
+  {
+    "id": "role-tracked-006",
+    "company": "Trey Research",
+    "title": "Director of Engineering Operations",
+    "status": "interested",
+    "urls": {
+      "job": "https://jobs.example.invalid/trey-research/director-eng-ops",
+      "apply": "https://apply.example.invalid/trey-research/director-eng-ops"
+    },
+    "posting": {
+      "location": "Remote",
+      "workMode": "remote",
+      "compensation": {
+        "currency": "USD",
+        "minimum": 225000,
+        "maximum": 300000
+      }
+    },
+    "fit": {
+      "level": "very-strong",
+      "rationale": "Internal promotion opportunity at current employer. Very strong fit.",
+      "matchedEvidenceIds": ["ev-001", "ev-002", "ev-003"]
+    },
+    "notes": ["Exploration stage. Discussing scope with current leadership."],
+    "followUpQuestions": ["Is this a true promotion or lateral expansion?"],
+    "updatedAt": "2026-07-24"
+  },
+  {
+    "id": "role-tracked-007",
+    "company": "Tailspin Toys",
+    "title": "Senior Engineering Manager",
+    "status": "interview",
+    "urls": {
+      "job": "https://jobs.example.invalid/tailspin-toys/senior-eng-manager",
+      "apply": "https://apply.example.invalid/tailspin-toys/senior-eng-manager"
+    },
+    "posting": {
+      "location": "Portland, OR",
+      "workMode": "hybrid",
+      "compensation": {
+        "currency": "USD",
+        "minimum": 205000,
+        "maximum": 275000
+      }
+    },
+    "fit": {
+      "level": "strong",
+      "rationale": "Regional preference makes this attractive. Strong team leadership fit.",
+      "matchedEvidenceIds": ["ev-001", "ev-003"]
+    },
+    "notes": ["Technical interview passed. Scheduled for team panel interview."],
+    "followUpQuestions": [],
+    "updatedAt": "2026-07-21"
+  },
+  {
+    "id": "role-tracked-008",
+    "company": "Wide World Importers",
+    "title": "VP of Engineering",
+    "status": "not-applied",
+    "urls": {
+      "job": "https://jobs.example.invalid/wide-world/vp-engineering",
+      "apply": "https://apply.example.invalid/wide-world/vp-engineering"
+    },
+    "posting": {
+      "location": "Seattle, WA",
+      "workMode": "on-site",
+      "compensation": {
+        "currency": "USD",
+        "minimum": 240000,
+        "maximum": 320000
+      }
+    },
+    "fit": {
+      "level": "moderate",
+      "rationale": "VP-level fit but on-site only at current workplace. Worth revisiting if remote compromise available.",
+      "matchedEvidenceIds": ["ev-001"]
+    },
+    "notes": ["Previous employer. Monitoring for remote-flexible version of role."],
+    "followUpQuestions": [],
+    "updatedAt": "2026-07-18"
+  },
+  {
+    "id": "role-tracked-009",
+    "company": "Contoso Corporation",
+    "title": "Engineering Manager, Cloud Platform",
+    "status": "applied",
+    "urls": {
+      "job": "https://jobs.example.invalid/contoso/cloud-platform-manager",
+      "apply": "https://apply.example.invalid/contoso/cloud-platform-manager"
+    },
+    "posting": {
+      "location": "Austin, TX",
+      "workMode": "hybrid",
+      "compensation": {
+        "currency": "USD",
+        "minimum": 210000,
+        "maximum": 280000
+      }
+    },
+    "fit": {
+      "level": "strong",
+      "rationale": "Cloud platform focus aligns with infrastructure background. Growing regional tech hub.",
+      "matchedEvidenceIds": ["ev-001"]
+    },
+    "notes": [],
+    "followUpQuestions": [],
+    "updatedAt": "2026-07-17"
+  },
+  {
+    "id": "role-tracked-010",
+    "company": "Humongous Insurance",
+    "title": "Director of Engineering",
+    "status": "rejected",
+    "urls": {
+      "job": "https://jobs.example.invalid/humongous/director-engineering",
+      "apply": "https://apply.example.invalid/humongous/director-engineering"
+    },
+    "posting": {
+      "location": "Boston, MA",
+      "workMode": "on-site",
+      "compensation": {
+        "currency": "USD",
+        "minimum": 225000,
+        "maximum": 300000
+      }
+    },
+    "fit": {
+      "level": "moderate",
+      "rationale": "Finance/insurance domain less familiar. On-site requirement is significant limitation.",
+      "matchedEvidenceIds": []
+    },
+    "notes": ["Rejection reason: Strong candidate but seeking someone with insurance domain expertise or prior on-site availability."],
+    "followUpQuestions": [],
+    "updatedAt": "2026-07-16"
+  },
+  {
+    "id": "role-tracked-011",
+    "company": "Fabulous Furnishings",
+    "title": "Senior Director of Engineering",
+    "status": "not-applied",
+    "urls": {
+      "job": "https://jobs.example.invalid/fabulous-furnishings/senior-director",
+      "apply": "https://apply.example.invalid/fabulous-furnishings/senior-director"
+    },
+    "posting": {
+      "location": "Los Angeles, CA",
+      "workMode": "on-site",
+      "compensation": {
+        "currency": "USD",
+        "minimum": 250000,
+        "maximum": 340000
+      }
+    },
+    "fit": {
+      "level": "moderate",
+      "rationale": "Strong compensation but retail/furniture domain and on-site location are not aligned.",
+      "matchedEvidenceIds": []
+    },
+    "notes": ["Saved for future consideration if role becomes remote-flexible."],
+    "followUpQuestions": [],
+    "updatedAt": "2026-07-14"
+  }
+]

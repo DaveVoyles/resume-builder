@@ -1,0 +1,86 @@
+[
+  {
+    "id": "role-seed-001",
+    "company": "Adventure Works",
+    "title": "VP of Engineering",
+    "status": "seeded",
+    "urls": {
+      "job": "https://jobs.example.invalid/adventure-works/vp-engineering",
+      "apply": ""
+    },
+    "source": "candidate",
+    "location": "Remote, US",
+    "seniority": "director",
+    "employmentType": "full-time",
+    "workMode": "remote",
+    "rationale": "Step-up role from Director position. Strong cultural fit with focus on team development.",
+    "keywords": ["team leadership", "organizational scaling", "technical strategy"],
+    "evidenceNeeded": [],
+    "notes": ["Stretch role candidate. Worth applying if Director role doesn't land quickly."],
+    "followUpQuestions": ["Are they actively recruiting or exploratory at this stage?"],
+    "createdAt": "2026-07-24"
+  },
+  {
+    "id": "role-seed-002",
+    "company": "Litware International",
+    "title": "Director of Infrastructure Engineering",
+    "status": "seeded",
+    "urls": {
+      "job": "https://jobs.example.invalid/litware-intl/director-infra",
+      "apply": ""
+    },
+    "source": "network",
+    "location": "Hybrid, San Francisco Bay Area",
+    "seniority": "director",
+    "employmentType": "full-time",
+    "workMode": "hybrid",
+    "rationale": "Referred by former colleague. Infrastructure domain knowledge transferable from platform background.",
+    "keywords": ["infrastructure", "team leadership", "system reliability"],
+    "evidenceNeeded": ["Clarify infrastructure leadership experience at previous roles."],
+    "notes": ["Strong referral source. Hiring manager aware of candidate interest."],
+    "followUpQuestions": [],
+    "createdAt": "2026-07-24"
+  },
+  {
+    "id": "role-seed-003",
+    "company": "Proseware Consulting",
+    "title": "Senior Engineering Manager",
+    "status": "seeded",
+    "urls": {
+      "job": "https://jobs.example.invalid/proseware-consulting/senior-mgr",
+      "apply": ""
+    },
+    "source": "recruiter",
+    "location": "Remote",
+    "seniority": "senior",
+    "employmentType": "full-time",
+    "workMode": "remote",
+    "rationale": "Recruiter outreach. Consulting background provides organizational change experience.",
+    "keywords": ["team leadership", "organizational development", "change management"],
+    "evidenceNeeded": [],
+    "notes": ["Recruiter contact: Sarah Johnson (sarah.johnson@recruiter.example). Follow up by end of month."],
+    "followUpQuestions": ["What is the team size and charter?"],
+    "createdAt": "2026-07-23"
+  },
+  {
+    "id": "role-seed-004",
+    "company": "Northridge Securities",
+    "title": "VP of Engineering",
+    "status": "seeded",
+    "urls": {
+      "job": "https://jobs.example.invalid/northridge/vp-engineering",
+      "apply": ""
+    },
+    "source": "LinkedIn",
+    "location": "New York, NY",
+    "seniority": "director",
+    "employmentType": "full-time",
+    "workMode": "hybrid",
+    "rationale": "VP-level opportunity in financial services. Aligns with compensation targets.",
+    "keywords": ["team leadership", "financial technology", "risk management"],
+    "evidenceNeeded": ["Research financial services engineering culture and compliance requirements."],
+    "notes": ["Found via LinkedIn Jobs. No active application yet. Good backup to offer pending roles."],
+    "followUpQuestions": [],
+    "createdAt": "2026-07-22"
+  }
+]

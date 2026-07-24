@@ -1,0 +1,81 @@
+{
+  "schemaVersion": "1.0",
+  "roleTargets": [
+    {
+      "titles": [
+        "Engineering Manager",
+        "Senior Engineering Manager",
+        "Director of Engineering",
+        "VP of Engineering"
+      ],
+      "seniority": "senior",
+      "employmentTypes": ["full-time"],
+      "keywords": ["team leadership", "technical excellence", "organizational scaling", "mentorship"],
+      "priority": "must"
+    }
+  ],
+  "locations": {
+    "workModes": ["remote", "hybrid"],
+    "preferredRegions": ["US West Coast", "US East Coast"],
+    "excludedRegions": [],
+    "priority": "should"
+  },
+  "industries": [
+    {
+      "name": "Technology / Software",
+      "priority": "must"
+    },
+    {
+      "name": "Financial Services",
+      "priority": "should"
+    },
+    {
+      "name": "Telecommunications",
+      "priority": "avoid"
+    }
+  ],
+  "technologies": [
+    {
+      "name": "Cloud infrastructure",
+      "priority": "should"
+    },
+    {
+      "name": "Microservices",
+      "priority": "should"
+    }
+  ],
+  "compensation": {
+    "currency": "USD",
+    "baseMinimum": 210000,
+    "totalMinimum": 260000,
+    "totalTarget": 340000,
+    "publiclyShare": false
+  },
+  "travel": "limited",
+  "dealBreakers": [
+    {
+      "id": "deal-001",
+      "text": "No relocation outside the United States.",
+      "priority": "must"
+    },
+    {
+      "id": "deal-002",
+      "text": "Requires involvement in technical hiring and team building.",
+      "priority": "must"
+    }
+  ],
+  "resumeStyle": {
+    "tone": "direct",
+    "length": "one-page",
+    "emphasis": ["team building", "technical leadership", "organizational impact"]
+  },
+  "stalenessThresholds": {
+    "applied": 14,
+    "interview": 7,
+    "offer": 3,
+    "not-applied": 30,
+    "other": 21
+  },
+  "notes": "Fictional preferences for engineering leadership job search. Based on senior engineering manager / director-level target roles.",
+  "updatedAt": "2026-07-24"
+}
