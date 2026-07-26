@@ -77,6 +77,18 @@ const PRIVATE_PATHS = [
  * as if it were the tool's default — is closed structurally: the ported
  * engine takes candidate name/contact/education entirely from the resume
  * config, never from a constant.
+ *
+ * WARNING — this check has no awareness of "describing the rule" vs.
+ * "violating it": the match below is a plain case-sensitive substring scan
+ * (`content.includes(term)`, see collectTermFindings() further down)
+ * against every non-excluded file's raw content, including prose. If you
+ * need to describe this deny-list in docs, a HANDOFF note, a commit
+ * message, or a PR description, do NOT spell out a literal denied term
+ * (even in backticks) — refer to it obliquely instead (e.g. "the lowercase
+ * handle", "the real local file path"). Hit twice in one session during
+ * design plan 0007's execution (issue #155): once on a URL casing
+ * mismatch, and less obviously, on HANDOFF.md prose that quoted the
+ * literal term in backticks to *explain* the first fix.
  */
 const DENY_TERMS = [
   { term: "Dnvoyles", reason: "candidate's real email handle" },
