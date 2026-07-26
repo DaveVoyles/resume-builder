@@ -40,3 +40,7 @@ outputs/
 /scripts/review-lens-validate-findings.sh
 /scripts/review-lens-receipt.sh
 /scripts/board-seed.sh
+
+# Agent-landing-floor tooling (scripts/enable-landing-floor.sh symlinks) -- machine-local, never commit
+/scripts/gh-app-token.sh
+/scripts/gh-auth-doctor.sh
