@@ -1,0 +1,4 @@
+{
+  "name": "resume-builder portable cloud",
+  "install": "bash scripts/setup-cursor-cloud.sh"
+}
