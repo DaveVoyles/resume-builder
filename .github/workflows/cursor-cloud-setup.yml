@@ -1,0 +1,19 @@
+name: Cursor Cloud setup
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  cursor-cloud-setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Prove portable Cloud setup
+        run: bash scripts/setup-cursor-cloud.sh
