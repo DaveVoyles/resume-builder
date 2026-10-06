@@ -25,7 +25,7 @@
   }
   ::selection { background: #d5e2f2; color: var(--ink); }
   a:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
-  main { max-width: 44rem; margin: 0 auto; padding: 3.2rem 1.4rem 4.5rem; }
+  main { max-width: 52rem; margin: 0 auto; padding: 3.2rem 1.4rem 4.5rem; }
   h1 {
     font-size: clamp(2.3rem, 6vw, 3.4rem);
     line-height: 1.05;
@@ -47,7 +47,51 @@
   .sample { background: var(--example); box-shadow: none; }
   .sample p { margin: 0.15rem 0; }
   .sample h3 { font-family: system-ui, sans-serif; font-size: 0.95rem; font-weight: 650; color: var(--accent); margin: 0 0 0.45rem; }
-  ol { list-style: none; margin: 1.6rem 0 0; padding: 0; }
+  .diagram { margin: 1.4rem 0 0.4rem; }
+  .diagram p { font-family: system-ui, sans-serif; font-size: 1.02rem; }
+  .frame {
+    margin-top: 0.8rem;
+    background: var(--paper);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 16px 36px rgba(28, 25, 21, 0.08);
+    height: 36rem;
+  }
+  .frame iframe { width: 100%; height: 100%; border: 0; background: #fff; }
+  .trip { position: relative; margin-top: 1.6rem; }
+  ol { list-style: none; margin: 0; padding: 0; }
+  .traveler {
+    position: absolute;
+    left: 1.02rem;
+    top: 0;
+    width: 0.9rem;
+    height: 0.9rem;
+    margin-left: 0;
+    border-radius: 50%;
+    background: #b8893d;
+    box-shadow: 0 0 0 7px rgba(184, 137, 61, 0.22);
+    z-index: 2;
+    transition: transform 720ms cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+  }
+  li.step.on .n {
+    background: #b8893d;
+    transform: scale(1.06);
+    transition: background 400ms cubic-bezier(0.16, 1, 0.3, 1), transform 400ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  li.step { animation: arrive 640ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+  li.step:nth-child(1) { animation-delay: 40ms; }
+  li.step:nth-child(2) { animation-delay: 90ms; }
+  li.step:nth-child(3) { animation-delay: 140ms; }
+  li.step:nth-child(4) { animation-delay: 190ms; }
+  li.step:nth-child(5) { animation-delay: 240ms; }
+  li.step:nth-child(6) { animation-delay: 290ms; }
+  li.step:nth-child(7) { animation-delay: 340ms; }
+  li.step:nth-child(8) { animation-delay: 390ms; }
+  @keyframes arrive {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: none; }
+  }
   li.step {
     display: grid;
     grid-template-columns: 3.2rem 1fr;
@@ -86,6 +130,12 @@
     li.step { grid-template-columns: 2.5rem 1fr; }
     .n { width: 2.4rem; height: 2.4rem; }
     li.step:not(:last-child)::before { left: 1.15rem; }
+    .traveler { left: 0.78rem; }
+    .frame { height: 28rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    li.step, .traveler { animation: none; transition: none; }
+    .traveler { display: none; }
   }
 </style>
 </head>
@@ -114,6 +164,16 @@
     </div>
   </section>
 
+  <section class="diagram">
+    <h2>Watch the trip</h2>
+    <p>The line below is Alex’s path. It starts with an old resume, passes through one job, and ends on a list. A light runs along the arrows. You still decide what is true, and you still decide when anything is sent.</p>
+    <div class="frame">
+      <iframe src="journey.html" title="Alex’s path from an old resume to a job list"></iframe>
+    </div>
+  </section>
+
+  <div class="trip">
+  <div class="traveler" hidden></div>
   <ol>
     <li class="step">
       <div class="n">1</div>
@@ -180,6 +240,7 @@
       </div>
     </li>
   </ol>
+  </div>
 
   <section class="close">
     <h2>A few kind rules</h2>
@@ -191,5 +252,26 @@
     </ul>
   </section>
 </main>
+<script>
+  const steps = Array.from(document.querySelectorAll("li.step"));
+  const traveler = document.querySelector(".traveler");
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function place(index) {
+    steps.forEach((step, i) => step.classList.toggle("on", i === index));
+    const step = steps[index];
+    if (!step || !traveler) return;
+    traveler.hidden = false;
+    traveler.style.transform = "translateY(" + (step.offsetTop + 10) + "px)";
+  }
+  if (!reduce && steps.length) {
+    let index = 0;
+    place(0);
+    window.setInterval(() => {
+      index = (index + 1) % steps.length;
+      place(index);
+    }, 2200);
+    window.addEventListener("resize", () => place(index));
+  }
+</script>
 </body>
 </html>

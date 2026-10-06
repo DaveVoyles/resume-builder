@@ -6,7 +6,7 @@ If you must name a file type, gloss it in the same sentence. "Word file" is enou
 
 ## 1. This page
 
-"I'm opening one page in your browser. It walks through the steps with a made-up person, so you can see what a resume and a job look like before we use yours. You don't need to do anything yet. Tell me when you can see it."
+"I'm opening one page in your browser. It walks through the steps with a made-up person, and a picture on that page moves from an old resume to a job list. You don't need to do anything yet. Tell me when you can see it."
 
 If they cannot see it: "I'll try again. You should see a page titled Your job search, one page."
 

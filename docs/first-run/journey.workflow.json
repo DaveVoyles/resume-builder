@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "From an old resume to one job",
+    "subtitle": "You talk. The helper writes. Nothing is sent until you say so.",
+    "animation": "trace"
+  },
+  "lanes": [
+    { "id": "you", "label": "You" },
+    { "id": "helper", "label": "Your helper" }
+  ],
+  "phases": [
+    { "id": "story", "label": "Your story", "fromCol": 0, "toCol": 1 },
+    { "id": "job", "label": "One job", "fromCol": 2, "toCol": 3 },
+    { "id": "after", "label": "After you decide", "fromCol": 4, "toCol": 5 }
+  ],
+  "mainPath": ["share", "ask", "pick", "write", "read", "list"],
+  "nodes": [
+    { "id": "share", "lane": "you", "col": 0, "type": "frontend", "label": "Old resume", "sublabel": "Contoso Labs" },
+    { "id": "ask", "lane": "helper", "col": 1, "type": "backend", "label": "Questions", "sublabel": "one at a time" },
+    { "id": "pick", "lane": "you", "col": 2, "type": "frontend", "label": "One job", "sublabel": "Northwind" },
+    { "id": "write", "lane": "helper", "col": 3, "type": "backend", "label": "Word file", "sublabel": "for that job" },
+    { "id": "read", "lane": "you", "col": 4, "type": "frontend", "label": "You read it", "sublabel": "fix untrue lines" },
+    { "id": "list", "lane": "helper", "col": 5, "type": "database", "label": "Job list", "sublabel": "then you apply" }
+  ],
+  "edges": [
+    { "from": "share", "to": "ask", "variant": "emphasis", "fromSide": "bottom", "toSide": "top", "route": "drop" },
+    { "from": "ask", "to": "pick", "variant": "emphasis", "fromSide": "top", "toSide": "bottom", "route": "drop" },
+    { "from": "pick", "to": "write", "variant": "emphasis", "fromSide": "bottom", "toSide": "top", "route": "drop" },
+    { "from": "write", "to": "read", "variant": "emphasis", "fromSide": "top", "toSide": "bottom", "route": "drop" },
+    { "from": "read", "to": "list", "variant": "emphasis", "fromSide": "bottom", "toSide": "top", "route": "drop" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "What moves",
+      "items": [
+        "Your old resume starts the trip",
+        "The helper asks, then writes",
+        "You approve the job and the words",
+        "The list updates only after you say what happened"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "What stays put",
+      "items": [
+        "Alex, Contoso, and Northwind are made up",
+        "Your real files stay on your computer",
+        "This picture does not send an application"
+      ]
+    }
+  ]
+}
