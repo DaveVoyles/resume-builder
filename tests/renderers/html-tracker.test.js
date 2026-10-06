@@ -559,7 +559,7 @@ test("html tracker shows no stale badge for recent applications", () => {
       id: "role-001",
       company: "Fabrikam AI",
       title: "Product Manager",
-      application: { status: "applied", appliedAt: "2026-07-15" }, // 5 days old (threshold: 14)
+      application: { status: "applied", appliedAt: new Date(Date.now() - 5 * 86400000).toISOString().split("T")[0] }, // 5 days old (threshold: 14)
       resume: { outputPath: "outputs/resumes/fabrikam-ai.docx" },
     },
   ];
