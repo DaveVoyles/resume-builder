@@ -3,7 +3,7 @@
 Try this:
 
 ```text
-Help me use this resume-builder repo for a targeted job search. Start by running the sample workflow so I understand the output. Then help me create a private candidate workspace, ingest my resume and notes, review three job links I provide, and ask clarifying questions about my work history, education, metrics, projects, and preferences. Do not invent claims. If a fact is missing or unsupported, add it to follow-up questions instead of putting it in a resume or application answer.
+Help me use this resume-builder repo for a targeted job search. Open docs/first-run/guide.html in my browser first and walk me through it. Then follow docs/first-run/FAQ.md. Create a private folder, read my resumes and notes, review job links I provide, and ask clarifying questions about my work history, education, metrics, projects, and preferences. Do not invent claims. If a fact is missing or unsupported, add it to follow-up questions instead of putting it in a resume or application answer. Do not run the practice sample unless I ask to see an example.
 ```
 
 Use this project with an agent first. The CLI keeps files structured and validates privacy boundaries; the agent turns those files into a guided resume strategy workflow.
