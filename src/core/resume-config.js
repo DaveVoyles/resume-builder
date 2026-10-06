@@ -28,6 +28,56 @@
  * }
  */
 
+const MAX_HEADLINE_CHARS = 80;
+const MAX_SUMMARY_WORDS = 120;
+const MAX_FIRST_JOB_BULLETS = 6;
+const MAX_LATER_JOB_BULLETS = 4;
+const MAX_PROXY_SCORE = 1000;
+
+function wordCount(text) {
+  return typeof text === "string" ? text.split(/\s+/u).filter(Boolean).length : 0;
+}
+
+// ResumeProxyScore = summary words + all bullet words + 40 per job + 20 per education row.
+// Rough page-length proxy; a score over MAX_PROXY_SCORE fails validation.
+function validateShortResume(config, errors) {
+  const headline = config.candidate && config.candidate.headline;
+  if (!isNonEmptyString(headline)) {
+    errors.push("candidate.headline: required non-empty string");
+  } else if (headline.length > MAX_HEADLINE_CHARS) {
+    errors.push(`candidate.headline: must be ${MAX_HEADLINE_CHARS} characters or fewer (got ${headline.length})`);
+  }
+
+  const summaryWords = wordCount(config.summary && config.summary.text);
+  if (summaryWords > MAX_SUMMARY_WORDS) {
+    errors.push(`summary.text: must be ${MAX_SUMMARY_WORDS} words or fewer (got ${summaryWords})`);
+  }
+
+  let bulletWords = 0;
+  let jobCount = 0;
+  if (Array.isArray(config.experienceSections)) {
+    config.experienceSections.forEach((section, i) => {
+      if (!isObject(section) || !Array.isArray(section.jobs)) return;
+      section.jobs.forEach((job, j) => {
+        if (!isObject(job)) return;
+        const limit = jobCount === 0 ? MAX_FIRST_JOB_BULLETS : MAX_LATER_JOB_BULLETS;
+        jobCount += 1;
+        if (!Array.isArray(job.bullets)) return;
+        if (job.bullets.length > limit) {
+          errors.push(`experienceSections[${i}].jobs[${j}].bullets: at most ${limit} bullets allowed for this job (got ${job.bullets.length})`);
+        }
+        job.bullets.forEach((bullet) => { bulletWords += wordCount(bullet); });
+      });
+    });
+  }
+
+  const educationRows = Array.isArray(config.education) ? config.education.length : 0;
+  const score = summaryWords + bulletWords + 40 * jobCount + 20 * educationRows;
+  if (score > MAX_PROXY_SCORE) {
+    errors.push(`ResumeProxyScore ${score} is over ${MAX_PROXY_SCORE}; shorten the summary or bullets, or drop jobs`);
+  }
+}
+
 const LAYOUTS = ["combined", "speaking-then-publications", "combined-speaking-only", "publications-only"];
 
 function isNonEmptyString(value) {
@@ -158,6 +208,7 @@ function validateResumeConfig(config) {
 
   validateExperienceSections(config.experienceSections, errors);
   validateSkills(config.skills, errors);
+  validateShortResume(config, errors);
 
   validateEntryList(config.education, "education", ["degree", "institution", "dates"], errors);
   validateEntryList(config.publications, "publications", ["title", "publisher", "dates"], errors);

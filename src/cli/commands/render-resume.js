@@ -54,6 +54,18 @@ async function run(options) {
   const companyDir = path.join(paths.outputResumes, sanitizeSegment(config.company, "company"));
   const outputPath = path.join(companyDir, sanitizeSegment(fileName, "outputFileName"));
 
+  if (fs.existsSync(outputPath) && options.includeApplied !== true) {
+    const tracked = readJson(paths.rolesTracked, []);
+    const sent = tracked.find((role) => role
+      && role.company === config.company
+      && role.application
+      && role.application.status
+      && role.application.status !== "interested");
+    if (sent) {
+      throw new Error(`Refusing to overwrite ${outputPath}: ${config.company} already has application status "${sent.application.status}". Pass --include-applied to overwrite it.`);
+    }
+  }
+
   ensureDir(companyDir);
   fs.writeFileSync(outputPath, buffer);
 

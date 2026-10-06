@@ -11,6 +11,7 @@ function validConfig() {
     outputFileName: "sample-candidate-acme-corp.docx",
     candidate: {
       name: "Sample Candidate",
+      headline: "Fictional engineer for tests",
       contact: [
         { text: "Remote, US" },
         { text: "sample.candidate@example.invalid", link: "mailto:sample.candidate@example.invalid" },
@@ -186,4 +187,64 @@ test("validateResumeConfig rejects a non-string subHeader", () => {
   const { valid, errors } = validateResumeConfig(config);
   assert.equal(valid, false);
   assert.ok(errors.some((error) => error.includes("subHeader")));
+});
+
+test("validateResumeConfig requires a headline of at most 80 characters", () => {
+  const missing = validConfig();
+  delete missing.candidate.headline;
+  assert.equal(validateResumeConfig(missing).valid, false);
+  const long = validConfig();
+  long.candidate.headline = "x".repeat(81);
+  assert.equal(validateResumeConfig(long).valid, false);
+});
+
+test("validateResumeConfig rejects a summary over 120 words", () => {
+  const config = validConfig();
+  config.summary.text = Array(121).fill("word").join(" ");
+  const { valid, errors } = validateResumeConfig(config);
+  assert.equal(valid, false);
+  assert.ok(errors.some((e) => e.startsWith("summary.text")));
+});
+
+test("validateResumeConfig limits bullets: 6 for the first job, 4 for later jobs", () => {
+  const job = (count) => ({
+    title: "Engineer",
+    company: "Acme Corp",
+    dates: "2020",
+    bullets: Array.from({ length: count }, (_, i) => `Fictional bullet ${i}.`),
+  });
+  const ok = validConfig();
+  ok.experienceSections[0].jobs = [job(6), job(4)];
+  assert.equal(validateResumeConfig(ok).valid, true);
+
+  const tooManyFirst = validConfig();
+  tooManyFirst.experienceSections[0].jobs = [job(7)];
+  assert.equal(validateResumeConfig(tooManyFirst).valid, false);
+
+  const tooManyLater = validConfig();
+  tooManyLater.experienceSections[0].jobs = [job(2), job(5)];
+  assert.equal(validateResumeConfig(tooManyLater).valid, false);
+});
+
+test("validateResumeConfig rejects a ResumeProxyScore over 1000", () => {
+  const config = validConfig();
+  const bullet = Array(30).fill("word").join(" ");
+  config.experienceSections[0].jobs = [0, 1, 2, 3].map(() => ({
+    title: "Engineer",
+    company: "Acme Corp",
+    dates: "2020",
+    bullets: [bullet, bullet, bullet, bullet],
+  }));
+  const { valid, errors } = validateResumeConfig(config);
+  assert.equal(valid, false);
+  assert.ok(errors.some((e) => e.includes("ResumeProxyScore")));
+});
+
+test("the Northwind sample config passes validation", () => {
+  const fs = require("fs");
+  const path = require("path");
+  const file = path.join(__dirname, "..", "..", "examples", "sample-candidate", "resume-configs", "northwind-tools-senior-pm.json");
+  const { valid, errors } = validateResumeConfig(JSON.parse(fs.readFileSync(file, "utf8")));
+  assert.deepEqual(errors, []);
+  assert.equal(valid, true);
 });

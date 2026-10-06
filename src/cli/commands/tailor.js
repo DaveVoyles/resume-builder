@@ -143,7 +143,7 @@ async function run(options) {
   // Step 3: render the DOCX (D2, render-resume) — delegate to the render
   // command itself so path sanitization, directory layout, and file writing
   // all stay in one place instead of a second, drifting copy here.
-  const outputPath = await renderResume.run({ workspace: options.workspace, config: options.config });
+  const outputPath = await renderResume.run({ workspace: options.workspace, config: options.config, includeApplied: options.includeApplied });
 
   // Step 4: register the tracked role (D6, add-role) — delegate to
   // add-role's own command (dedup by id or job URL, tracked-list

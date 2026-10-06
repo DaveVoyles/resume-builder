@@ -23,6 +23,7 @@ function fictionalConfig(overrides = {}) {
     company: "Fabrikam AI",
     candidate: {
       name: "Sample Candidate",
+      headline: "Fictional engineer for tests",
       contact: [{ text: "Remote, US" }],
     },
     summary: { text: "Fictional product leader focused on developer platforms and AI-assisted workflows." },
@@ -93,6 +94,7 @@ function fictionalCoverLetterConfig(overrides = {}) {
     company: "Fabrikam AI",
     candidate: {
       name: "Sample Candidate",
+      headline: "Fictional engineer for tests",
       contact: [{ text: "Remote, US" }],
     },
     salutation: "Dear Hiring Manager,",
@@ -260,6 +262,7 @@ test("tailor is safe to re-run: does not duplicate the tracked role or reset an 
 
     await command.run({
       workspace,
+      includeApplied: true,
       config: configPath,
       url: "https://jobs.example.invalid/fabrikam/developer-platform-pm",
       title: "Developer platform product manager",
@@ -492,6 +495,7 @@ test("tailor end-to-end: tailors the real sample-candidate's Fabrikam AI seed ro
       outputFileName: "alex-rivera-fabrikam-ai.docx",
       candidate: {
         name: "Alex Rivera",
+        headline: "Fictional engineer for tests",
         contact: [{ text: "Raleigh, NC" }],
       },
       summary: {
