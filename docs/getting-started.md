@@ -14,7 +14,7 @@ New here? [`docs/playbooks/onboarding.md`](playbooks/onboarding.md) is the proac
 
 ## 🤖 Recommended path: use an agent
 
-Use this path if you want the simplest experience. Ask a terminal agent to download the repo, run the sample, create your workspace, and interview you before drafting anything.
+Use this path if you want the simplest experience. Ask a terminal agent to download the repo, open the briefing, create your workspace, and interview you before drafting anything.
 
 An agent can help you by following packaged **playbooks** from [`docs/playbooks/`](playbooks/) — vendor-neutral markdown instructions for intake interviews, workspace validation, and resume tailoring. The agent does the semantic work (asking clarifying questions, drafting strategy); the CLI validates the output.
 
@@ -26,16 +26,16 @@ An agent can help you:
 - ⚠️ Avoid unsupported resume claims.
 - ✍️ Turn workspace evidence into resume strategy notes and application answers.
 
-## 🧪 First success: run the sample
+## 🧪 The briefing comes first
 
-The first goal is to make sure the fictional sample works. Your agent can run this for you:
+Open [`docs/first-run/guide.html`](first-run/guide.html) before anything else, and follow [`docs/first-run/FAQ.md`](first-run/FAQ.md). Do not lead with `npm start`.
+
+`npm start` is a practice with a fictional person. It uses a temporary folder and then deletes that folder. Run it only if the person asks to see an example.
 
 ```bash
 npm install
 npm start
 ```
-
-`npm start` runs the sample workflow. You should see generated sample outputs under `examples/sample-candidate/outputs/`.
 
 ## 🗂️ Create your private workspace
 
@@ -57,7 +57,7 @@ This creates a local `candidate/` workspace with:
 
 It also opens a browser tab to your tracker dashboard automatically (`outputs/tracker.html`) — empty at first, it fills in as you go. Pass `--noServe` to skip this in CI/automation contexts, or `--noOpen` to start the server without opening a tab.
 
-Drop your material into `inputs/`, then ask your agent to ingest it:
+The agent opens `candidate/inputs/` so the resumes folder and the notes folder are both visible. Resumes go in `inputs/resumes/`. Notes go in `inputs/notes/`. Then ask your agent to ingest what you added:
 
 ```bash
 npm run workspace:ingest -- --workspace candidate --resume <file> --notes <file> --links candidate/inputs/links.md

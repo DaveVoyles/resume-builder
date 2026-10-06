@@ -1,6 +1,6 @@
 # What to say
 
-Say these sentences. Then stop and wait. Do not add folder names, command names, or file types unless the person asks.
+Say these sentences. Then stop and wait. Do not add folder paths, command names, or file types unless the person asks. The resumes folder and the notes folder are the exception in section 3, because that window is already open.
 
 If you must name a file type, say what it is in the same sentence. "Word file" is enough. Do not say docx, JSON, gitignore, workspace, CLI, ingest, or evidence ledger.
 
@@ -22,7 +22,9 @@ After the empty list opens: "That page is your role list. It stays empty until w
 
 "I need material you already have: past resumes, notes, or links to work you have published. More than one source is useful. I'll turn them into a private profile. I will not write a resume from them yet."
 
-Do not list folder paths. Open the folder for them.
+Open `candidate/inputs/` for them. Do not recite the path.
+
+"This folder is where those files go. Put resumes in the resumes folder and notes in the notes folder. If you have a link, paste it to me. Tell me when the files are in."
 
 ## 4. Reading what they gave you
 
@@ -40,11 +42,15 @@ Then follow `docs/playbooks/grill.md`. Keep each question to one sentence.
 
 ## 7. The resume
 
+Open the Word file under `candidate/outputs/resumes/` before you say this. Do not recite the path.
+
 "The resume is ready. Please read it. Tell me any sentence you would not say. Nothing has been sent."
 
 ## 8. The list
 
-"This is your list of roles. Each row shows where that role stands: not started, applied, interview, offer, or no."
+"This is your list of roles. Each row shows where that role stands: not started, applied, interview, offer, they said no, you withdrew, or no reply."
+
+Those plain words match interested, applied, interview, offer, rejected, withdrawn, and ghosted. Use the plain words with the person.
 
 ## 9. A status change
 
@@ -53,6 +59,21 @@ Then follow `docs/playbooks/grill.md`. Keep each question to one sentence.
 ## 10. The interview brief
 
 "I'll write a short brief for this interview from your profile and this role. It will use work you have done, and it will name what you have not done."
+
+Open `candidate/outputs/study-guides/<company>/study-guide.md` for them when it exists. Do not recite the path.
+
+## If they ask where a file is
+
+"I'll open it."
+
+Then open the file. Do not recite the path.
+
+| They mean | You open |
+| --- | --- |
+| Past resumes and notes | `candidate/inputs/` |
+| The resume | the Word file under `candidate/outputs/resumes/` |
+| The role list | `candidate/outputs/tracker.html` |
+| The interview brief | `candidate/outputs/study-guides/` |
 
 ## If they ask about the samples
 
