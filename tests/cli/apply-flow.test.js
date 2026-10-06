@@ -58,6 +58,24 @@ test("apply needs approval, then prints dry run", () => {
   assert.equal(quiet(() => apply.run({ ...opts, confirmSubmit: true })).confirmSubmit, true);
 });
 
+test("practice form fills dummy contact fields and leaves the essay blank", () => {
+  const { fillPracticeForm } = require("../../src/core/fill-practice-form");
+  const html = fs.readFileSync(path.join(__dirname, "../../examples/practice-application.html"), "utf8");
+  const filled = fillPracticeForm(html, {
+    name: "Alex Rivera",
+    email: "alex.rivera@example.invalid",
+    phone: "555-0100",
+    location: "Raleigh, NC",
+  });
+  assert.match(filled.html, /value="Alex Rivera"/);
+  assert.match(filled.html, /value="alex.rivera@example.invalid"/);
+  assert.match(filled.html, /value="555-0100"/);
+  assert.match(filled.html, /value="Raleigh, NC"/);
+  assert.match(filled.html, /<textarea id="why"[^>]*><\/textarea>/);
+  assert.deepEqual(filled.missing, ["Why this role?"]);
+  assert.equal(filled.submitted, false);
+});
+
 test("fillFields maps profile values and never invents a phone", () => {
   const fields = [
     { id: "full_name", label: "Full name" },

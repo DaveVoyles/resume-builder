@@ -1,12 +1,13 @@
 "use strict";
 
-const FIELD_PATTERN = /name|email|phone/iu;
+const FIELD_PATTERN = /name|email|phone|city|location/iu;
 
 function profileKey(field) {
   const text = `${field.id || ""} ${field.label || ""}`;
   if (!FIELD_PATTERN.test(text)) return null;
   if (/email/iu.test(text)) return "email";
   if (/phone/iu.test(text)) return "phone";
+  if (/city|location/iu.test(text)) return "location";
   return "name";
 }
 
