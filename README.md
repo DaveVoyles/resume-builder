@@ -36,10 +36,10 @@ The 8 steps:
 4. **Tailor.** The agent shapes your resume for one job, using only facts you gave it. ([tailor](docs/playbooks/tailor.md))
 5. **Review the Word file.** You open the `.docx` and fix anything that is not true. ([tailor](docs/playbooks/tailor.md))
 6. **Track.** The role goes into your tracker page. ([find-roles](docs/playbooks/find-roles.md))
-7. **Update status.** When you apply, hear back, or get rejected, the agent updates the tracker. ([debrief](docs/playbooks/debrief.md))
+7. **Update status.** When you apply, hear back, or get rejected, the agent updates the tracker. ([status recipe](AGENTS.md#-status-update-recipe))
 8. **Study guide.** Before an interview, the agent writes a guide from your evidence. ([study-guide](docs/playbooks/study-guide.md))
 
-Commands for the tracker and apply steps (documented here; they are coming):
+Commands for a saved lead, a form fill, and a PDF:
 
 ```bash
 npm run workspace:add-lead -- --workspace candidate --company "Northwind Tools" --title "Senior Product Manager" --url https://jobs.example.invalid/northwind
