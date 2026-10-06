@@ -102,11 +102,7 @@ Before you finalize the guide:
 
 1. Save the guide to `outputs/study-guides/<company>/study-guide.md`.
 2. Verify the file is readable and well-formatted.
-3. Commit it to the workspace:
-   ```bash
-   git add outputs/study-guides/<company>/study-guide.md
-   git commit -m "docs(study-guide): prepare for <company> — <role-title>"
-   ```
+3. Leave it in the private workspace. `outputs/` and `candidate/` are gitignored. Do not commit a real study guide to this public repo.
 
 ---
 
