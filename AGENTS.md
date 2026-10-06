@@ -95,6 +95,8 @@ The grill playbook is the source of truth. See the `.claude/skills/grill` skill 
    This writes `outputs/study-guide-bundles/<role-id>.json`. See [`docs/workspace-schemas.md`](docs/workspace-schemas.md#study-guide-bundle-study-guide-bundle) for the exact bundle shape.
 2. Read the bundle and write the actual study guide to `outputs/study-guides/<company>/study-guide.md`, following [`docs/playbooks/study-guide.md`](docs/playbooks/study-guide.md) — organized by interview stage, with every talking point tied back to an `evidence.jsonl` entry ID.
 
+   Write the guide in the order set by the playbook: plain-language briefing, short jargon table, optional pictures in a two-column markdown table, 60-second opener, honesty gaps, 90-minute hands-on lab, questions to ask the recruiter. Claude, Grok, and Gemini are all valid writers. Every claim cites an evidence id from the bundle; no invented product internals.
+
 ## 🗣️ Debrief recipe
 
 **When to use:** After any interview, practice session, or grill/tailor conversation the candidate wants to learn from.
