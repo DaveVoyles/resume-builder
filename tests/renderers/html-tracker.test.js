@@ -910,9 +910,14 @@ test("renderHtmlTracker with notice option renders a visible banner with escaped
 test("renderHtmlTracker without notice option renders no banner and is byte-identical to previous behavior", () => {
   const htmlWithoutNotice = renderHtmlTracker([], {});
   const htmlWithoutOption = renderHtmlTracker([]);
+  const stamp = /Generated [^<]+ from/g;
 
-  // Both calls should produce identical output (no notice banner added, no whitespace differences).
-  assert.strictEqual(htmlWithoutNotice, htmlWithoutOption, "output must be identical whether notice is undefined or an empty options object");
+  // The generated clock can tick between the two calls. Compare everything else.
+  assert.strictEqual(
+    htmlWithoutNotice.replace(stamp, "Generated STAMP from"),
+    htmlWithoutOption.replace(stamp, "Generated STAMP from"),
+    "output must be identical whether notice is undefined or an empty options object"
+  );
 
   // The notice banner must not appear anywhere in the output.
   assert.doesNotMatch(htmlWithoutNotice, /class="notice-banner"/, "no notice-banner div should appear when notice is not provided");

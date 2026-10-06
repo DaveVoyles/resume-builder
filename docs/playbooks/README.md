@@ -16,7 +16,7 @@ Playbooks are vendor-neutral markdown instruction docs for terminal LLM agents. 
 
 **Let the agent guide you.** The agent asks questions one at a time, takes notes, and writes structured output to your workspace files.
 
-**Validate before proceeding.** Once the agent hands you a workspace file, run `npm run workspace:validate` to catch errors before they compound.
+**The agent validates.** The person does not run a check. The agent runs `npm run workspace:validate` before handing over a resume.
 
 ## Current playbooks
 
