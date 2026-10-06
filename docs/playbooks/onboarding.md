@@ -55,9 +55,9 @@ If `profile.json`'s `experience` array has at least one entry, the candidate has
 
 ## State 0: No workspace yet
 
-**Say first** (the map), before any setup, if they have not seen it yet:
+**Say first**, before any setup, if they have not seen the start page yet:
 
-"I'm opening one page in your browser. It is a map of the whole path. You don't need to do anything yet. Tell me when you can see it."
+"I'm opening one page in your browser. It walks through the steps with a made-up person, so you can see what a resume and a job look like before we use yours. You don't need to do anything yet. Tell me when you can see it."
 
 Open `docs/first-run/guide.html`. Wait until they can see it.
 

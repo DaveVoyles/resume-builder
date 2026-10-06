@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Your job search, one page</title>
+<title>How this job search works</title>
 <style>
   :root {
     --bg: #f3efe6;
@@ -12,44 +12,55 @@
     --line: #c9bfb0;
     --paper: #fffdf8;
     --accent: #1e3a5f;
-    --accent-soft: #e7eef6;
+    --example: #f7f1e4;
   }
   * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
   body {
     margin: 0;
     background: var(--bg);
     color: var(--ink);
     font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
     font-size: 1.125rem;
-    line-height: 1.45;
+    line-height: 1.5;
   }
   ::selection { background: #d5e2f2; color: var(--ink); }
-  a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
-  main { max-width: 42rem; margin: 0 auto; padding: 3.5rem 1.4rem 4rem; }
+  a:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  main { max-width: 44rem; margin: 0 auto; padding: 3.2rem 1.4rem 4.5rem; }
   h1 {
-    font-size: clamp(2.4rem, 6vw, 3.6rem);
+    font-size: clamp(2.3rem, 6vw, 3.4rem);
     line-height: 1.05;
     font-weight: 600;
     letter-spacing: -0.03em;
-    margin: 0 0 1rem;
+    margin: 0 0 0.8rem;
   }
-  .lede { font-size: 1.3rem; margin: 0 0 0.8rem; }
-  .end { color: var(--muted); margin: 0 0 2.4rem; }
-  ol { list-style: none; margin: 0; padding: 0; }
-  li {
+  .lede { font-size: 1.28rem; margin: 0 0 1.4rem; }
+  .story, .sample, .close {
+    background: var(--paper);
+    border-radius: 14px;
+    padding: 1.15rem 1.25rem 1.25rem;
+    box-shadow: 0 12px 28px rgba(28, 25, 21, 0.06);
+  }
+  .story { margin-bottom: 1.2rem; }
+  h2 { font-size: 1.35rem; margin: 0 0 0.4rem; letter-spacing: -0.02em; }
+  .samples { display: grid; gap: 0.8rem; margin-top: 0.9rem; }
+  @media (min-width: 40rem) { .samples { grid-template-columns: 1fr 1fr; } }
+  .sample { background: var(--example); box-shadow: none; }
+  .sample p { margin: 0.15rem 0; }
+  .sample h3 { font-family: system-ui, sans-serif; font-size: 0.95rem; font-weight: 650; color: var(--accent); margin: 0 0 0.45rem; }
+  ol { list-style: none; margin: 1.6rem 0 0; padding: 0; }
+  li.step {
     display: grid;
     grid-template-columns: 3.2rem 1fr;
-    gap: 0.2rem 1rem;
+    gap: 0.15rem 1rem;
     position: relative;
-    padding-bottom: 1.6rem;
+    padding-bottom: 1.7rem;
   }
-  li:not(:last-child)::before {
+  li.step:not(:last-child)::before {
     content: "";
     position: absolute;
     left: 1.45rem;
-    top: 2.6rem;
-    bottom: 0.2rem;
+    top: 2.7rem;
+    bottom: 0.15rem;
     width: 2px;
     background: var(--line);
   }
@@ -63,109 +74,120 @@
     place-items: center;
     font-family: system-ui, sans-serif;
     font-weight: 650;
-    font-size: 1rem;
   }
-  h2 { font-size: 1.45rem; margin: 0.15rem 0 0.35rem; letter-spacing: -0.02em; }
-  p { margin: 0.2rem 0; }
-  .you, .get { font-family: system-ui, sans-serif; font-size: 1rem; }
-  .you strong, .get strong { font-weight: 650; }
-  .close {
-    margin-top: 0.6rem;
-    background: var(--paper);
-    border-radius: 12px;
-    padding: 1.1rem 1.2rem 1.2rem;
-    box-shadow: 0 10px 30px rgba(28, 25, 21, 0.06);
-  }
-  .close h2 { font-size: 1.3rem; }
-  ul { margin: 0.4rem 0 0; padding-left: 1.1rem; }
-  li.close-item { display: list-item; padding: 0.15rem 0; }
+  .step h2 { font-size: 1.4rem; margin: 0.1rem 0 0.3rem; }
+  .plain, .eg { font-family: system-ui, sans-serif; font-size: 1.02rem; margin: 0.25rem 0; }
+  .eg { color: var(--muted); }
+  .close { margin-top: 0.4rem; }
+  .close ul { margin: 0.3rem 0 0; padding-left: 1.15rem; }
+  .close li { padding: 0.15rem 0; }
   @media (max-width: 36rem) {
     main { padding-top: 2rem; }
-    li { grid-template-columns: 2.6rem 1fr; }
+    li.step { grid-template-columns: 2.5rem 1fr; }
     .n { width: 2.4rem; height: 2.4rem; }
-    li:not(:last-child)::before { left: 1.15rem; }
+    li.step:not(:last-child)::before { left: 1.15rem; }
   }
 </style>
 </head>
 <body>
 <main>
-  <h1>Your job search, one page</h1>
-  <p class="lede">You talk. A helper on your computer does the filing, the writing, and the checking.</p>
-  <p class="end">You finish with three things: a resume that only says what you really did, a list of the jobs you are chasing, and a short guide to read the night before an interview.</p>
+  <h1>How this job search works</h1>
+  <p class="lede">You talk. A helper on your computer does the filing and the writing. This page is the whole trip, in order. Nothing here is sent to an employer.</p>
+
+  <section class="story">
+    <h2>A made-up example, so the steps feel real</h2>
+    <p>Meet Alex Rivera. Alex is not you. Alex wants a Senior Product Manager job at a made-up company called Northwind Tools. Along the way Alex has two things in hand: an old resume, and one job posting.</p>
+    <div class="samples">
+      <article class="sample">
+        <h3>An old resume</h3>
+        <p><strong>Alex Rivera</strong></p>
+        <p>Product manager, Contoso Labs</p>
+        <p>2022 to 2024</p>
+        <p>Led the launch of an internal tool for one product team.</p>
+      </article>
+      <article class="sample">
+        <h3>A job to chase</h3>
+        <p><strong>Senior Product Manager</strong></p>
+        <p>Northwind Tools</p>
+        <p>They want someone who has shipped a product with a team.</p>
+      </article>
+    </div>
+  </section>
 
   <ol>
-    <li>
+    <li class="step">
       <div class="n">1</div>
       <div>
-        <h2>See the map</h2>
-        <p class="you"><strong>You:</strong> look at this page. Ask what any step means.</p>
-        <p class="get"><strong>You get:</strong> the whole path, before any of your real history is used.</p>
+        <h2>Read this page</h2>
+        <p class="plain">You are doing this step right now. Ask your helper what any step means. You do not need to hand over your own history yet.</p>
+        <p class="eg">For Alex, this is just getting oriented. No resume has been written.</p>
       </div>
     </li>
-    <li>
+    <li class="step">
       <div class="n">2</div>
       <div>
-        <h2>Hand over old material</h2>
-        <p class="you"><strong>You:</strong> give your helper old resumes, notes, or a link to work you have already published.</p>
-        <p class="get"><strong>You get:</strong> a private folder on your computer. It is not published.</p>
+        <h2>Share something you already have</h2>
+        <p class="plain">An old resume, a notes file, or a link to work you already published is enough. Your helper puts it in a private folder on your computer. That folder is not published.</p>
+        <p class="eg">Alex drops in the Contoso Labs resume from 2022, plus a short note: “The tool was for one team, not the whole company.”</p>
       </div>
     </li>
-    <li>
+    <li class="step">
       <div class="n">3</div>
       <div>
         <h2>Answer one question at a time</h2>
-        <p class="you"><strong>You:</strong> correct anything that is vague or untrue. Skip a question if you do not know.</p>
-        <p class="get"><strong>You get:</strong> a record of your real work, in your words.</p>
+        <p class="plain">Your helper will ask about jobs you have had, the kind of role you want, and where you can work. Correct anything that is wrong. Skip a question if you do not know.</p>
+        <p class="eg">Alex is asked, “What did you do at Contoso Labs?” Alex says, “I led one product launch. I did not manage a budget.”</p>
       </div>
     </li>
-    <li>
+    <li class="step">
       <div class="n">4</div>
       <div>
         <h2>Pick one job</h2>
-        <p class="you"><strong>You:</strong> paste a job link, or say which role you want.</p>
-        <p class="get"><strong>You get:</strong> a check that the link still works, and a yes or no from you before any resume is written.</p>
+        <p class="plain">Paste a link, or say the company and the job title. Your helper checks that the link still opens. You say yes before any resume is written.</p>
+        <p class="eg">Alex pastes the Northwind Tools posting for Senior Product Manager. The link still works. Alex says, “Yes, write one for this.”</p>
       </div>
     </li>
-    <li>
+    <li class="step">
       <div class="n">5</div>
       <div>
-        <h2>Read the resume</h2>
-        <p class="you"><strong>You:</strong> open the Word file and mark anything you would not say out loud.</p>
-        <p class="get"><strong>You get:</strong> a resume aimed at that one job. It is not sent anywhere.</p>
+        <h2>Read the new resume</h2>
+        <p class="plain">You get a Word file aimed at that one job. Read it. Say so if a sentence is something you would not say out loud. It comes off. Nothing is emailed.</p>
+        <p class="eg">The draft says, “Led a launch used by several teams.” Alex says, “Change that. It was one team.” The helper changes it.</p>
       </div>
     </li>
-    <li>
+    <li class="step">
       <div class="n">6</div>
       <div>
-        <h2>Watch the list</h2>
-        <p class="you"><strong>You:</strong> glance at one page that lists every job you are chasing.</p>
-        <p class="get"><strong>You get:</strong> status in plain words: not yet, applied, interview, offer, or no.</p>
+        <h2>Look at your job list</h2>
+        <p class="plain">One page lists every job you are chasing. Each row says where things stand: not yet, applied, interview, offer, or no.</p>
+        <p class="eg">Alex’s list has one row: Northwind Tools, Senior Product Manager, Not yet.</p>
       </div>
     </li>
-    <li>
+    <li class="step">
       <div class="n">7</div>
       <div>
-        <h2>Say what happened</h2>
-        <p class="you"><strong>You:</strong> tell your helper “I applied,” “I have an interview,” or “they said no.”</p>
-        <p class="get"><strong>You get:</strong> the list updated. You do not edit a spreadsheet.</p>
+        <h2>Tell your helper what happened</h2>
+        <p class="plain">When you apply, get an interview, or hear a no, just say that. Your helper updates the list. You do not keep a spreadsheet.</p>
+        <p class="eg">A week later Alex says, “I applied on Tuesday.” The row changes from Not yet to Applied.</p>
       </div>
     </li>
-    <li>
+    <li class="step">
       <div class="n">8</div>
       <div>
-        <h2>Prepare for the conversation</h2>
-        <p class="you"><strong>You:</strong> ask for a study guide before the interview.</p>
-        <p class="get"><strong>You get:</strong> talking points tied to work you actually did, plus the gaps you should not pretend to have.</p>
+        <h2>Get ready for the interview</h2>
+        <p class="plain">Ask for a short guide the night before. It uses work you really did. It also says what you have not done, so you do not have to pretend.</p>
+        <p class="eg">Alex’s guide says how to talk about the Contoso launch, and it says plainly that Alex has not managed a budget.</p>
       </div>
     </li>
   </ol>
 
   <section class="close">
-    <h2>What you never have to do</h2>
+    <h2>A few kind rules</h2>
     <ul>
-      <li class="close-item">Write code, or learn a new tool.</li>
-      <li class="close-item">Send an application from this page. You still choose when anything is submitted.</li>
-      <li class="close-item">Let a sentence stay on the resume if it is not true. Say so, and it comes off.</li>
+      <li>You never have to write code.</li>
+      <li>This page does not apply to jobs for you. You still choose when anything is sent.</li>
+      <li>If a sentence on the resume is not true, say so. It comes off.</li>
+      <li>Alex, Contoso Labs, and Northwind Tools are made up. Your helper will use your real story instead.</li>
     </ul>
   </section>
 </main>
