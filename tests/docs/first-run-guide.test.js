@@ -20,7 +20,10 @@ test("the welcome page names the helper and keeps the sample inside the steps", 
   assert.doesNotMatch(guide, /Alex is not you/);
   assert.doesNotMatch(guide, /Meet Alex/);
   assert.match(guide, /nothing is sent until you say so/i);
-  assert.match(guide, /your helper/i);
+  assert.match(guide, /private profile/i);
+  assert.match(guide, /Fabrikam Studio/);
+  assert.match(guide, /night-before guide/);
+  assert.equal((guide.match(/You do this/g) || []).length, 8);
   assert.match(guide, /Sample, made up/);
   assert.match(guide, /Contoso Labs/);
   assert.match(guide, /Northwind Tools/);

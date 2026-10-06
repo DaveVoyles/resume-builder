@@ -149,6 +149,40 @@
   .cap { margin-top: 0.8rem; }
   .paper h3 { margin: 0; font-size: 1.35rem; }
   .paper h3.next { margin-top: 0.8rem; }
+  .because { margin: 0.2rem 0 0; }
+  .because div { margin-top: 0.85rem; }
+  .because dt {
+    font-family: system-ui, sans-serif;
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .because dd {
+    margin: 0.15rem 0 0;
+    font-family: system-ui, sans-serif;
+    font-size: 1.02rem;
+  }
+  .paper ul { margin: 0.45rem 0 0; padding-left: 1.1rem; }
+  .paper li { margin: 0.25rem 0; }
+  .row {
+    display: grid;
+    grid-template-columns: 1.15fr 1.35fr auto;
+    gap: 0.6rem;
+    align-items: baseline;
+    padding: 0.55rem 0;
+    border-top: 1px solid var(--line);
+    font-family: system-ui, sans-serif;
+    font-size: 0.98rem;
+  }
+  .counts {
+    display: flex;
+    gap: 1.1rem;
+    margin: 0.15rem 0 0.15rem;
+    font-family: system-ui, sans-serif;
+    font-size: 0.95rem;
+  }
+  .counts b { font-size: 1.35rem; font-weight: 650; margin-right: 0.25rem; }
   .paper .role { margin: 0.15rem 0 0.55rem; color: var(--muted); }
   .paper p { margin: 0.3rem 0 0; font-family: Georgia, serif; }
   .struck { text-decoration: line-through; opacity: 0.55; }
@@ -187,6 +221,8 @@
     li.step:not(:last-child)::before { left: 1.15rem; }
     .traveler { left: 0.78rem; }
     .frame { height: 28rem; }
+    .row { grid-template-columns: 1fr auto; }
+    .row span:nth-child(2) { grid-column: 1; }
   }
   @media (prefers-reduced-motion: reduce) {
     .traveler { display: none; }
@@ -197,7 +233,8 @@
 <body>
 <main>
   <h1>One resume for one job.</h1>
-  <p class="lede">You talk, and your helper writes that resume, keeps a list of the job, and can write a short guide the night before an interview.</p>
+  <p class="lede">You talk. Your helper builds a private profile from work you already did, then writes one resume for one job.</p>
+  <p class="lede">You can chase more than one job. They all sit on one list. A short guide is ready the night before an interview.</p>
   <p class="promise">You say when a sentence is wrong, and nothing is sent until you say so.</p>
 
   <div class="trip">
@@ -208,11 +245,15 @@
       <details class="box">
         <summary>
           <h2>Look around this page</h2>
-          <p class="prize">You get the whole trip before you share any work history.</p>
+          <p class="prize">You see the whole trip before you share any work history.</p>
           <span class="toggle"><span class="when-closed">Show this step</span><span class="when-open">Hide this step</span></span>
         </summary>
         <div class="more">
-          <p>Your helper opened this page so you can see where this goes. You do not hand over your history yet. Read the steps. Open any box. When you want to begin, tell your helper you are ready.</p>
+          <dl class="because">
+            <div><dt>You do this</dt><dd>Read the steps. Open any box. You do not hand over your history yet.</dd></div>
+            <div><dt>Why</dt><dd>So you know what your helper will ask for, and what you will hold at the end, before you share anything.</dd></div>
+            <div><dt>You get</dt><dd>A clear trip. When you want to begin, tell your helper you are ready.</dd></div>
+          </dl>
           <p class="say">You could say: "I'm ready. I have an old resume."</p>
         </div>
       </details>
@@ -221,18 +262,30 @@
       <div class="n">2</div>
       <details class="box">
         <summary>
-          <h2>Hand over an old resume or a few notes</h2>
-          <p class="prize">Your story stays in a private place on your computer.</p>
+          <h2>Hand over old resumes or notes</h2>
+          <p class="prize">Your helper builds a private profile of your work. Later writing comes from that profile.</p>
           <span class="toggle"><span class="when-closed">Show this step</span><span class="when-open">Hide this step</span></span>
         </summary>
         <div class="more">
-          <p>An old resume is enough. A notes file is enough. A link to work you already published is enough. Your helper puts it in a folder on your computer. That folder is not published.</p>
+          <dl class="because">
+            <div><dt>You do this</dt><dd>Hand over old resumes, notes, or links to work you already published. Several are better than one.</dd></div>
+            <div><dt>Why</dt><dd>Your helper reads them and writes a private profile: the jobs you had, what you did, and what you did not do. Every resume and every night-before guide is written from that profile. Your own work builds that profile. The job ads tell your helper which jobs to write for.</dd></div>
+            <div><dt>You get</dt><dd>A profile you can correct. It stays on your computer. It is not a resume, and it is not published.</dd></div>
+          </dl>
           <p class="say">You could say: "Here is my old resume, and a note about what that job really was."</p>
           <div class="paper">
-            <p class="who">Sample, made up</p>
+            <p class="who">Sample, made up. What Alex handed over.</p>
             <h3>Alex Rivera</h3>
             <p class="role">Contoso Labs, 2022</p>
             <p>Note in the margin: the tool was for one team, not the whole company.</p>
+          </div>
+          <div class="paper">
+            <p class="who">Sample, made up. The private profile that comes out of it.</p>
+            <h3>Alex Rivera</h3>
+            <ul>
+              <li>Led one product launch at Contoso Labs. It was one team.</li>
+              <li>Has not managed a budget.</li>
+            </ul>
           </div>
         </div>
       </details>
@@ -242,11 +295,15 @@
       <details class="box">
         <summary>
           <h2>Answer one question at a time</h2>
-          <p class="prize">You get a story you would say out loud. Skip any question you do not know.</p>
+          <p class="prize">The profile matches what you would say out loud. Skip any question you do not know.</p>
           <span class="toggle"><span class="when-closed">Show this step</span><span class="when-open">Hide this step</span></span>
         </summary>
         <div class="more">
-          <p>Your helper asks about jobs you have had, the kind of role you want, and where you can work. Correct anything that is wrong the moment you hear it. If you do not know, say skip.</p>
+          <dl class="because">
+            <div><dt>You do this</dt><dd>Answer questions about jobs you have had, the kind of role you want, and where you can work. Correct a wrong line the moment you hear it. Say skip if you do not know.</dd></div>
+            <div><dt>Why</dt><dd>The papers are a start. The questions fill the gaps and take out anything you would not say. The profile is only useful if it sounds like you.</dd></div>
+            <div><dt>You get</dt><dd>A profile your helper can trust for the resumes and the night-before guide.</dd></div>
+          </dl>
           <p class="say">Sample question: "What did you do at Contoso Labs?" Alex says: "I led one product launch. I did not manage a budget."</p>
           <p class="cap">Sample, made up. Alex Rivera at Contoso Labs.</p>
         </div>
@@ -256,17 +313,21 @@
       <div class="n">4</div>
       <details class="box">
         <summary>
-          <h2>Pick one job</h2>
-          <p class="prize">The resume waits until you say yes.</p>
+          <h2>Bring the jobs you want</h2>
+          <p class="prize">You can bring more than one. Each resume is written for one job, after you say yes.</p>
           <span class="toggle"><span class="when-closed">Show this step</span><span class="when-open">Hide this step</span></span>
         </summary>
         <div class="more">
-          <p>Paste a link, or say the company and the job title. Your helper checks that the link still opens. If the posting is gone, you pick another. Your helper does not write a resume until you say yes.</p>
-          <p class="say">Alex says: "Yes, write one for this."</p>
+          <dl class="because">
+            <div><dt>You do this</dt><dd>Paste one link, or several. You can also say the company and the job title. Your helper checks that each link still opens.</dd></div>
+            <div><dt>Why</dt><dd>The list needs to know what you are chasing. A resume is written for one posting, so the sentences match that job. Your helper waits for a yes on each one. The other jobs sit on the list until you are ready.</dd></div>
+            <div><dt>You get</dt><dd>A set of real, open jobs. No resume is written until you say yes to that job.</dd></div>
+          </dl>
+          <p class="say">Alex says: "Yes, write one for Northwind. Leave Fabrikam on the list for now."</p>
           <div class="paper">
-            <p class="who">Sample, made up. Northwind Tools.</p>
-            <h3>Northwind Tools</h3>
-            <p class="role">Senior Product Manager. The link still opens.</p>
+            <p class="who">Sample, made up. Two jobs. One yes.</p>
+            <div class="row"><span>Northwind Tools</span><span>Senior product manager</span><span class="status">Write this one</span></div>
+            <div class="row"><span>Fabrikam Studio</span><span>Product manager</span><span class="status">Waiting</span></div>
           </div>
         </div>
       </details>
@@ -276,11 +337,15 @@
       <details class="box">
         <summary>
           <h2>Read the new resume</h2>
-          <p class="prize">You get a copy you can open, written for that one job, and nothing is emailed.</p>
+          <p class="prize">You get a copy written for that one job, from your profile. Nothing is emailed.</p>
           <span class="toggle"><span class="when-closed">Show this step</span><span class="when-open">Hide this step</span></span>
         </summary>
         <div class="more">
-          <p>Read each line as if you were saying it out loud. Your helper wrote it from what you shared and from the one job you picked. If a line is wrong, say so. Your helper takes it off. Nothing is emailed. Nothing is sent until you say so.</p>
+          <dl class="because">
+            <div><dt>You do this</dt><dd>Read each line as if you were saying it out loud.</dd></div>
+            <div><dt>Why</dt><dd>Your helper wrote it from your profile and from the one job you approved. A wrong line would go out in your name later. If a line is wrong, say so. Your helper takes it off.</dd></div>
+            <div><dt>You get</dt><dd>A resume for that one job. Nothing is emailed. Nothing is sent until you say so. Ask for the next job when you want another.</dd></div>
+          </dl>
           <p class="say">You could say: "Change that. It was one team."</p>
           <div class="paper">
             <p class="who">Sample, made up. Alex Rivera, reading a resume for Northwind Tools.</p>
@@ -296,17 +361,22 @@
       <div class="n">6</div>
       <details class="box">
         <summary>
-          <h2>Look at your list</h2>
-          <p class="prize">You get one page that shows where that job stands.</p>
+          <h2>Look at your job list</h2>
+          <p class="prize">Every job you brought sits on one page, with where it stands.</p>
           <span class="toggle"><span class="when-closed">Show this step</span><span class="when-open">Hide this step</span></span>
         </summary>
         <div class="more">
-          <p>One page lists every job you are chasing. Each row says where things stand: not yet, applied, interview, offer, or no. You can open it any time. Your helper keeps it current.</p>
+          <dl class="because">
+            <div><dt>You do this</dt><dd>Open the list your helper keeps. You do not keep a second list.</dd></div>
+            <div><dt>Why</dt><dd>One page shows every job you are chasing, so you can see what is waiting, what you applied to, and what moved to an interview.</dd></div>
+            <div><dt>You get</dt><dd>A list you can open any time. Each row says not yet, applied, interview, offer, or no.</dd></div>
+          </dl>
           <p class="say">You could say: "Show me the list."</p>
           <div class="paper">
-            <p class="who">Sample, made up</p>
-            <h3>Northwind Tools</h3>
-            <p class="role">Senior Product Manager. Not yet.</p>
+            <p class="who">Sample, made up. The job list.</p>
+            <p class="counts"><span><b>2</b> jobs</span><span><b>0</b> applied</span><span><b>0</b> interviews</span></p>
+            <div class="row"><span>Northwind Tools</span><span>Senior product manager</span><span class="status">Not yet</span></div>
+            <div class="row"><span>Fabrikam Studio</span><span>Product manager</span><span class="status">Not yet</span></div>
           </div>
         </div>
       </details>
@@ -320,9 +390,18 @@
           <span class="toggle"><span class="when-closed">Show this step</span><span class="when-open">Hide this step</span></span>
         </summary>
         <div class="more">
-          <p>When you apply, get an interview, or hear a no, just say that. Your helper updates the list. You do not keep a second list of your own. You still choose when anything is sent.</p>
-          <p class="say">Alex says: "I applied on Tuesday." The row changes from Not yet to Applied.</p>
-          <p class="cap">Sample, made up.</p>
+          <dl class="because">
+            <div><dt>You do this</dt><dd>When you apply, get an interview, or hear a no, just say that.</dd></div>
+            <div><dt>Why</dt><dd>The list is only useful if it matches what happened. Your helper updates the row. You do not keep a spreadsheet. Saying it does not send an application.</dd></div>
+            <div><dt>You get</dt><dd>A list that stays current. You still choose when anything is sent.</dd></div>
+          </dl>
+          <p class="say">Alex says: "I applied to Northwind on Tuesday."</p>
+          <div class="paper">
+            <p class="who">Sample, made up. The same list, after Alex says what happened.</p>
+            <p class="counts"><span><b>2</b> jobs</span><span><b>1</b> applied</span><span><b>0</b> interviews</span></p>
+            <div class="row"><span>Northwind Tools</span><span>Senior product manager</span><span class="status">Applied</span></div>
+            <div class="row"><span>Fabrikam Studio</span><span>Product manager</span><span class="status">Not yet</span></div>
+          </div>
         </div>
       </details>
     </li>
@@ -331,18 +410,26 @@
       <details class="box">
         <summary>
           <h2>Ask for a short guide the night before</h2>
-          <p class="prize">It uses work you really did, and it names what you have not done.</p>
+          <p class="prize">It is written from your profile, for that one interview, and it names what you have not done.</p>
           <span class="toggle"><span class="when-closed">Show this step</span><span class="when-open">Hide this step</span></span>
         </summary>
         <div class="more">
-          <p>Ask your helper for a short guide. It is for that one conversation. It uses the launch you really led. It also says what you have not done, so you do not have to pretend.</p>
+          <dl class="because">
+            <div><dt>You do this</dt><dd>Ask your helper for a short guide the night before that conversation.</dd></div>
+            <div><dt>Why</dt><dd>The guide is built from your profile and from that one job, so you can talk about work you really did. It also names what you have not done, so you do not have to pretend.</dd></div>
+            <div><dt>You get</dt><dd>A short page for that interview. It is not a script for a job you have not done.</dd></div>
+          </dl>
           <p class="say">You could say: "Write the short guide for tomorrow."</p>
           <div class="paper">
-            <p class="who">Sample, made up. Alex Rivera.</p>
-            <h3>Say this</h3>
+            <p class="who">Sample, made up. The night-before guide.</p>
+            <h3>Tomorrow: Northwind Tools</h3>
+            <p class="role">Senior product manager</p>
+            <h3 class="next">Say this</h3>
             <p>How Alex led the Contoso launch for one team.</p>
             <h3 class="next">Leave this out</h3>
             <p>Alex has not managed a budget.</p>
+            <h3 class="next">They may ask</h3>
+            <p>Tell me about a launch you led.</p>
           </div>
         </div>
       </details>
@@ -360,7 +447,7 @@
 
   <section class="close">
     <h2>When you are ready</h2>
-    <p>Tell your helper: "Start." Your helper will ask for one old resume or a few notes. That is all you need to bring today. Nothing is sent until you say so.</p>
+    <p>Tell your helper: "Start." Your helper will ask for old resumes or notes, so a private profile can be built. You can bring more than one job after that. Nothing is sent until you say so.</p>
     <ul>
       <li>You never have to write code.</li>
       <li>You still choose when anything is sent.</li>

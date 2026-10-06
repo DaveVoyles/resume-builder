@@ -18,13 +18,13 @@ After the empty tracker opens: "That page is your job list. It is empty on purpo
 
 ## 3. Old material
 
-"I need something real to work from. Any of these is enough to start: an old resume, a notes file, or a link to work you already published, such as GitHub. Put them where I show you, then tell me you're done. If you are not sure what to include, say so and I will give you a short list."
+"I need something real to work from. Old resumes, a notes file, or a link to work you already published. Several are better than one. Those files are how I build a private profile of your work. Put them where I show you, then tell me you're done. I will not publish that folder, and I will not write a resume yet."
 
 Do not list four folder paths. Open the folder for them.
 
 ## 4. Reading what they gave you
 
-"I'll read what you added and turn it into a list of facts we can check. I won't write a resume yet."
+"I'll read what you added and turn it into a private profile we can check. I won't write a resume yet."
 
 ## 5. The interview
 
@@ -34,7 +34,7 @@ Then follow `docs/playbooks/grill.md`. Keep each question to one sentence.
 
 ## 6. One job
 
-"Paste a link to one job you might want, or tell me the company and the title. I'll check the link is still live. I won't write the resume until you say yes."
+"You can paste more than one job. I'll check each link. I'll write a resume for one job at a time, and only after you say yes to that job. The others wait on your list."
 
 ## 7. The resume
 
@@ -42,7 +42,7 @@ Then follow `docs/playbooks/grill.md`. Keep each question to one sentence.
 
 ## 8. The list
 
-"This page is your list of jobs. Each row says where things stand: not started, applied, interview, offer, or no."
+"This page is your list of jobs. Every job you brought is a row. Each row says where things stand: not started, applied, interview, offer, or no."
 
 ## 9. A status change
 
