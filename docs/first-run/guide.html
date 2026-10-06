@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your job search, one page</title>
+<style>
+  :root {
+    --bg: #f3efe6;
+    --ink: #1c1915;
+    --muted: #3d3832;
+    --line: #c9bfb0;
+    --paper: #fffdf8;
+    --accent: #1e3a5f;
+    --accent-soft: #e7eef6;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+    font-size: 1.125rem;
+    line-height: 1.45;
+  }
+  ::selection { background: #d5e2f2; color: var(--ink); }
+  a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  main { max-width: 42rem; margin: 0 auto; padding: 3.5rem 1.4rem 4rem; }
+  h1 {
+    font-size: clamp(2.4rem, 6vw, 3.6rem);
+    line-height: 1.05;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    margin: 0 0 1rem;
+  }
+  .lede { font-size: 1.3rem; margin: 0 0 0.8rem; }
+  .end { color: var(--muted); margin: 0 0 2.4rem; }
+  ol { list-style: none; margin: 0; padding: 0; }
+  li {
+    display: grid;
+    grid-template-columns: 3.2rem 1fr;
+    gap: 0.2rem 1rem;
+    position: relative;
+    padding-bottom: 1.6rem;
+  }
+  li:not(:last-child)::before {
+    content: "";
+    position: absolute;
+    left: 1.45rem;
+    top: 2.6rem;
+    bottom: 0.2rem;
+    width: 2px;
+    background: var(--line);
+  }
+  .n {
+    width: 2.9rem;
+    height: 2.9rem;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-family: system-ui, sans-serif;
+    font-weight: 650;
+    font-size: 1rem;
+  }
+  h2 { font-size: 1.45rem; margin: 0.15rem 0 0.35rem; letter-spacing: -0.02em; }
+  p { margin: 0.2rem 0; }
+  .you, .get { font-family: system-ui, sans-serif; font-size: 1rem; }
+  .you strong, .get strong { font-weight: 650; }
+  .close {
+    margin-top: 0.6rem;
+    background: var(--paper);
+    border-radius: 12px;
+    padding: 1.1rem 1.2rem 1.2rem;
+    box-shadow: 0 10px 30px rgba(28, 25, 21, 0.06);
+  }
+  .close h2 { font-size: 1.3rem; }
+  ul { margin: 0.4rem 0 0; padding-left: 1.1rem; }
+  li.close-item { display: list-item; padding: 0.15rem 0; }
+  @media (max-width: 36rem) {
+    main { padding-top: 2rem; }
+    li { grid-template-columns: 2.6rem 1fr; }
+    .n { width: 2.4rem; height: 2.4rem; }
+    li:not(:last-child)::before { left: 1.15rem; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Your job search, one page</h1>
+  <p class="lede">You talk. A helper on your computer does the filing, the writing, and the checking.</p>
+  <p class="end">You finish with three things: a resume that only says what you really did, a list of the jobs you are chasing, and a short guide to read the night before an interview.</p>
+
+  <ol>
+    <li>
+      <div class="n">1</div>
+      <div>
+        <h2>See the map</h2>
+        <p class="you"><strong>You:</strong> look at this page. Ask what any step means.</p>
+        <p class="get"><strong>You get:</strong> the whole path, before any of your real history is used.</p>
+      </div>
+    </li>
+    <li>
+      <div class="n">2</div>
+      <div>
+        <h2>Hand over old material</h2>
+        <p class="you"><strong>You:</strong> give your helper old resumes, notes, or a link to work you have already published.</p>
+        <p class="get"><strong>You get:</strong> a private folder on your computer. It is not published.</p>
+      </div>
+    </li>
+    <li>
+      <div class="n">3</div>
+      <div>
+        <h2>Answer one question at a time</h2>
+        <p class="you"><strong>You:</strong> correct anything that is vague or untrue. Skip a question if you do not know.</p>
+        <p class="get"><strong>You get:</strong> a record of your real work, in your words.</p>
+      </div>
+    </li>
+    <li>
+      <div class="n">4</div>
+      <div>
+        <h2>Pick one job</h2>
+        <p class="you"><strong>You:</strong> paste a job link, or say which role you want.</p>
+        <p class="get"><strong>You get:</strong> a check that the link still works, and a yes or no from you before any resume is written.</p>
+      </div>
+    </li>
+    <li>
+      <div class="n">5</div>
+      <div>
+        <h2>Read the resume</h2>
+        <p class="you"><strong>You:</strong> open the Word file and mark anything you would not say out loud.</p>
+        <p class="get"><strong>You get:</strong> a resume aimed at that one job. It is not sent anywhere.</p>
+      </div>
+    </li>
+    <li>
+      <div class="n">6</div>
+      <div>
+        <h2>Watch the list</h2>
+        <p class="you"><strong>You:</strong> glance at one page that lists every job you are chasing.</p>
+        <p class="get"><strong>You get:</strong> status in plain words: not yet, applied, interview, offer, or no.</p>
+      </div>
+    </li>
+    <li>
+      <div class="n">7</div>
+      <div>
+        <h2>Say what happened</h2>
+        <p class="you"><strong>You:</strong> tell your helper “I applied,” “I have an interview,” or “they said no.”</p>
+        <p class="get"><strong>You get:</strong> the list updated. You do not edit a spreadsheet.</p>
+      </div>
+    </li>
+    <li>
+      <div class="n">8</div>
+      <div>
+        <h2>Prepare for the conversation</h2>
+        <p class="you"><strong>You:</strong> ask for a study guide before the interview.</p>
+        <p class="get"><strong>You get:</strong> talking points tied to work you actually did, plus the gaps you should not pretend to have.</p>
+      </div>
+    </li>
+  </ol>
+
+  <section class="close">
+    <h2>What you never have to do</h2>
+    <ul>
+      <li class="close-item">Write code, or learn a new tool.</li>
+      <li class="close-item">Send an application from this page. You still choose when anything is submitted.</li>
+      <li class="close-item">Let a sentence stay on the resume if it is not true. Say so, and it comes off.</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

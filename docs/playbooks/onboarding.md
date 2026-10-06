@@ -2,7 +2,7 @@
 
 **Onboarding** is the proactive, state-aware first-run sequence: workspace setup, dropping in real source material, ingesting it, and starting the grill intake interview. It replaces guessing at "what step is this candidate on" with a quick check of the workspace's actual state, then greeting the candidate at the right point instead of always starting from step one.
 
-This playbook covers **workspace-init → drop-docs → ingest → grill intake only**. Once the candidate has a populated profile, later stages (find-roles, tailor, tracker) are already well documented — see [Playbooks](README.md) and hand off to `grill.md` at the end of this one.
+This playbook covers setup, old material, reading those files, and the interview. The sentences you say are in [`docs/first-run/what-to-say.md`](../first-run/what-to-say.md). Open [`docs/first-run/guide.html`](../first-run/guide.html) before the first of those sentences. Later stages (a job, a resume, the list, a study guide) are in [`docs/first-run/FAQ.md`](../first-run/FAQ.md).
 
 Before you start:
 
@@ -55,9 +55,15 @@ If `profile.json`'s `experience` array has at least one entry, the candidate has
 
 ## State 0: No workspace yet
 
-**Say:**
+**Say first** (the map), before any setup, if they have not seen it yet:
 
-"Welcome — let's get your workspace set up. I'll run the setup command, which creates a private `candidate/` folder for your resumes, notes, and generated files. None of it gets committed to Git."
+"I'm opening one page in your browser. It is a map of the whole path. You don't need to do anything yet. Tell me when you can see it."
+
+Open `docs/first-run/guide.html`. Wait until they can see it.
+
+**Then say:**
+
+"I'll make a private folder on your computer for your resumes and notes. It stays on this machine. I will not publish it."
 
 **Do:**
 
@@ -69,7 +75,7 @@ npm run setup
 
 **Say:**
 
-"You should already have a browser tab open — that's your tracker dashboard, live. It's empty right now, but as you add roles and I tailor resumes for them, this page fills in — funnel stage counts, application status, stale-application flags, all in one view. It'll rebuild automatically each time we update it."
+"That page is your job list. It is empty on purpose. It fills in as we add real jobs. Each row will say where things stand, in plain words."
 
 Then move straight into State 1's messaging below — the candidate is now in that state.
 
@@ -81,16 +87,9 @@ Then move straight into State 1's messaging below — the candidate is now in th
 
 **Say:**
 
-"Your workspace is ready. Now I need some real material to work with — the more you give me, the better the resumes I can generate and the better I can match you to roles. There are four ways to hand me material, and you can use any combination:
+Say the "Old material" sentence in [`docs/first-run/what-to-say.md`](../first-run/what-to-say.md). Do not add a second version.
 
-- Drop resume files (`.docx`, `.md`, `.txt`) into `candidate/inputs/resumes/`.
-- Add freeform notes — projects, metrics, career history — to `candidate/inputs/notes/intake.md` or new files in that folder.
-- List portfolio, writing, or talk links in `candidate/inputs/links.md`, one per line.
-- Share your GitHub username, and I'll pull your public profile and repos.
-
-Note: LinkedIn profile pages are login-walled, so there's no automatic LinkedIn pull the way there is for GitHub. If you want your LinkedIn history included, either export your data (LinkedIn Settings > 'Get a copy of your data') and drop the relevant parts into your notes file, or add your LinkedIn URL to `links.md` as a reference link — it'll be recorded, just not scraped for content.
-
-Take your time — let me know when you've added something, or ask 'what should I include?' if you want help deciding."
+If they ask about LinkedIn, then say you cannot read a page behind a login, and a public GitHub username is fine.
 
 **Wait** for the candidate to confirm they've dropped material, or to ask for help deciding what to include (in which case, point them at the "before you begin" checklist in [Getting started](../getting-started.md) and wait again).
 
@@ -102,7 +101,7 @@ Once they confirm, move to State 2's messaging.
 
 **Say:**
 
-"Got it — want me to ingest that now? I'll read what you've added and extract structured evidence from it."
+"I'll read what you added and turn it into a list of facts we can check. I won't write a resume yet. Want me to do that now?"
 
 **Wait** for confirmation, then **do:**
 
@@ -121,7 +120,7 @@ Then move to State 3's messaging.
 
 **Say:**
 
-"I've pulled in what you shared, but I still don't have your structured work history, target roles, or preferences — that's what makes the difference between a generic resume and one tailored to you. Want to do a quick intake interview now? I'll ask about your work history, target roles, location, and compensation, one question at a time, and you can confirm or correct what I propose. The more information I have, the better the resumes I can generate and the more accurately I can find matching roles."
+"I have your files, and I still need your story in order. I'll ask one question at a time, about jobs, the kind of role you want, where you can work, and pay if you want to share it. Correct me when I'm wrong. You can skip any question."
 
 **Wait** for confirmation, then **hand off to [`grill.md`](grill.md)** — follow that playbook's "Start the intake conversation" section from here.
 

@@ -3,7 +3,7 @@
 Try this with a terminal agent:
 
 ```text
-Download https://github.com/DaveVoyles/resume-builder and help me get started. Run the sample workflow first, then follow docs/playbooks/onboarding.md to create my private workspace, walk me through dropping my resume, notes, and job links into candidate/inputs/, and start my grill intake interview when I'm ready. Ask clarifying questions before making resume claims.
+Clone https://github.com/DaveVoyles/resume-builder and help me get started. Open docs/first-run/guide.html in my browser first and walk me through it. Then follow docs/first-run/FAQ.md. Ask me questions before you write any claim about me. Do not ask me to run commands.
 ```
 
 Resume Builder is designed for an **agent-first workflow**. The easiest path is to let a terminal agent guide setup, ask clarifying questions, and keep resume claims tied to source evidence. The agent is the primary operator; the CLI is a deterministic toolbelt for validation and rendering. See [ADR 0001: Agent-operated CLI](../decisions/0001-agent-operated-cli.md) for the design rationale.
