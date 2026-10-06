@@ -21,6 +21,14 @@ const gettingStarted = fs.readFileSync(
   path.join(__dirname, "../../docs/getting-started.md"),
   "utf8"
 );
+const agentWorkflow = fs.readFileSync(
+  path.join(__dirname, "../../docs/agent-workflow.md"),
+  "utf8"
+);
+const readme = fs.readFileSync(
+  path.join(__dirname, "../../README.md"),
+  "utf8"
+);
 
 test("the briefing states the four outcomes and keeps samples fictional", () => {
   assert.equal((guide.match(/<details/g) || []).length, 4);
@@ -72,5 +80,10 @@ test("the FAQ and getting started agree with the briefing", () => {
   assert.match(faq, /Open `candidate\/inputs\/`/);
   assert.doesNotMatch(faq, /Open `candidate\/inputs\/resumes\/`/);
   assert.doesNotMatch(gettingStarted, /The first goal is to make sure the fictional sample works/);
+  assert.doesNotMatch(gettingStarted, /The sample workflow runs successfully/);
+  assert.match(gettingStarted, /The briefing was opened before any resume was written/);
   assert.match(gettingStarted, /Do not lead with `npm start`/);
+  assert.doesNotMatch(agentWorkflow, /Start by running the sample workflow/);
+  assert.match(agentWorkflow, /Open docs\/first-run\/guide\.html/);
+  assert.match(readme, /practice sample only/);
 });

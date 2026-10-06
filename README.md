@@ -36,9 +36,10 @@ The person-facing start is the section above. You run the commands. The full scr
 
 `npm start` runs a fictional sample (Alex Rivera) through the lifecycle in a temporary folder and then deletes that folder. It is not the first page to show a person. The first page is [`docs/first-run/guide.html`](docs/first-run/guide.html).
 
-If you are driving the tool yourself, without an assistant, see [CLI workflow](docs/cli-workflow.md). The design note is [ADR 0001](docs/decisions/0001-agent-operated-cli.md).
+If you are driving the tool yourself, without an assistant, see [CLI workflow](docs/cli-workflow.md). The design note is [ADR 0001](docs/decisions/0001-agent-operated-cli.md). Run the practice below only in that case, or when the person asks to see an example.
 
 ```bash
+# practice sample only; not the first page for a person
 npm install
 npm start
 ```

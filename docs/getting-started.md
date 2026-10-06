@@ -33,6 +33,7 @@ Open [`docs/first-run/guide.html`](first-run/guide.html) before anything else, a
 `npm start` is a practice with a fictional person. It uses a temporary folder and then deletes that folder. Run it only if the person asks to see an example.
 
 ```bash
+# only if they ask to see an example
 npm install
 npm start
 ```
@@ -84,7 +85,7 @@ Gather:
 
 After setup, you should be able to say:
 
-- 🧪 The sample workflow runs successfully.
+- 🧪 The briefing was opened before any resume was written.
 - 🔒 Real candidate files are in `candidate/`, not committed to Git.
 - 📝 The workspace has an intake note with unanswered questions.
 - 📊 The tracker and similar-role files are generated from structured workspace data.
