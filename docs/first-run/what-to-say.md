@@ -4,9 +4,9 @@ Say these sentences. Then stop and wait. Do not add folder names, command names,
 
 If you must name a file type, gloss it in the same sentence. "Word file" is enough. Do not say docx, JSON, gitignore, workspace, CLI, ingest, or evidence ledger to them.
 
-## 1. The map
+## 1. This page
 
-"I'm opening one page in your browser. It is a map of the whole path. You don't need to do anything yet. Tell me when you can see it."
+"I'm opening one page in your browser. It walks through the steps with a made-up person, so you can see what a resume and a job look like before we use yours. You don't need to do anything yet. Tell me when you can see it."
 
 If they cannot see it: "I'll try again. You should see a page titled Your job search, one page."
 
@@ -54,4 +54,4 @@ Then follow `docs/playbooks/grill.md`. Keep each question to one sentence.
 
 ## If they ask to see a finished example first
 
-"I can run a practice with a fictional person named Alex Rivera. It is not you. The practice files are thrown away when it finishes. The map I already opened is the page to keep."
+"I can run a practice with a fictional person named Alex Rivera. It is not you. The practice files are thrown away when it finishes. The page I already opened is the one to keep."

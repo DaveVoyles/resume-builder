@@ -24,9 +24,9 @@ Then follow docs/first-run/FAQ.md. Ask me questions before you write any claim a
 Do not ask me to run commands.
 ```
 
-Your assistant will open a one-page map. After that you will have a resume aimed at one job, a list of the jobs you are chasing, and a short guide before an interview. Your real files stay on your computer. They are not published with this project.
+Your assistant will open one page that walks through the steps with a made-up example. After that you will have a resume aimed at one job, a list of the jobs you are chasing, and a short guide before an interview. Your real files stay on your computer. They are not published with this project.
 
-The map is also here: [docs/first-run/guide.html](docs/first-run/guide.html).
+The page is also here: [docs/first-run/guide.html](docs/first-run/guide.html).
 
 Free and open source, no API key required. See [why it's free](#-why-this-is-free).
 

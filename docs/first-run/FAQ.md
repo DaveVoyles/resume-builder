@@ -8,7 +8,7 @@ Read [what-to-say.md](what-to-say.md) before you speak. Open [guide.html](guide.
 
 Do not skip ahead. Do not show them a pile of commands.
 
-1. **Open the map.** From the repo root:
+1. **Open the start page.** From the repo root:
 
    ```bash
    open docs/first-run/guide.html
@@ -20,9 +20,9 @@ Do not skip ahead. Do not show them a pile of commands.
 
 2. **Install only if needed.** If `node_modules` is missing, run `npm install` yourself. Do not ask them to.
 
-3. **Do not lead with `npm start`.** That command runs a fictional practice in a temporary folder and then deletes it. The person never gets a stable page from it. If they ask to see an example, say sentence "If they ask to see a finished example first" and run it yourself. Then return to the map.
+3. **Do not lead with `npm start`.** That command runs a fictional practice in a temporary folder and then deletes it. The person never gets a stable page from it. If they ask to see an example, say the sentence "If they ask to see a finished example first" and run it yourself. Then return to the start page.
 
-4. **Create their private folder** only after they have seen the map and are ready.
+4. **Create their private folder** only after they have seen the start page and are ready.
 
    ```bash
    npm run setup
@@ -64,7 +64,7 @@ At the start of a later session, check before you greet them:
 
 | If this is true | You are here |
 | --- | --- |
-| `candidate/profile.json` is missing | Step 4. They have not started. Open the map again if they have never seen it. |
+| `candidate/profile.json` is missing | Step 4. They have not started. Open the start page again if they have never seen it. |
 | The private folder exists but `candidate/inputs/` has no real files | Step 5. Ask for old material. |
 | Files are there and `candidate/evidence.jsonl` is empty | Step 6. Read the files. |
 | Evidence exists and `profile.json` has an empty `experience` list | Step 7. Interview. |

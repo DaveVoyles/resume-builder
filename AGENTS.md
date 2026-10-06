@@ -19,7 +19,7 @@ Do not ask them to run commands. Do not ask them to edit files. Do not open a pr
 ## 🚀 Default workflow
 
 1. 📦 Run `npm install` if dependencies are missing. You run it.
-2. 🗺️ Open the first-run map (`docs/first-run/guide.html`) before setup.
+2. Open `docs/first-run/guide.html` in the browser before setup.
 3. 🧭 Follow [`docs/playbooks/onboarding.md`](docs/playbooks/onboarding.md) for which step they are on. Follow [`docs/first-run/FAQ.md`](docs/first-run/FAQ.md) for what to say and what to run.
 
 Throughout the lifecycle, not just at first launch:
