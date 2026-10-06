@@ -228,8 +228,8 @@ test("validateResumeConfig limits bullets: 6 for the first job, 4 for later jobs
 
 test("validateResumeConfig rejects a ResumeProxyScore over 1000", () => {
   const config = validConfig();
-  const bullet = Array(30).fill("word").join(" ");
-  config.experienceSections[0].jobs = [0, 1, 2, 3].map(() => ({
+  const bullet = Array(60).fill("word").join(" ");
+  config.experienceSections[0].jobs = [0, 1, 2, 3, 4].map(() => ({
     title: "Engineer",
     company: "Acme Corp",
     dates: "2020",
