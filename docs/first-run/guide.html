@@ -1,277 +1,289 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>How this job search works</title>
-<style>
-  :root {
-    --bg: #f3efe6;
-    --ink: #1c1915;
-    --muted: #3d3832;
-    --line: #c9bfb0;
-    --paper: #fffdf8;
-    --accent: #1e3a5f;
-    --example: #f7f1e4;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--ink);
-    font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
-    font-size: 1.125rem;
-    line-height: 1.5;
-  }
-  ::selection { background: #d5e2f2; color: var(--ink); }
-  a:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
-  main { max-width: 52rem; margin: 0 auto; padding: 3.2rem 1.4rem 4.5rem; }
-  h1 {
-    font-size: clamp(2.3rem, 6vw, 3.4rem);
-    line-height: 1.05;
-    font-weight: 600;
-    letter-spacing: -0.03em;
-    margin: 0 0 0.8rem;
-  }
-  .lede { font-size: 1.28rem; margin: 0 0 1.4rem; }
-  .story, .sample, .close {
-    background: var(--paper);
-    border-radius: 14px;
-    padding: 1.15rem 1.25rem 1.25rem;
-    box-shadow: 0 12px 28px rgba(28, 25, 21, 0.06);
-  }
-  .story { margin-bottom: 1.2rem; }
-  h2 { font-size: 1.35rem; margin: 0 0 0.4rem; letter-spacing: -0.02em; }
-  .samples { display: grid; gap: 0.8rem; margin-top: 0.9rem; }
-  @media (min-width: 40rem) { .samples { grid-template-columns: 1fr 1fr; } }
-  .sample { background: var(--example); box-shadow: none; }
-  .sample p { margin: 0.15rem 0; }
-  .sample h3 { font-family: system-ui, sans-serif; font-size: 0.95rem; font-weight: 650; color: var(--accent); margin: 0 0 0.45rem; }
-  .diagram { margin: 1.4rem 0 0.4rem; }
-  .diagram p { font-family: system-ui, sans-serif; font-size: 1.02rem; }
-  .frame {
-    margin-top: 0.8rem;
-    background: var(--paper);
-    border-radius: 14px;
-    overflow: hidden;
-    box-shadow: 0 16px 36px rgba(28, 25, 21, 0.08);
-    height: 36rem;
-  }
-  .frame iframe { width: 100%; height: 100%; border: 0; background: #fff; }
-  .trip { position: relative; margin-top: 1.6rem; }
-  ol { list-style: none; margin: 0; padding: 0; }
-  .traveler {
-    position: absolute;
-    left: 1.02rem;
-    top: 0;
-    width: 0.9rem;
-    height: 0.9rem;
-    margin-left: 0;
-    border-radius: 50%;
-    background: #b8893d;
-    box-shadow: 0 0 0 7px rgba(184, 137, 61, 0.22);
-    z-index: 2;
-    transition: transform 720ms cubic-bezier(0.16, 1, 0.3, 1);
-    pointer-events: none;
-  }
-  li.step.on .n {
-    background: #b8893d;
-    transform: scale(1.06);
-    transition: background 400ms cubic-bezier(0.16, 1, 0.3, 1), transform 400ms cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  li.step { animation: arrive 640ms cubic-bezier(0.16, 1, 0.3, 1) both; }
-  li.step:nth-child(1) { animation-delay: 40ms; }
-  li.step:nth-child(2) { animation-delay: 90ms; }
-  li.step:nth-child(3) { animation-delay: 140ms; }
-  li.step:nth-child(4) { animation-delay: 190ms; }
-  li.step:nth-child(5) { animation-delay: 240ms; }
-  li.step:nth-child(6) { animation-delay: 290ms; }
-  li.step:nth-child(7) { animation-delay: 340ms; }
-  li.step:nth-child(8) { animation-delay: 390ms; }
-  @keyframes arrive {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: none; }
-  }
-  li.step {
-    display: grid;
-    grid-template-columns: 3.2rem 1fr;
-    gap: 0.15rem 1rem;
-    position: relative;
-    padding-bottom: 1.7rem;
-  }
-  li.step:not(:last-child)::before {
-    content: "";
-    position: absolute;
-    left: 1.45rem;
-    top: 2.7rem;
-    bottom: 0.15rem;
-    width: 2px;
-    background: var(--line);
-  }
-  .n {
-    width: 2.9rem;
-    height: 2.9rem;
-    border-radius: 50%;
-    background: var(--accent);
-    color: #fff;
-    display: grid;
-    place-items: center;
-    font-family: system-ui, sans-serif;
-    font-weight: 650;
-  }
-  .step h2 { font-size: 1.4rem; margin: 0.1rem 0 0.3rem; }
-  .plain, .eg { font-family: system-ui, sans-serif; font-size: 1.02rem; margin: 0.25rem 0; }
-  .eg { color: var(--muted); }
-  .close { margin-top: 0.4rem; }
-  .close ul { margin: 0.3rem 0 0; padding-left: 1.15rem; }
-  .close li { padding: 0.15rem 0; }
-  @media (max-width: 36rem) {
-    main { padding-top: 2rem; }
-    li.step { grid-template-columns: 2.5rem 1fr; }
-    .n { width: 2.4rem; height: 2.4rem; }
-    li.step:not(:last-child)::before { left: 1.15rem; }
-    .traveler { left: 0.78rem; }
-    .frame { height: 28rem; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    li.step, .traveler { animation: none; transition: none; }
-    .traveler { display: none; }
-  }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>What the assistant produces before anything leaves your desk</title>
+  <style>
+    :root {
+      --ink: #1a1a1a;
+      --ink-muted: #3f3f3f;
+      --paper: #f7f5f0;
+      --paper-elevated: #fffef9;
+      --rule: #c9c4b8;
+      --accent: #2c3e50;
+      --focus: #1a5276;
+      --measure: 42rem;
+      --font-serif: Georgia, "Times New Roman", Times, serif;
+      --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    html { font-size: 100%; -webkit-text-size-adjust: 100%; }
+
+    body {
+      margin: 0;
+      padding: 2.5rem 1.25rem 4rem;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--font-sans);
+      font-size: 1.0625rem;
+      line-height: 1.55;
+    }
+
+    ::selection { background: #d6e4f0; color: var(--ink); }
+
+    .memo {
+      max-width: var(--measure);
+      margin: 0 auto;
+      background: var(--paper-elevated);
+      padding: 2.75rem 2.5rem 3rem;
+      box-shadow: 0 1px 0 var(--rule), 0 12px 28px rgba(26, 26, 26, 0.06);
+    }
+
+    @media (max-width: 520px) {
+      body { padding: 1.25rem 0.75rem 3rem; }
+      .memo { padding: 2rem 1.35rem 2.5rem; }
+    }
+
+    header {
+      border-bottom: 1px solid var(--ink);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.75rem, 4vw, 2.15rem);
+      font-weight: 600;
+      line-height: 1.2;
+      margin: 0 0 0.75rem;
+      letter-spacing: -0.02em;
+    }
+
+    .meta {
+      font-size: 1rem;
+      color: var(--ink);
+      margin: 0;
+    }
+
+    h2 {
+      font-family: var(--font-serif);
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin: 2.25rem 0 1rem;
+      color: var(--accent);
+    }
+
+    h2:first-of-type { margin-top: 0; }
+
+    .outcomes {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 2.5rem;
+      counter-reset: outcome;
+    }
+
+    .outcomes li {
+      counter-increment: outcome;
+      padding: 0.85rem 0 0.85rem 2.25rem;
+      border-bottom: 1px solid var(--rule);
+      position: relative;
+    }
+
+    .outcomes li::before {
+      content: counter(outcome) ".";
+      position: absolute;
+      left: 0;
+      font-family: var(--font-serif);
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .outcomes li:last-child { border-bottom-color: var(--ink); }
+
+    .outcomes strong {
+      display: block;
+      font-size: 1.05rem;
+      margin-bottom: 0.2rem;
+    }
+
+    .outcomes span {
+      color: var(--ink-muted);
+      font-size: 0.98rem;
+    }
+
+    details {
+      margin: 0;
+      border-top: 1px solid var(--rule);
+    }
+
+    details:last-of-type { border-bottom: 1px solid var(--rule); }
+
+    summary {
+      cursor: pointer;
+      padding: 1rem 1.75rem 1rem 0;
+      font-weight: 500;
+      line-height: 1.45;
+      list-style: none;
+      position: relative;
+    }
+
+    summary::-webkit-details-marker { display: none; }
+    summary::marker { content: ""; }
+
+    summary::after {
+      content: "+";
+      position: absolute;
+      right: 0.15rem;
+      top: 1rem;
+      font-family: var(--font-serif);
+      font-size: 1.25rem;
+      font-weight: 400;
+      color: var(--ink-muted);
+      line-height: 1;
+    }
+
+    details[open] summary::after { content: "\2212"; }
+
+    summary:hover { color: var(--accent); }
+    summary:focus { outline: none; }
+
+    summary:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 3px;
+      border-radius: 2px;
+    }
+
+    .detail-body { padding: 0 0 1.35rem; }
+
+    .detail-body p { margin: 0 0 1rem; }
+    .detail-body p:last-child { margin-bottom: 0; }
+
+    .sample {
+      margin: 1.15rem 0 0;
+      padding: 1rem 1.15rem;
+      background: var(--paper);
+      border: 1px solid var(--rule);
+      font-size: 0.98rem;
+    }
+
+    .sample-label {
+      display: block;
+      font-family: var(--font-sans);
+      font-size: 0.75rem;
+      font-style: normal;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--ink-muted);
+      margin-bottom: 0.65rem;
+      font-weight: 650;
+    }
+
+    .sample p {
+      margin: 0 0 0.65rem;
+      font-family: var(--font-serif);
+      color: var(--ink);
+    }
+
+    .sample p:last-child { margin-bottom: 0; }
+
+    footer {
+      margin-top: 2.5rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--rule);
+      font-size: 0.95rem;
+      color: var(--ink-muted);
+    }
+
+    a:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 2px;
+    }
+  </style>
 </head>
 <body>
-<main>
-  <h1>How this job search works</h1>
-  <p class="lede">You talk. A helper on your computer does the filing and the writing. This page is the whole trip, in order. Nothing here is sent to an employer.</p>
+  <article class="memo">
+    <header>
+      <h1>What the assistant produces before anything leaves your desk</h1>
+      <p class="meta">Nothing is sent until you say so. The samples below are fictional.</p>
+    </header>
 
-  <section class="story">
-    <h2>A made-up example, so the steps feel real</h2>
-    <p>Meet Alex Rivera. Alex is not you. Alex wants a Senior Product Manager job at a made-up company called Northwind Tools. Along the way Alex has two things in hand: an old resume, and one job posting.</p>
-    <div class="samples">
-      <article class="sample">
-        <h3>An old resume</h3>
-        <p><strong>Alex Rivera</strong></p>
-        <p>Product manager, Contoso Labs</p>
-        <p>2022 to 2024</p>
-        <p>Led the launch of an internal tool for one product team.</p>
-      </article>
-      <article class="sample">
-        <h3>A job to chase</h3>
-        <p><strong>Senior Product Manager</strong></p>
-        <p>Northwind Tools</p>
-        <p>They want someone who has shipped a product with a team.</p>
-      </article>
-    </div>
-  </section>
+    <h2>Outcomes</h2>
+    <ol class="outcomes">
+      <li>
+        <strong>A private profile</strong>
+        <span>Your roles, what you did, and what you have not done, drawn from material you already have.</span>
+      </li>
+      <li>
+        <strong>A resume for one approved role</strong>
+        <span>Written only after you approve that opening. Other roles wait.</span>
+      </li>
+      <li>
+        <strong>A list that can hold several roles</strong>
+        <span>Each resume stays tied to a single role. The list remembers where every role stands.</span>
+      </li>
+      <li>
+        <strong>An interview brief the night before</strong>
+        <span>Written from your profile and that one role. It cites work you did and names the gaps.</span>
+      </li>
+    </ol>
 
-  <section class="diagram">
-    <h2>Watch the trip</h2>
-    <p>The line below is Alex’s path. It starts with an old resume, passes through one job, and ends on a list. A light runs along the arrows. You still decide what is true, and you still decide when anything is sent.</p>
-    <div class="frame">
-      <iframe src="journey.html" title="Alex’s path from an old resume to a job list"></iframe>
-    </div>
-  </section>
+    <h2>How each piece is produced</h2>
 
-  <div class="trip">
-  <div class="traveler" hidden></div>
-  <ol>
-    <li class="step">
-      <div class="n">1</div>
-      <div>
-        <h2>Read this page</h2>
-        <p class="plain">You are doing this step right now. Ask your helper what any step means. You do not need to hand over your own history yet.</p>
-        <p class="eg">For Alex, this is just getting oriented. No resume has been written.</p>
+    <details>
+      <summary>The profile is assembled from your resumes, notes, and published work. A job posting tells the assistant which role to write for. It does not change the profile.</summary>
+      <div class="detail-body">
+        <p>The assistant reads what you already have: past resumes, notes, and work you have published. From that it writes a private profile of how you have actually worked. The profile stays on your computer. It is not published, and it is not a resume. When a role is worth pursuing, the assistant uses the profile to write for that role. The posting does not rewrite your history.</p>
+        <aside class="sample">
+          <span class="sample-label">Fictional sample. Profile excerpt.</span>
+          <p>Alex Rivera. Contoso Labs. Led one product launch with one team. Did not manage a budget. The work depended on prioritization inside that team.</p>
+        </aside>
       </div>
-    </li>
-    <li class="step">
-      <div class="n">2</div>
-      <div>
-        <h2>Share something you already have</h2>
-        <p class="plain">An old resume, a notes file, or a link to work you already published is enough. Your helper puts it in a private folder on your computer. That folder is not published.</p>
-        <p class="eg">Alex drops in the Contoso Labs resume from 2022, plus a short note: “The tool was for one team, not the whole company.”</p>
-      </div>
-    </li>
-    <li class="step">
-      <div class="n">3</div>
-      <div>
-        <h2>Answer one question at a time</h2>
-        <p class="plain">Your helper will ask about jobs you have had, the kind of role you want, and where you can work. Correct anything that is wrong. Skip a question if you do not know.</p>
-        <p class="eg">Alex is asked, “What did you do at Contoso Labs?” Alex says, “I led one product launch. I did not manage a budget.”</p>
-      </div>
-    </li>
-    <li class="step">
-      <div class="n">4</div>
-      <div>
-        <h2>Pick one job</h2>
-        <p class="plain">Paste a link, or say the company and the job title. Your helper checks that the link still opens. You say yes before any resume is written.</p>
-        <p class="eg">Alex pastes the Northwind Tools posting for Senior Product Manager. The link still works. Alex says, “Yes, write one for this.”</p>
-      </div>
-    </li>
-    <li class="step">
-      <div class="n">5</div>
-      <div>
-        <h2>Read the new resume</h2>
-        <p class="plain">You get a Word file aimed at that one job. Read it. Say so if a sentence is something you would not say out loud. It comes off. Nothing is emailed.</p>
-        <p class="eg">The draft says, “Led a launch used by several teams.” Alex says, “Change that. It was one team.” The helper changes it.</p>
-      </div>
-    </li>
-    <li class="step">
-      <div class="n">6</div>
-      <div>
-        <h2>Look at your job list</h2>
-        <p class="plain">One page lists every job you are chasing. Each row says where things stand: not yet, applied, interview, offer, or no.</p>
-        <p class="eg">Alex’s list has one row: Northwind Tools, Senior Product Manager, Not yet.</p>
-      </div>
-    </li>
-    <li class="step">
-      <div class="n">7</div>
-      <div>
-        <h2>Tell your helper what happened</h2>
-        <p class="plain">When you apply, get an interview, or hear a no, just say that. Your helper updates the list. You do not keep a spreadsheet.</p>
-        <p class="eg">A week later Alex says, “I applied on Tuesday.” The row changes from Not yet to Applied.</p>
-      </div>
-    </li>
-    <li class="step">
-      <div class="n">8</div>
-      <div>
-        <h2>Get ready for the interview</h2>
-        <p class="plain">Ask for a short guide the night before. It uses work you really did. It also says what you have not done, so you do not have to pretend.</p>
-        <p class="eg">Alex’s guide says how to talk about the Contoso launch, and it says plainly that Alex has not managed a budget.</p>
-      </div>
-    </li>
-  </ol>
-  </div>
+    </details>
 
-  <section class="close">
-    <h2>A few kind rules</h2>
-    <ul>
-      <li>You never have to write code.</li>
-      <li>This page does not apply to jobs for you. You still choose when anything is sent.</li>
-      <li>If a sentence on the resume is not true, say so. It comes off.</li>
-      <li>Alex, Contoso Labs, and Northwind Tools are made up. Your helper will use your real story instead.</li>
-    </ul>
-  </section>
-</main>
-<script>
-  const steps = Array.from(document.querySelectorAll("li.step"));
-  const traveler = document.querySelector(".traveler");
-  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  function place(index) {
-    steps.forEach((step, i) => step.classList.toggle("on", i === index));
-    const step = steps[index];
-    if (!step || !traveler) return;
-    traveler.hidden = false;
-    traveler.style.transform = "translateY(" + (step.offsetTop + 10) + "px)";
-  }
-  if (!reduce && steps.length) {
-    let index = 0;
-    place(0);
-    window.setInterval(() => {
-      index = (index + 1) % steps.length;
-      place(index);
-    }, 2200);
-    window.addEventListener("resize", () => place(index));
-  }
-</script>
+    <details>
+      <summary>Several roles can sit on the list at once. A resume is written for one role at a time, and only after you approve that role.</summary>
+      <div class="detail-body">
+        <p>You can track more than one opening without a resume for each. Approval is the gate. Until you confirm that a given opening should have a tailored resume, the assistant does not draft one. When you approve, the work is that single role, until the resume is ready for you to read.</p>
+        <aside class="sample">
+          <span class="sample-label">Fictional sample. List.</span>
+          <p>Northwind Tools, Senior Product Manager. Approved. Resume in review.</p>
+          <p>Fabrikam Studio, Product Manager. On the list. Not yet approved for a draft.</p>
+        </aside>
+      </div>
+    </details>
+
+    <details>
+      <summary>You review every resume. A sentence you would not say comes off. Nothing is emailed or submitted until you say so. Telling the assistant you applied does not send an application.</summary>
+      <div class="detail-body">
+        <p>The assistant proposes wording. You own the voice. A line that overstates the work comes off. There is no automatic email and no submission in the background. Saying you applied updates your list. It does not file an application. You send it when you are ready.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>The interview brief uses your profile and the one role you are preparing for. It cites work you did and names gaps without softening them.</summary>
+      <div class="detail-body">
+        <p>Ask for it the evening before the conversation. It connects that role to specific work in your profile, and it flags where your record is thinner so you can decide what to say. It is a brief, not a script.</p>
+        <aside class="sample">
+          <span class="sample-label">Fictional sample. Brief for Northwind Tools, Senior Product Manager.</span>
+          <p>Lead with the Contoso launch: one team, no budget, delivery through prioritization. Gap: Alex has not managed a budget. If they ask, say so.</p>
+        </aside>
+      </div>
+    </details>
+
+    <footer>
+      When you are ready, tell your assistant to start. The first thing it needs is material you already have. Names and companies in the samples are fictional.
+    </footer>
+  </article>
 </body>
 </html>

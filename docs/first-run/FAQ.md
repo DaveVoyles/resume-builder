@@ -99,7 +99,7 @@ One page in the browser. Each row is a job. The status is a plain word. They do 
 A short document for one interview. It uses their real work. It also lists what they have not done.
 
 **Can we do more than one job?**
-Yes. Repeat steps 8 and 9 for each job they choose. One at a time.
+Yes. They can paste several listings. Check each link. Write one resume at a time, and only after they say yes to that job. The list holds the rest. The private profile comes from their own resumes and notes, not from the job ads.
 
 **What if the job link is dead?**
 Stop. Tell them the posting is gone. Do not write a resume for it.
