@@ -1,6 +1,6 @@
 # What to say
 
-Say these sentences. Then stop and wait. Do not add folder names, command names, or file types unless the person asks.
+Say these sentences. Then stop and wait. Do not add folder paths, command names, or file types unless the person asks. The resumes folder and the notes folder are the exception in section 3, because that window is already open.
 
 If you must name a file type, say what it is in the same sentence. "Word file" is enough. Do not say docx, JSON, gitignore, workspace, CLI, ingest, or evidence ledger.
 
