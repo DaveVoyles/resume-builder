@@ -19,7 +19,7 @@ function baseResumeConfig(bullets) {
   return {
     schemaVersion: "1.0",
     company: "Acme Corp",
-    candidate: { name: "Sample Candidate", contact: [{ text: "Remote, US" }] },
+    candidate: { name: "Sample Candidate", headline: "Fictional engineer for tests", contact: [{ text: "Remote, US" }] },
     summary: { text: "Fictional summary for the validate CLI claim-audit test." },
     experienceSections: [
       {

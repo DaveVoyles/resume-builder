@@ -27,6 +27,7 @@ function fictionalConfig() {
     company: "Acme Corp",
     candidate: {
       name: "Sample Candidate",
+      headline: "Fictional engineer for tests",
       contact: [{ text: "sample.candidate@example.invalid", link: "mailto:sample.candidate@example.invalid" }],
     },
     summary: { text: "Fictional product leader focused on fictional developer workflows." },

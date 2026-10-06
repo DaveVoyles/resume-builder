@@ -15,6 +15,7 @@ function fictionalConfig(overrides = {}) {
     company: "Acme Corp",
     candidate: {
       name: "Sample Candidate",
+      headline: "Fictional engineer for tests",
       contact: [
         { text: "Remote, US" },
         { text: "sample.candidate@example.invalid", link: "mailto:sample.candidate@example.invalid" },
@@ -67,6 +68,7 @@ test("renderResumeConfig produces a docx Document whose extracted text contains 
 
     const text = readDocxText(outputPath);
     assert.match(text, /Sample Candidate/);
+    assert.match(text, /Fictional engineer for tests/);
     assert.match(text, /Fictional product leader focused on fictional developer workflows\./);
     assert.match(text, /Senior Fictional Engineer/);
     assert.match(text, /Northwind Widgets/);

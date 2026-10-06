@@ -46,6 +46,7 @@ function fabrikamResumeConfig() {
     outputFileName: "alex-rivera-fabrikam-ai.docx",
     candidate: {
       name: "Alex Rivera",
+      headline: "Senior product manager for developer platforms",
       contact: [
         { text: "Raleigh, NC" },
         { text: "alex.rivera@example.invalid", link: "mailto:alex.rivera@example.invalid" },

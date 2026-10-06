@@ -13,6 +13,7 @@
 const {
   name,
   contactLine,
+  headline,
   rule,
   sectionHeading,
   injectFit,
@@ -55,7 +56,14 @@ function renderResumeConfig(config) {
 
   const summary = injectFit(config.summary.text, config.summary.fitOverride ?? null);
 
-  const children = [name(config.candidate.name), contactLine(config.candidate.contact), rule(), sectionHeading("Summary"), para(summary)];
+  const children = [
+    name(config.candidate.name),
+    contactLine(config.candidate.contact),
+    headline(config.candidate.headline),
+    rule(),
+    sectionHeading("Summary"),
+    para(summary),
+  ];
 
   for (const section of config.experienceSections) {
     children.push(rule(), sectionHeading(section.heading));

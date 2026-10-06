@@ -15,6 +15,7 @@ function fictionalCoverLetterConfig(overrides = {}) {
     company: "Acme Corp",
     candidate: {
       name: "Sample Candidate",
+      headline: "Fictional engineer for tests",
       contact: [
         { text: "Remote, US" },
         { text: "sample.candidate@example.invalid", link: "mailto:sample.candidate@example.invalid" },
