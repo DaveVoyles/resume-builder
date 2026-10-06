@@ -20,7 +20,7 @@ Do not skip ahead. Do not show them a pile of commands.
 
 2. **Install only if needed.** If `node_modules` is missing, run `npm install` yourself. Do not ask them to.
 
-3. **Do not lead with `npm start`.** That command runs a fictional practice in a temporary folder and then deletes it. The person never gets a stable page from it. If they ask to see an example, say the sentence "If they ask to see a finished example first" and run it yourself. Then return to the start page.
+3. **Do not lead with `npm start`.** That command runs a fictional practice in a temporary folder and then deletes it. The person never gets a stable page from it. If they ask to see an example, say the sentence "If they ask about the samples" and run it yourself. Then return to the start page.
 
 4. **Create their private folder** only after they have seen the start page and are ready.
 
@@ -30,9 +30,9 @@ Do not skip ahead. Do not show them a pile of commands.
 
    Say sentence 2. The setup command opens an empty job list in the browser. Tell them the emptiness is normal.
 
-5. **Collect old material.** Open `candidate/inputs/resumes/` for them (`open` / `start` / `xdg-open` on that folder). Say sentence 3. Wait until they say the files are in, or they ask what to include.
+5. **Collect old material.** Open `candidate/inputs/` for them (`open` / `start` / `xdg-open` on that folder). Both the resumes folder and the notes folder are inside it. Say both sentences in section 3 of [what-to-say.md](what-to-say.md). Wait until they say the files are in, or they ask what to include.
 
-   Enough to start: one old resume, or a notes file, or a GitHub username. More is better. LinkedIn pages are behind a login, so you cannot pull a LinkedIn profile the way you can pull public GitHub repos. If they want LinkedIn included, ask them to export their data from LinkedIn settings, or paste the parts they care about into a notes file.
+   Resumes go in `resumes/`. Notes go in `notes/`. A link can be pasted in chat, or you write it into `links.md`. Enough to start: one old resume, or a notes file, or a GitHub username. More is better. LinkedIn pages are behind a login, so you cannot pull a LinkedIn profile the way you can pull public GitHub repos. If they want LinkedIn included, ask them to export their data from LinkedIn settings, or paste the parts they care about into a notes file.
 
 6. **Read the files.** Say sentence 4. Wait for a yes. Then run ingest with only the flags that match what they gave you:
 
@@ -56,7 +56,7 @@ Do not skip ahead. Do not show them a pile of commands.
 
 11. **Later: status.** When they say they applied, interviewed, got an offer, or were turned down, run `set-status` yourself and say sentence 9. Status words: interested, applied, interview, offer, rejected, withdrawn, ghosted. Say the plain version back: "not started," "applied," "interview," "offer," "they said no," "you withdrew," "no reply."
 
-12. **Later: study guide.** When an interview is coming, follow `docs/playbooks/study-guide.md`. Say sentence 10. The guide stays in their private folder. Do not commit it.
+12. **Later: study guide.** When an interview is coming, follow `docs/playbooks/study-guide.md`. Say sentence 10. Open `candidate/outputs/study-guides/<company>/study-guide.md` for them. The guide stays in their private folder. Do not commit it.
 
 ## How you know which step they are on
 
@@ -81,7 +81,7 @@ No. You run the steps. They answer questions and read the resume.
 Claude, Grok, or Gemini, including Google Antigravity. Copilot or ChatGPT also work if they can read this repo and run commands. This program does not call an AI and does not need an API key.
 
 **Where do my files go?**
-In a folder named `candidate/` on their machine. Say "a private folder on your computer." It is not uploaded with the project. Do not commit it. Before any commit of project files, run `npm run check:privacy`.
+In a folder named `candidate/` on their machine. Say "a private folder on your computer." Open `candidate/inputs/` when they are adding files. When they ask for the resume, the list, or the brief, open that file. The paths are in [what-to-say.md](what-to-say.md), under "If they ask where a file is." It is not uploaded with the project. Do not commit it. Before any commit of project files, run `npm run check:privacy`.
 
 **Will this apply to jobs for me?**
 No. A resume is written for them to review. Nothing is submitted unless they later say so, on a real application site, themselves. If you see a page titled like a practice application for a fictional company, that page is a test fixture. Do not open it during first-run. It is not their application.

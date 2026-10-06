@@ -13,6 +13,14 @@ const speech = fs.readFileSync(
   path.join(__dirname, "../../docs/first-run/what-to-say.md"),
   "utf8"
 );
+const faq = fs.readFileSync(
+  path.join(__dirname, "../../docs/first-run/FAQ.md"),
+  "utf8"
+);
+const gettingStarted = fs.readFileSync(
+  path.join(__dirname, "../../docs/getting-started.md"),
+  "utf8"
+);
 
 test("the briefing states the four outcomes and keeps samples fictional", () => {
   assert.equal((guide.match(/<details/g) || []).length, 4);
@@ -37,4 +45,32 @@ test("the assistant script matches the briefing and does not talk down", () => {
   assert.match(speech, /What the assistant produces before anything leaves your desk/);
   assert.match(speech, /private profile/);
   assert.match(speech, /only after you approve that role/);
+});
+
+test("the briefing tells a person where files go in and where results come back", () => {
+  assert.match(guide, /It will open a folder/);
+  assert.match(guide, /Put past resumes and notes in that folder/);
+  assert.match(guide, /finished resume, the role list, and the interview brief/);
+});
+
+test("the assistant opens the inputs folder and uses the real status words", () => {
+  assert.match(speech, /candidate\/inputs\//);
+  assert.match(speech, /resumes folder/);
+  assert.match(speech, /notes folder/);
+  assert.match(speech, /they said no/);
+  assert.match(speech, /you withdrew/);
+  assert.match(speech, /no reply/);
+  assert.doesNotMatch(speech, /or no\./);
+  assert.match(speech, /outputs\/resumes/);
+  assert.match(speech, /tracker\.html/);
+  assert.match(speech, /study-guides/);
+});
+
+test("the FAQ and getting started agree with the briefing", () => {
+  assert.match(faq, /If they ask about the samples/);
+  assert.doesNotMatch(faq, /finished example first/);
+  assert.match(faq, /Open `candidate\/inputs\/`/);
+  assert.doesNotMatch(faq, /Open `candidate\/inputs\/resumes\/`/);
+  assert.doesNotMatch(gettingStarted, /The first goal is to make sure the fictional sample works/);
+  assert.match(gettingStarted, /Do not lead with `npm start`/);
 });

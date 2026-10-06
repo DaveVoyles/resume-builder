@@ -85,9 +85,11 @@ Then move straight into State 1's messaging below — the candidate is now in th
 
 ## State 1: Workspace scaffolded, nothing real added yet
 
+**Do:** Open `candidate/inputs/` (`open` / `start` / `xdg-open`). Do not recite the path. The resumes folder and the notes folder are both inside it.
+
 **Say:**
 
-Say the "Old material" sentence in [`docs/first-run/what-to-say.md`](../first-run/what-to-say.md). Do not add a second version.
+Say both sentences under "Old material" in [`docs/first-run/what-to-say.md`](../first-run/what-to-say.md). Do not add a third version.
 
 If they ask about LinkedIn, then say you cannot read a page behind a login, and a public GitHub username is fine.
 
