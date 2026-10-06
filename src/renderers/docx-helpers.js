@@ -68,7 +68,15 @@ function contactLine(parts) {
       children.push(new TextRun({ text: p.text, font: "Arial", size: 18, color: COLOR.gray }));
     }
   });
-  return new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 160 }, children });
+  return new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 40 }, children });
+}
+
+function headline(text) {
+  return new Paragraph({
+    alignment: AlignmentType.CENTER,
+    spacing: { before: 0, after: 120 },
+    children: [new TextRun({ text, font: "Arial", size: 20, color: COLOR.gray })],
+  });
 }
 
 function rule() {
@@ -249,6 +257,7 @@ module.exports = {
   injectFit,
   name,
   contactLine,
+  headline,
   rule,
   sectionHeading,
   jobHeader,

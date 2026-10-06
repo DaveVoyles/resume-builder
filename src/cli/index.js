@@ -21,6 +21,10 @@ const COMMANDS = {
   tailor: () => require("./commands/tailor"),
   validate: () => require("./commands/validate"),
   serve: () => require("./commands/serve"),
+  "add-lead": () => require("./commands/add-lead"),
+  "export-pdf": () => require("./commands/export-pdf"),
+  "approve-apply": () => require("./commands/approve-apply"),
+  apply: () => require("./commands/apply"),
 };
 
 function help() {
@@ -48,6 +52,10 @@ function help() {
     "  tailor --workspace <dir> --config <resume-config.json> (--url <url> | --title <title> [--company <name>]) [--applyUrl <url>] [--location <text>] [--compensation <text>] [--fit <text>] [--notes <text>] [--keywords <keywords.json>] [--cover-letter <cover-letter-config.json>]",
     "  validate --workspace <dir>",
     "  serve --workspace <dir> [--port <n>] [--noOpen]",
+    "  add-lead --workspace <dir> --company <name> --title <name> --url <url> [--fit <text>] [--notes <text>]",
+    "  export-pdf --docx <file.docx> [--out <file.pdf>]",
+    "  approve-apply --workspace <dir> --company <name> --title <name> [--note <text>]",
+    "  apply --workspace <dir> --company <name> --title <name> --dry-run [--confirm-submit]",
     "",
     "Common options:",
     "  --workspace <dir>   Candidate workspace directory (default: candidate)",

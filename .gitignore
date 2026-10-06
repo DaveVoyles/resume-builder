@@ -20,6 +20,9 @@ candidate/roles.tracked.json
 candidate/claim-policy.json
 candidate/resume-configs/
 candidate/outputs/
+candidate/leads.json
+candidate/apply-approvals.json
+candidate/apply-profile.json
 
 # Modular workflow generated outputs
 outputs/

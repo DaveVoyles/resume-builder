@@ -14,6 +14,7 @@ function fictionalConfig(overrides = {}) {
     company: "Acme Corp",
     candidate: {
       name: "Sample Candidate",
+      headline: "Fictional engineer for tests",
       contact: [{ text: "Remote, US" }],
     },
     salutation: "Dear Hiring Manager,",

@@ -14,6 +14,7 @@ function fictionalConfig(overrides = {}) {
     company: "Acme Corp",
     candidate: {
       name: "Sample Candidate",
+      headline: "Fictional engineer for tests",
       contact: [{ text: "Remote, US" }],
     },
     summary: { text: "Fictional summary for the render-resume CLI test." },
@@ -141,5 +142,30 @@ test("render-resume command strips null bytes from company/outputFileName instea
 test("render-resume command rejects an excessively long company value with a clean error, not a raw ENAMETOOLONG crash", async () => {
   await withWorkspace(fictionalConfig({ company: "A".repeat(500) }), async ({ workspace, configPath }) => {
     await assert.rejects(() => command.run({ workspace, config: configPath }), /company must be \d+ characters or fewer/);
+  });
+});
+
+test("render-resume does not overwrite a resume for an applied role unless includeApplied is set", async () => {
+  await withWorkspace(fictionalConfig(), async ({ workspace, configPath }) => {
+    const outputPath = path.join(workspace, "outputs", "resumes", "Acme Corp", "sample-candidate-acme-corp.docx");
+    const trackedPath = path.join(workspace, "roles.tracked.json");
+
+    await command.run({ workspace, config: configPath });
+    assert.ok(fs.existsSync(outputPath));
+    const firstBytes = fs.readFileSync(outputPath);
+
+    fs.writeFileSync(trackedPath, JSON.stringify([
+      { id: "role-1", company: "Acme Corp", title: "Engineer", application: { status: "applied" } },
+    ]));
+
+    await assert.rejects(
+      command.run({ workspace, config: configPath }),
+      (error) => error.message.includes("Acme Corp") && error.message.includes("--include-applied"),
+    );
+    assert.ok(fs.readFileSync(outputPath).equals(firstBytes));
+
+    fs.writeFileSync(outputPath, "marker");
+    await command.run({ workspace, config: configPath, includeApplied: true });
+    assert.notEqual(fs.readFileSync(outputPath, "utf8"), "marker");
   });
 });

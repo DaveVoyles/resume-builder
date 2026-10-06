@@ -77,47 +77,24 @@ Open the bundle and review:
 3. **The tailored resume** — see how the config positioned the candidate for this role (check `resumeConfig.summary.fitOverride` and `resume.emphasis`).
 4. **Evidence connections** — review which evidence entries support the key claims in the resume (stored in `evidence[]`).
 
-### Step 2.2: Organize the study guide by interview stage
+### Step 2.2: Write the guide in this order
 
-Write the study guide to `outputs/study-guides/<company>/study-guide.md`. Structure it around the likely interview stages (recruiter screen → team interviews → executive round):
+Write the guide to `outputs/study-guides/<company>/study-guide.md`. Use these seven parts, in this order:
 
-**Study guide sections:**
+1. **Plain-language briefing.** What the company does, what the role does, and why you fit. Short sentences. No jargon.
+2. **Short jargon table.** A two-column table: term, plain meaning. Only terms the posting or interviewers will use.
+3. **Pictures (optional).** If pictures help, put them in a markdown pipe table with two columns, for example `| Wiring | Illustration |`. The pictures are illustrations that the agent or the person adds. Do not require any diagram tool. Skip this part if there are none.
+4. **60-second opener.** A short script the person can say out loud when asked "tell me about yourself".
+5. **Honesty gaps.** What the person has not done. For each gap, one honest sentence they can say and one step to close it.
+6. **90-minute hands-on lab.** One small exercise that builds real familiarity with the role's domain, with clear steps and a finish line.
+7. **Questions to ask the recruiter.** The loop, the team, and what success looks like.
 
-1. **Role Overview**
-   - Job title, company, key responsibilities (from the posting).
-   - Your fit assessment: what makes you a good match for this role?
-   - Link to the job posting.
-
-2. **Your Strongest Assets**
-   - List 3-5 of your most relevant achievements from the evidence that directly support the role's stated needs.
-   - For each achievement, include: the accomplishment, the business impact, and why it's relevant to *this specific role*.
-   - Use exact quotes from your evidence and resume config where appropriate.
-
-3. **Likely Interview Questions**
-   - Brainstorm 8-12 questions a hiring manager for this role would likely ask.
-   - Group by interview stage if relevant (e.g., recruiter screen, technical round, culture fit).
-   - For each question, draft a short talking point (1-2 sentences) grounded in your evidence and experience.
-
-4. **Addressing Gaps**
-   - If the posting lists skills or experience you haven't explicitly mentioned in your evidence, call them out.
-   - For each gap, assess: is this a blocker, a "nice to have," or something you can learn on the job?
-   - Prepare a short, honest response for if the question comes up.
-
-5. **Your Questions for the Team**
-   - Prepare 5-7 thoughtful questions to ask the hiring team.
-   - Focus on culture, role clarity, technical challenges, team dynamics, and growth opportunities — not compensation (save that for the offer stage).
-   - Questions should show you've read the posting and understand what success in this role looks like.
-
-6. **Day-of Checklist**
-   - Confirm the date/time and format of each interview.
-   - Link to the team members you'll meet (LinkedIn or company bio, if available).
-   - Note any technical setup needed (video call tools, coding environment, whiteboard).
-   - Reminder: bring a physical copy of your tailored resume (the one in `outputs/resumes/`).
+Any agent can write this: Claude, Grok, or Gemini. Do not invent product internals. If the bundle does not say how a product works, say so. Use Northwind only as an example heading.
 
 ### Step 2.3: Ground everything in evidence
 
 Before you finalize the guide:
-- Every achievement or claim should reference the `evidence.jsonl` entry ID (e.g., "ev-001").
+- Every claim must cite an evidence id from the bundle (e.g., "ev-001").
 - Check that the evidence supports what you've written (no over-claiming).
 - If an important skill is in the resume but missing from evidence, flag it — the candidate may need to review or add a note.
 
@@ -125,11 +102,7 @@ Before you finalize the guide:
 
 1. Save the guide to `outputs/study-guides/<company>/study-guide.md`.
 2. Verify the file is readable and well-formatted.
-3. Commit it to the workspace:
-   ```bash
-   git add outputs/study-guides/<company>/study-guide.md
-   git commit -m "docs(study-guide): prepare for <company> — <role-title>"
-   ```
+3. Leave it in the private workspace. `outputs/` and `candidate/` are gitignored. Do not commit a real study guide to this public repo.
 
 ---
 
