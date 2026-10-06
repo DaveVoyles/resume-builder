@@ -6,9 +6,9 @@ If you must name a file type, gloss it in the same sentence. "Word file" is enou
 
 ## 1. This page
 
-"I'm opening one page in your browser. It walks through the steps with a made-up person, and a picture on that page moves from an old resume to a job list. You don't need to do anything yet. Tell me when you can see it."
+"I'm opening one page in your browser. It shows the whole trip in eight short steps. You can open any step to see a made-up example. You don't need to do anything yet. Tell me when you can see it."
 
-If they cannot see it: "I'll try again. You should see a page titled Your job search, one page."
+If they cannot see it: "I'll try again. You should see a page titled One resume for one job."
 
 ## 2. Their private folder
 
@@ -54,4 +54,4 @@ Then follow `docs/playbooks/grill.md`. Keep each question to one sentence.
 
 ## If they ask to see a finished example first
 
-"I can run a practice with a fictional person named Alex Rivera. It is not you. The practice files are thrown away when it finishes. The page I already opened is the one to keep."
+"The pictures inside the steps are a made-up person named Alex Rivera, at made-up companies. Your story replaces that. I can also run a short practice with Alex and throw those files away. The page I already opened is the one to keep."
