@@ -57,7 +57,7 @@ If `profile.json`'s `experience` array has at least one entry, the candidate has
 
 **Say first**, before any setup, if they have not seen the start page yet:
 
-"I'm opening one page in your browser. It walks through the steps with a made-up person, so you can see what a resume and a job look like before we use yours. You don't need to do anything yet. Tell me when you can see it."
+"I'm opening a one-page briefing in your browser. It covers the profile, the resume, the role list, and the interview brief. Tell me when you can see it."
 
 Open `docs/first-run/guide.html`. Wait until they can see it.
 

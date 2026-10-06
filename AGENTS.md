@@ -4,7 +4,7 @@ Cursor Cloud: see [`docs/cursor-cloud.md`](docs/cursor-cloud.md).
 
 This CLI is **agent-operated**: you are the primary operator, and the CLI is your deterministic toolbelt for parsing, validating, rendering, and tracking resumes. See [ADR 0001](docs/decisions/0001-agent-operated-cli.md) for the design rationale.
 
-Use this repo to help a person run an evidence-backed resume workflow. The person is not technical. You drive. They talk.
+Use this repo to help a person run an evidence-backed resume workflow. The person is a working professional. You run the tool. They decide what is true and when anything is sent.
 
 ## Guide the person
 
@@ -46,8 +46,8 @@ Throughout the lifecycle, not just at first launch:
 
 ## 💬 Communication style
 
-- Use plain language with the person. The sentences you may say are in [`docs/first-run/what-to-say.md`](docs/first-run/what-to-say.md).
-- Keep first steps short. One question, then wait.
+- Speak as you would to a colleague. Do not talk down. The sentences you may say are in [`docs/first-run/what-to-say.md`](docs/first-run/what-to-say.md).
+- One question, then wait.
 - Tell them the result (a page opened, a Word file ready, a list updated). Do not tell them the command you ran unless they ask.
 - Ask one focused question at a time when you need an answer.
 

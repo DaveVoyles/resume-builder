@@ -14,23 +14,27 @@ const speech = fs.readFileSync(
   "utf8"
 );
 
-test("the welcome page names the helper and keeps the sample inside the steps", () => {
-  assert.equal((guide.match(/<details/g) || []).length, 8);
-  assert.equal((guide.match(/Show this step/g) || []).length, 8);
+test("the briefing states the four outcomes and keeps samples fictional", () => {
+  assert.equal((guide.match(/<details/g) || []).length, 4);
   assert.doesNotMatch(guide, /Alex is not you/);
   assert.doesNotMatch(guide, /Meet Alex/);
-  assert.match(guide, /nothing is sent until you say so/i);
+  assert.doesNotMatch(guide, /You do this/);
+  assert.doesNotMatch(guide, /You could say/);
+  assert.doesNotMatch(guide, /Show this step/);
+  assert.match(guide, /Nothing is sent until you say so/);
   assert.match(guide, /private profile/i);
   assert.match(guide, /Fabrikam Studio/);
-  assert.match(guide, /night-before guide/);
-  assert.equal((guide.match(/You do this/g) || []).length, 8);
-  assert.match(guide, /Sample, made up/);
   assert.match(guide, /Contoso Labs/);
   assert.match(guide, /Northwind Tools/);
+  assert.match(guide, /Fictional sample/);
+  assert.match(guide, /does not send an application/);
 });
 
-test("the agent does not introduce the reader as Alex", () => {
+test("the assistant script matches the briefing and does not talk down", () => {
   assert.doesNotMatch(speech, /Alex is not you/);
   assert.doesNotMatch(speech, /It is not you/);
-  assert.match(speech, /One resume for one job/);
+  assert.doesNotMatch(speech, /eight short steps/);
+  assert.match(speech, /What the assistant produces before anything leaves your desk/);
+  assert.match(speech, /private profile/);
+  assert.match(speech, /only after you approve that role/);
 });

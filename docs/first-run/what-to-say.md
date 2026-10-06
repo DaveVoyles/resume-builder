@@ -2,56 +2,58 @@
 
 Say these sentences. Then stop and wait. Do not add folder names, command names, or file types unless the person asks.
 
-If you must name a file type, gloss it in the same sentence. "Word file" is enough. Do not say docx, JSON, gitignore, workspace, CLI, ingest, or evidence ledger to them.
+If you must name a file type, say what it is in the same sentence. "Word file" is enough. Do not say docx, JSON, gitignore, workspace, CLI, ingest, or evidence ledger.
+
+Speak as you would to a colleague. Do not talk down.
 
 ## 1. This page
 
-"I'm opening one page in your browser. It shows the whole trip in eight short steps. You can open any step to see a made-up example. You don't need to do anything yet. Tell me when you can see it."
+"I'm opening a one-page briefing in your browser. It covers the profile, the resume, the role list, and the interview brief. Tell me when you can see it."
 
-If they cannot see it: "I'll try again. You should see a page titled One resume for one job."
+If they cannot see it: "I'll try again. The page is titled What the assistant produces before anything leaves your desk."
 
 ## 2. Their private folder
 
-"I'll make a private folder on your computer for your resumes and notes. It stays on this machine. I will not publish it."
+"I'll keep your resumes and notes in a private folder on this computer. I will not publish it."
 
-After the empty tracker opens: "That page is your job list. It is empty on purpose. It fills in as we add real jobs."
+After the empty list opens: "That page is your role list. It stays empty until we add roles."
 
 ## 3. Old material
 
-"I need something real to work from. Old resumes, a notes file, or a link to work you already published. Several are better than one. Those files are how I build a private profile of your work. Put them where I show you, then tell me you're done. I will not publish that folder, and I will not write a resume yet."
+"I need material you already have: past resumes, notes, or links to work you have published. More than one source is useful. I'll turn them into a private profile. I will not write a resume from them yet."
 
-Do not list four folder paths. Open the folder for them.
+Do not list folder paths. Open the folder for them.
 
 ## 4. Reading what they gave you
 
-"I'll read what you added and turn it into a private profile we can check. I won't write a resume yet."
+"I'll read what you added and draft a private profile for you to correct. I will not write a resume yet."
 
 ## 5. The interview
 
-"I have your files, and I still need your story in order. I'll ask one question at a time, about jobs, the kind of role you want, where you can work, and pay if you want to share it. Correct me when I'm wrong. You can skip any question."
+"I still need the story in your words. I'll ask one question at a time: roles you have held, the kind of work you want, where you can work, and compensation if you want to include it. Correct me when I have it wrong. Skip anything you would rather not answer."
 
 Then follow `docs/playbooks/grill.md`. Keep each question to one sentence.
 
-## 6. One job
+## 6. Roles
 
-"You can paste more than one job. I'll check each link. I'll write a resume for one job at a time, and only after you say yes to that job. The others wait on your list."
+"You can send several postings. I'll check that each link is still live. I'll write a resume for one role at a time, and only after you approve that role. The others stay on the list."
 
 ## 7. The resume
 
-"The Word file is ready. Please read it. Tell me any sentence you would not say out loud. Nothing has been sent."
+"The resume is ready. Please read it. Tell me any sentence you would not say. Nothing has been sent."
 
 ## 8. The list
 
-"This page is your list of jobs. Every job you brought is a row. Each row says where things stand: not started, applied, interview, offer, or no."
+"This is your list of roles. Each row shows where that role stands: not started, applied, interview, offer, or no."
 
 ## 9. A status change
 
-"I'll mark that on your list." Then say the new status back in plain words.
+"I'll update the list." Then repeat the new status. Remind them, if it is ambiguous, that updating the list does not submit an application.
 
-## 10. The study guide
+## 10. The interview brief
 
-"I'll write a short guide for this interview. Every point will tie back to work you really did. I'll also list what you have not done, so you don't have to pretend."
+"I'll write a short brief for this interview from your profile and this role. It will use work you have done, and it will name what you have not done."
 
-## If they ask to see a finished example first
+## If they ask about the samples
 
-"The pictures inside the steps are a made-up person named Alex Rivera, at made-up companies. Your story replaces that. I can also run a short practice with Alex and throw those files away. The page I already opened is the one to keep."
+"The samples on that page are a fictional person, Alex Rivera, at fictional companies. Your profile replaces them. I can also run a short practice with Alex and discard those files. The briefing is the page to keep."
