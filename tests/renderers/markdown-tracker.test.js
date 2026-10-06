@@ -101,12 +101,13 @@ test("markdown tracker displays stale flag for old applications", () => {
 });
 
 test("markdown tracker shows dash for non-stale applications", () => {
+  const recentDate = new Date(Date.now() - 5 * 86400000).toISOString().split("T")[0];
   const roles = [
     {
       id: "role-001",
       company: "Fabrikam AI",
       title: "Product Manager",
-      application: { status: "applied", appliedAt: "2026-07-15" }, // 5 days old (threshold: 14)
+      application: { status: "applied", appliedAt: recentDate }, // 5 days old (threshold: 14)
       resume: { outputPath: "outputs/resumes/fabrikam-ai.docx" },
     },
   ];
@@ -114,7 +115,7 @@ test("markdown tracker shows dash for non-stale applications", () => {
   const output = renderTracker(roles, { stalenessThresholds: { applied: 14 } });
 
   // Should not show stale info in the data row (only in header)
-  assert.match(output, /Fabrikam AI \| Product Manager \| — \| — \| — \| Applied 2026-07-15 \| — \| — \| outputs\/resumes\/fabrikam-ai\.docx \| — \| — \| — \|/);
+  assert.ok(output.includes(`Applied ${recentDate} | — | — | outputs/resumes/fabrikam-ai.docx | — | — | — |`));
 });
 
 test("markdown tracker never marks terminal statuses as stale", () => {
