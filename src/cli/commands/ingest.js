@@ -1,5 +1,7 @@
 "use strict";
 
+const fs = require("fs");
+const path = require("path");
 const { fetchGithubMetadata } = require("../../adapters/github");
 const { readTextSource } = require("../../adapters/freeform-notes");
 const { createEvidenceEntry, appendUniqueEvidence, snippet } = require("../../core/evidence-ledger");
@@ -14,7 +16,26 @@ const {
   writeJson,
 } = require("../../core/workspace");
 
-function collectSources(options) {
+const REPLACE_SCAN_KEYS = ["resume", "notes", "input", "source"];
+const INTAKE_TEMPLATE_PATH = path.resolve(__dirname, "../../../templates/candidate-intake.md");
+const SUPPORTED_EXTENSIONS = new Set([
+  ".docx",
+  ".pptx",
+  ".pdf",
+  ".md",
+  ".markdown",
+  ".txt",
+  ".json",
+  ".csv",
+  ".tsv",
+]);
+
+function hasReplaceScanFlags(options) {
+  if (options.github) return true;
+  return REPLACE_SCAN_KEYS.some((key) => asArray(options[key]).length > 0);
+}
+
+function collectFlagSources(options) {
   return [
     ...asArray(options.resume).map((file) => ({ file, kind: "resume" })),
     ...asArray(options.notes).map((file) => ({ file, kind: "notes" })),
@@ -24,10 +45,152 @@ function collectSources(options) {
   ];
 }
 
-async function ingestLocalSources(options, workspace, paths, profile) {
+function displayPath(workspace, filePath) {
+  return relativeToWorkspace(workspace, filePath) || filePath;
+}
+
+function skipEntry(workspace, filePath, reason) {
+  console.log(`Skipped ${displayPath(workspace, filePath)}: ${reason}`);
+}
+
+function normalizeTemplateText(text) {
+  return String(text)
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .split("\n")
+    .map((line) => line.trimEnd())
+    .join("\n")
+    .trimEnd();
+}
+
+function isUnchangedIntakeTemplate(filePath, templateNormalized) {
+  let text;
+  try {
+    text = fs.readFileSync(filePath, "utf8");
+  } catch (error) {
+    return false;
+  }
+  return normalizeTemplateText(text) === templateNormalized;
+}
+
+function hasLinkContent(text) {
+  return String(text)
+    .split(/\r?\n/)
+    .some((line) => {
+      const trimmed = line.trim();
+      return trimmed.length > 0 && !trimmed.startsWith("#");
+    });
+}
+
+
+function collectDefaultFolderSources(workspace, paths) {
+  const sources = [];
+  const folders = [
+    { dir: paths.resumes, kind: "resume" },
+    { dir: paths.notes, kind: "notes" },
+  ];
+  let intakeTemplateNormalized = "";
+  try {
+    intakeTemplateNormalized = normalizeTemplateText(fs.readFileSync(INTAKE_TEMPLATE_PATH, "utf8"));
+  } catch (error) {
+    intakeTemplateNormalized = "";
+  }
+
+  for (const { dir, kind } of folders) {
+    if (!fs.existsSync(dir)) continue;
+    let entries;
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch (error) {
+      continue;
+    }
+    entries.sort((a, b) => a.name.localeCompare(b.name));
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        skipEntry(workspace, fullPath, "directory");
+        continue;
+      }
+      if (!entry.isFile()) {
+        skipEntry(workspace, fullPath, "unsupported type");
+        continue;
+      }
+      if (entry.name.startsWith(".")) {
+        skipEntry(workspace, fullPath, "dotfile");
+        continue;
+      }
+      const extension = path.extname(entry.name).toLowerCase();
+      if (!SUPPORTED_EXTENSIONS.has(extension)) {
+        skipEntry(workspace, fullPath, "unsupported type");
+        continue;
+      }
+      let size = 0;
+      try {
+        size = fs.statSync(fullPath).size;
+      } catch (error) {
+        skipEntry(workspace, fullPath, "unsupported type");
+        continue;
+      }
+      if (size === 0) {
+        skipEntry(workspace, fullPath, "empty");
+        continue;
+      }
+      if (kind === "notes" && entry.name === "intake.md" && isUnchangedIntakeTemplate(fullPath, intakeTemplateNormalized)) {
+        skipEntry(workspace, fullPath, "blank template");
+        continue;
+      }
+      console.log(`Read ${displayPath(workspace, fullPath)}`);
+      sources.push({ file: fullPath, kind });
+    }
+  }
+
+  const linksPath = paths.links;
+  if (fs.existsSync(linksPath)) {
+    let linksStat;
+    try {
+      linksStat = fs.statSync(linksPath);
+    } catch (error) {
+      linksStat = null;
+    }
+    if (linksStat && linksStat.isFile()) {
+      let linksText = "";
+      try {
+        linksText = fs.readFileSync(linksPath, "utf8");
+      } catch (error) {
+        linksText = null;
+      }
+      if (linksText !== null) {
+        if (!hasLinkContent(linksText)) {
+          skipEntry(workspace, linksPath, "no links (only blank or comment lines)");
+        } else {
+          console.log(`Read ${displayPath(workspace, linksPath)}`);
+          sources.push({ file: linksPath, kind: "links" });
+        }
+      }
+    }
+  }
+
+  return sources;
+}
+
+function collectSources(options, workspace, paths) {
+  const flagSources = collectFlagSources(options);
+  if (hasReplaceScanFlags(options) || !workspace || !paths) return flagSources;
+  const folderSources = collectDefaultFolderSources(workspace, paths);
+  const seen = new Set(folderSources.map((source) => path.resolve(source.file)));
+  for (const source of flagSources) {
+    const resolved = path.resolve(source.file);
+    if (seen.has(resolved)) continue;
+    folderSources.push(source);
+    seen.add(resolved);
+  }
+  return folderSources;
+}
+
+async function ingestLocalSources(sources, workspace, paths, profile) {
   const entries = [];
   let nextProfile = profile;
-  for (const source of collectSources(options)) {
+  for (const source of sources) {
     const read = readTextSource(source.file);
     const relativePath = relativeToWorkspace(workspace, read.path);
     if (read.warning) {
@@ -103,21 +266,28 @@ async function ingestGithub(options, paths, profile) {
   return { profile: nextProfile, appended };
 }
 
+function noFilesFoundMessage(paths) {
+  const resumesDisplay = path.relative(process.cwd(), paths.resumes) || paths.resumes;
+  const notesDisplay = path.relative(process.cwd(), paths.notes) || paths.notes;
+  return `No files found in ${resumesDisplay} or ${notesDisplay}. Add files there or pass --resume/--notes.`;
+}
+
 async function run(options) {
   const workspace = resolveWorkspace(options.workspace);
   const paths = workspacePaths(workspace);
   let profile = readJson(paths.profile);
+  const sources = collectSources(options, workspace, paths);
 
-  const local = await ingestLocalSources(options, workspace, paths, profile);
+  const local = await ingestLocalSources(sources, workspace, paths, profile);
   profile = local.profile;
   const github = await ingestGithub(options, paths, profile);
   profile = github.profile;
 
   writeJson(paths.profile, profile);
-  const sourceCount = collectSources(options).length + (options.github ? 1 : 0);
+  const sourceCount = sources.length + (options.github ? 1 : 0);
   syncOnboardingState(workspace);
   console.log(`Ingested ${sourceCount} source(s); appended ${local.appended + github.appended} evidence entr${local.appended + github.appended === 1 ? "y" : "ies"}.`);
-  if (sourceCount === 0) console.log("No sources provided. Use --resume, --notes, --links, --input, or --github.");
+  if (sourceCount === 0) console.log(noFilesFoundMessage(paths));
   if (profile.sources?.length) console.log(`Profile now references ${profile.sources.length} source(s). Latest snippet: ${snippet(profile.sources.at(-1).path || profile.sources.at(-1).url || "", 80)}`);
 }
 

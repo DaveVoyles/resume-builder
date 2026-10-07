@@ -3,7 +3,7 @@
 const fs = require("fs");
 const path = require("path");
 const { renderTracker } = require("../../renderers/markdown-tracker");
-const { validateEvidence, validateOnboardingState, validateProfile, validateRoles, validateFeedback } = require("../../core/schemas");
+const { validateEvidence, validateOnboardingState, validateProfile, validatePreferences, validateRoles, validateFeedback } = require("../../core/schemas");
 const { validateResumeConfig } = require("../../core/resume-config");
 const { auditResumeConfig } = require("../../core/claim-audit");
 const { lintConfig } = require("../../core/style-lint");
@@ -86,6 +86,9 @@ function run(options) {
   const feedback = fs.existsSync(paths.feedback) ? readJsonLines(paths.feedback) : [];
 
   errors.push(...validateProfile(profile));
+  if (fs.existsSync(paths.preferences)) {
+    errors.push(...validatePreferences(readJson(paths.preferences)));
+  }
   errors.push(...validateRoles(seedRoles, "roles.seed.json"));
   errors.push(...validateRoles(trackedRoles, "roles.tracked.json"));
   errors.push(...validateEvidence(evidence));

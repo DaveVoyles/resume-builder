@@ -118,8 +118,12 @@ function isRecord(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
+function isExclusiveTrueKey(value, key) {
+  return isRecord(value) && Object.keys(value).length === 1 && value[key] === true;
+}
+
 function isSkipped(value) {
-  return isRecord(value) && value.skipped === true;
+  return isExclusiveTrueKey(value, "skipped");
 }
 
 function isFirstRoleAddedDone(value) {
@@ -235,13 +239,15 @@ function hasEducation(profile) {
 function hasCompensation(preferences) {
   const compensation = preferences.compensation;
   if (!isRecord(compensation)) return false;
-  if (compensation.skipped === true) return true;
+  if (Object.prototype.hasOwnProperty.call(compensation, "skipped")) {
+    return isExclusiveTrueKey(compensation, "skipped");
+  }
   return ["baseMinimum", "totalMinimum", "totalTarget"].some((key) => Number.isFinite(Number(compensation[key])));
 }
 
 function hasDealBreakers(preferences) {
   const skip = preferences.dealBreakersSkip;
-  if (isRecord(skip) && (skip.skipped === true || skip.none === true)) return true;
+  if (isExclusiveTrueKey(skip, "skipped") || isExclusiveTrueKey(skip, "none")) return true;
   return (
     Array.isArray(preferences.dealBreakers) &&
     preferences.dealBreakers.some((item) => nonempty(item && item.text) || nonempty(item))
@@ -324,17 +330,21 @@ function deriveOnboardingState(workspace) {
   };
 }
 
-function syncOnboardingState(workspace) {
+function loadOnboardingState(workspace) {
   const paths = workspacePaths(workspace);
   const previous = fs.existsSync(paths.onboardingState)
     ? readOnboardingState(paths.onboardingState)
     : defaultOnboardingState();
   const derived = deriveOnboardingState(workspace);
-  const next = {
+  return {
     ...derived,
     firstRoleAdded: mergeFirstRoleAdded(previous.firstRoleAdded, derived.firstRoleAdded),
   };
-  writeJson(paths.onboardingState, next);
+}
+
+function syncOnboardingState(workspace) {
+  const next = loadOnboardingState(workspace);
+  writeJson(workspacePaths(workspace).onboardingState, next);
   return next;
 }
 
@@ -351,6 +361,7 @@ module.exports = {
   readOnboardingState,
   updateOnboardingState,
   deriveOnboardingState,
+  loadOnboardingState,
   syncOnboardingState,
   mergeFirstRoleAdded,
   hasFirstDraftFile,

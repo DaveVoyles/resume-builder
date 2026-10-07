@@ -5,18 +5,50 @@ const fs = require("fs");
 const path = require("path");
 const { execFile } = require("child_process");
 const { openInBrowser, resolvePort, DEFAULT_PORT, CONTENT_TYPES } = require("./serve");
+const { identityHeaders } = require("../../core/server-config");
 const { saveHomeAnswers } = require("../../core/home-answers");
+const { workspacePaths } = require("../../core/workspace");
+
 const {
   HOME_STEP_TO_TRACKER_STEPS,
   defaultOnboardingState,
   homeStepsFromOnboarding,
+  loadOnboardingState,
   onboardingSteps,
-  syncOnboardingState,
 } = require("../../core/onboarding-state");
 
 const REPO_ROOT = path.resolve(__dirname, "../../..");
 const HOME_PAGE = path.join(REPO_ROOT, "onboarding", "home.html");
 const BODY_LIMIT = 65536;
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/gu, "&amp;")
+    .replace(/</gu, "&lt;")
+    .replace(/>/gu, "&gt;")
+    .replace(/"/gu, "&quot;");
+}
+
+function missingTrackerPage(workspaceLabel) {
+  const command = escapeHtml(`npm run workspace:tracker:html -- --workspace ${workspaceLabel}`);
+  const filePath = escapeHtml(`${workspaceLabel}/outputs/tracker.html`);
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tracker not built yet</title>
+</head>
+<body>
+<h1>Tracker not built yet</h1>
+<p>The job list is not on disk yet. Build it with:</p>
+<pre>${command}</pre>
+<p>Then open <a href="/tracker.html">/tracker.html</a> from the home page. The file also lives at <code>${filePath}</code> if you need a file fallback.</p>
+<p><a href="/">Back to home</a></p>
+</body>
+</html>`;
+}
+
 
 function homeUrl(port) {
   return `http://localhost:${port}/`;
@@ -32,12 +64,12 @@ function resolveUnder(root, relativePath) {
 }
 
 function sendJson(res, status, body) {
-  res.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
+  res.writeHead(status, identityHeaders({ "Content-Type": "application/json; charset=utf-8" }));
   res.end(JSON.stringify(body));
 }
 
 function sendText(res, status, body) {
-  res.writeHead(status, { "Content-Type": "text/plain; charset=utf-8" });
+  res.writeHead(status, identityHeaders({ "Content-Type": "text/plain; charset=utf-8" }));
   res.end(body);
 }
 
@@ -48,7 +80,7 @@ function serveFile(filePath, res) {
       return;
     }
     const contentType = CONTENT_TYPES[path.extname(filePath)] || "application/octet-stream";
-    res.writeHead(200, { "Content-Type": contentType });
+    res.writeHead(200, identityHeaders({ "Content-Type": contentType }));
     res.end(data);
   });
 }
@@ -96,7 +128,7 @@ function onboardingPayload(workspace) {
     fs.existsSync(workspace) &&
     (fs.existsSync(path.join(workspace, "profile.json")) ||
       fs.existsSync(path.join(workspace, ".onboarding-state.json")));
-  const state = hasWorkspace ? syncOnboardingState(workspace) : defaultOnboardingState();
+  const state = hasWorkspace ? loadOnboardingState(workspace) : defaultOnboardingState();
   return {
     state,
     trackerSteps: onboardingSteps(state),
@@ -112,6 +144,9 @@ async function run(options, { openFolder = defaultOpenFolder, openHome = openInB
 
   const root = path.resolve(options.root || REPO_ROOT);
   const workspace = resolveHomeWorkspace(root, options);
+  const trackerFile = workspacePaths(workspace).htmlTracker;
+  const workspaceLabel = options.workspace || "candidate";
+
   const documentsDir = path.join(root, "my-documents");
   const outputDir = path.join(root, "output");
   fs.mkdirSync(documentsDir, { recursive: true });
@@ -127,6 +162,19 @@ async function run(options, { openFolder = defaultOpenFolder, openHome = openInB
       serveFile(HOME_PAGE, res);
       return;
     }
+
+    if (method === "GET" && requestedPath === "/tracker.html") {
+      fs.stat(trackerFile, (error, stats) => {
+        if (error || !stats.isFile()) {
+          res.writeHead(404, identityHeaders({ "Content-Type": "text/html; charset=utf-8" }));
+          res.end(missingTrackerPage(workspaceLabel));
+          return;
+        }
+        serveFile(trackerFile, res);
+      });
+      return;
+    }
+
 
     if (method === "GET" && requestedPath === "/api/documents") {
       sendJson(res, 200, { files: listFiles(documentsDir) });

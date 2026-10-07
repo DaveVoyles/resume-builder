@@ -85,7 +85,7 @@ Open `docs/first-run/guide.html`. Wait until they can see it.
 npm run setup
 ```
 
-**`npm run setup` already opens a concrete preview for you** — it writes an initial (empty) `tracker.html` and auto-launches the local server, opening a browser tab automatically. There's no separate `build-tracker`/`serve` step to run; seeing the tracker now, empty, gives the candidate a concrete payoff before they've invested any time in intake.
+**`npm run setup` already opens a concrete preview for you.** It writes an initial (empty) `tracker.html`. Open it from the home page ("Open my tracker") at http://localhost:4321/tracker.html. The file also lives at `candidate/outputs/tracker.html`. Seeing the tracker now, empty, gives the candidate a concrete payoff before they've invested any time in intake.
 
 **Say:**
 
@@ -122,11 +122,10 @@ Once they confirm, copy files from `my-documents` into `candidate/inputs/resumes
 **Wait** for confirmation, then **do:**
 
 ```bash
-npm run workspace:ingest -- --workspace candidate \
-  --resume <file> --notes <file> --links candidate/inputs/links.md --github <username>
+npm run workspace:ingest -- --workspace candidate
 ```
 
-Pass only the flags that apply — e.g. skip `--github` if the candidate didn't share a username, repeat `--resume`/`--notes`/`--links` for multiple files. Report back what was ingested (the command prints a source/entry count).
+With no `--resume`, `--notes`, `--input`, or `--github`, ingest reads `candidate/inputs/resumes` and `candidate/inputs/notes` (non-recursive), plus `candidate/inputs/links.md`. It prints each file it read and each file it skipped, with the reason. Unchanged setup templates are skipped: `inputs/notes/intake.md` while it still matches the blank template, and `inputs/links.md` when every line is blank or a `#` comment. `--links` adds extra link files on top of that scan. `--resume`, `--notes`, `--input`, or `--github` skip the folder scan and read only the sources you pass. `--links` still adds if you pass it too. Report back what was ingested (the command prints a source/entry count).
 
 Then move to State 3's messaging.
 

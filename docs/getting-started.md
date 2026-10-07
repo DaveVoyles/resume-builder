@@ -56,12 +56,12 @@ This creates a local `candidate/` workspace with:
 - 📌 `roles.seed.json` and `roles.tracked.json` for job search tracking.
 - 📊 `outputs/` for generated local outputs.
 
-It also opens a browser tab to your tracker dashboard automatically (`outputs/tracker.html`) — empty at first, it fills in as you go. Pass `--noServe` to skip this in CI/automation contexts, or `--noOpen` to start the server without opening a tab.
+It also opens a browser tab to your tracker dashboard automatically (http://localhost:4321/tracker.html) — empty at first, it fills in as you go. Pass `--noServe` to skip this in CI/automation contexts, or `--noOpen` to start the server without opening a tab. The file also lives at `candidate/outputs/tracker.html`.
 
-The person puts files in `my-documents`. The agent opens `my-documents`. If Open folder fails, open `my-documents` from the repo root. Then the agent copies resumes into `candidate/inputs/resumes` and notes into `candidate/inputs/notes`, and ingests from those paths:
+The person puts files in `my-documents`. The agent opens `my-documents`. If Open folder fails, open `my-documents` from the repo root. Then the agent copies resumes into `candidate/inputs/resumes` and notes into `candidate/inputs/notes`, and ingests from those folders:
 
 ```bash
-npm run workspace:ingest -- --workspace candidate --resume <file> --notes <file> --links candidate/inputs/links.md
+npm run workspace:ingest -- --workspace candidate
 ```
 
 ## 🎙️ Do the intake interview

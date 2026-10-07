@@ -38,6 +38,7 @@ function help() {
     "Commands:",
     "  init --workspace <dir> [--force] [--noServe] [--noOpen] [--port <n>]",
     "  ingest --workspace <dir> [--resume <file> ...] [--notes <file> ...] [--links <file> ...] [--input <file> ...] [--github <user>]",
+    "                         no --resume/--notes/--input/--github: read inputs/resumes, inputs/notes, inputs/links.md; --links adds files to that scan",
     "  add-role --workspace <dir> (--url <url> | --title <title> --company <company>) [--tracked]",
     "  add-contact --workspace <dir> --name <name> [--company <name>] --relationship <relationship> [--linked-role <role-id> ...] [--notes <text>]",
     "  find-similar --workspace <dir> [--candidates <file>] [--max <count>]",

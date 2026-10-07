@@ -2,7 +2,7 @@
 
 const { test, describe } = require("node:test");
 const assert = require("node:assert/strict");
-const { validateEvidence, validateOnboardingState, validateProfile } = require("../../src/core/schemas");
+const { validateEvidence, validateOnboardingState, validateProfile, validatePreferences } = require("../../src/core/schemas");
 const { defaultOnboardingState } = require("../../src/core/onboarding-state");
 
 // ---------------------------------------------------------------------------
@@ -150,3 +150,63 @@ describe("validateProfile educationSkip", () => {
     assert.deepEqual(validateProfile(profile), []);
   });
 });
+
+describe("validatePreferences skip markers", () => {
+  test("accepts dealBreakersSkip skipped true", () => {
+    assert.deepEqual(validatePreferences({ dealBreakersSkip: { skipped: true } }), []);
+  });
+
+  test("accepts dealBreakersSkip none true", () => {
+    assert.deepEqual(validatePreferences({ dealBreakersSkip: { none: true } }), []);
+  });
+
+  test("rejects dealBreakersSkip typo key", () => {
+    const errors = validatePreferences({ dealBreakersSkip: { skiped: true } });
+    assert.equal(errors.length > 0, true);
+    assert.match(errors.join("\n"), /dealBreakersSkip/);
+  });
+
+  test("rejects dealBreakersSkip skipped yes string", () => {
+    const errors = validatePreferences({ dealBreakersSkip: { skipped: "yes" } });
+    assert.equal(errors.length > 0, true);
+  });
+
+  test("rejects dealBreakersSkip extra keys", () => {
+    const errors = validatePreferences({ dealBreakersSkip: { skipped: true, none: true } });
+    assert.equal(errors.length > 0, true);
+  });
+
+  test("accepts compensation skipped true alone", () => {
+    assert.deepEqual(validatePreferences({ compensation: { skipped: true } }), []);
+  });
+
+  test("accepts compensation numbers without skipped", () => {
+    assert.deepEqual(
+      validatePreferences({
+        compensation: { currency: "USD", baseMinimum: 160000, totalMinimum: 190000, totalTarget: 220000, publiclyShare: false },
+      }),
+      [],
+    );
+  });
+
+  test("rejects compensation skiped typo key", () => {
+    const errors = validatePreferences({ compensation: { skiped: true } });
+    assert.equal(errors.length > 0, true);
+    assert.match(errors.join("\n"), /skiped/);
+    assert.match(
+      errors.join("\n"),
+      /allowed: currency, baseMinimum, totalMinimum, totalTarget, publiclyShare, skipped/,
+    );
+  });
+
+  test("rejects compensation skipped yes string", () => {
+    const errors = validatePreferences({ compensation: { skipped: "yes" } });
+    assert.equal(errors.length > 0, true);
+  });
+
+  test("rejects compensation skipped mixed with numbers", () => {
+    const errors = validatePreferences({ compensation: { skipped: true, baseMinimum: 160000 } });
+    assert.equal(errors.length > 0, true);
+  });
+});
+

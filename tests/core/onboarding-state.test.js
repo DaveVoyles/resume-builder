@@ -366,6 +366,47 @@ describe("deriveOnboardingState", () => {
     }
   });
 
+  test("typo skip markers do not mark compensation or deal breakers done", () => {
+    const workspace = tempWorkspace();
+    try {
+      const paths = workspacePaths(workspace);
+      writeJson(paths.profile, { candidate: {}, experience: [], education: [], sources: [] });
+      writeJson(paths.preferences, {
+        roleTargets: [],
+        locations: { workModes: [] },
+        dealBreakers: [],
+        compensation: { skiped: true },
+        dealBreakersSkip: { skiped: true },
+      });
+      const state = deriveOnboardingState(workspace);
+      assert.equal(state.sections.compensation, false);
+      assert.equal(state.sections.dealBreakers, false);
+    } finally {
+      fs.rmSync(workspace, { recursive: true, force: true });
+    }
+  });
+
+  test("string and mixed skip shapes do not tick compensation or deal breakers", () => {
+    const workspace = tempWorkspace();
+    try {
+      const paths = workspacePaths(workspace);
+      writeJson(paths.profile, { candidate: {}, experience: [], education: [], sources: [] });
+      writeJson(paths.preferences, {
+        roleTargets: [],
+        locations: { workModes: [] },
+        dealBreakers: [],
+        compensation: { skipped: true, baseMinimum: 160000 },
+        dealBreakersSkip: { skipped: "yes" },
+      });
+      const state = deriveOnboardingState(workspace);
+      assert.equal(state.sections.compensation, false);
+      assert.equal(state.sections.dealBreakers, false);
+    } finally {
+      fs.rmSync(workspace, { recursive: true, force: true });
+    }
+  });
+
+
   test("home extra text does not mark deal breakers done", () => {
     const workspace = tempWorkspace();
     try {

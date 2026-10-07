@@ -6,6 +6,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const http = require("http");
+const net = require("net");
 const { run } = require("../../src/cli/commands/serve-home");
 const { HOME_ANSWERS_FILENAME, HOME_STEP_TO_TRACKER_STEPS } = require("../../src/core/onboarding-state");
 const { renderHtmlTracker } = require("../../src/renderers/html-tracker");
@@ -34,6 +35,36 @@ function get(port, requestPath) {
       .on("error", reject);
   });
 }
+
+function getRaw(port, requestPath) {
+  return new Promise((resolve, reject) => {
+    const socket = net.connect({ port, host: "127.0.0.1" }, () => {
+      socket.write(`GET ${requestPath} HTTP/1.1\r\nHost: 127.0.0.1:${port}\r\nConnection: close\r\n\r\n`);
+    });
+    const chunks = [];
+    socket.on("data", (chunk) => chunks.push(chunk));
+    socket.on("end", () => {
+      const raw = Buffer.concat(chunks).toString("utf8");
+      const sep = raw.indexOf("\r\n\r\n");
+      const headerText = sep === -1 ? raw : raw.slice(0, sep);
+      const body = sep === -1 ? "" : raw.slice(sep + 4);
+      const match = headerText.match(/^HTTP\/1\.\d (\d+)/);
+      resolve({ status: match ? Number(match[1]) : 0, body });
+    });
+    socket.on("error", reject);
+  });
+}
+
+function writeCandidateWorkspace(tmpDir, { trackerHtml } = {}) {
+  const workspace = path.join(tmpDir, "candidate");
+  fs.mkdirSync(path.join(workspace, "outputs"), { recursive: true });
+  fs.writeFileSync(path.join(workspace, "profile.json"), '{"secret":"SECRET_PROFILE_CANARY"}\n');
+  fs.writeFileSync(path.join(workspace, ".onboarding-state.json"), '{"secret":"SECRET_STATE_CANARY"}\n');
+  if (trackerHtml !== undefined) {
+    fs.writeFileSync(path.join(workspace, "outputs", "tracker.html"), trackerHtml);
+  }
+}
+
 
 function post(port, requestPath, payload) {
   return new Promise((resolve, reject) => {
@@ -86,6 +117,8 @@ test("serve-home serves the three-tab dashboard at / with Introduction selected"
     assert.match(response.body, /data-home-checklist/);
     assert.match(response.body, /data-home-step="answerQuestions"/);
     assert.doesNotMatch(response.body, /It shows up in the Jobs tab/);
+    assert.match(response.body, /href="\/tracker.html"/);
+    assert.match(response.body, /Open my tracker/);
     assert.doesNotMatch(response.body, /SAMPLE DATA/);
   } finally {
     server.close();
@@ -168,6 +201,45 @@ test("GET /api/onboarding-state exposes the shared mapping and default steps", a
     cleanup(tmpDir);
   }
 });
+
+test("GET /api/onboarding-state does not write .onboarding-state.json", async () => {
+  const tmpDir = createHomeRoot();
+  const workspace = path.join(tmpDir, "candidate");
+  fs.mkdirSync(workspace, { recursive: true });
+  fs.writeFileSync(path.join(workspace, "profile.json"), '{"candidate":{}}\n');
+  const statePath = path.join(workspace, ".onboarding-state.json");
+  const original = '{"schemaVersion":"1.0","setupComplete":false}\n';
+  fs.writeFileSync(statePath, original);
+
+  const server = await run({ root: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    const beforeBytes = fs.readFileSync(statePath);
+    const beforeStat = fs.statSync(statePath);
+    const response = await get(port, "/api/onboarding-state");
+    assert.equal(response.status, 200);
+    const afterBytes = fs.readFileSync(statePath);
+    const afterStat = fs.statSync(statePath);
+    assert.equal(Buffer.compare(beforeBytes, afterBytes), 0);
+    assert.equal(afterStat.mtimeMs, beforeStat.mtimeMs);
+  } finally {
+    server.close();
+  }
+
+  fs.rmSync(statePath, { force: true });
+  const serverMissing = await run({ root: tmpDir, port: 0, noOpen: true });
+  const portMissing = serverMissing.address().port;
+  try {
+    assert.equal(fs.existsSync(statePath), false);
+    const response = await get(portMissing, "/api/onboarding-state");
+    assert.equal(response.status, 200);
+    assert.equal(fs.existsSync(statePath), false);
+  } finally {
+    serverMissing.close();
+    cleanup(tmpDir);
+  }
+});
+
 
 test("serve-home save-intake writes answers, not a fake resume draft", async () => {
   const tmpDir = createHomeRoot();
@@ -279,6 +351,86 @@ test("serve-home open-folder only accepts my-documents or output", async () => {
     const bad = await post(port, "/api/open-folder", { folder: "candidate" });
     assert.equal(bad.status, 400);
     assert.equal(opened.length, 1);
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
+test("serve-home serves the built tracker at /tracker.html", async () => {
+  const tmpDir = createHomeRoot();
+  writeCandidateWorkspace(tmpDir, { trackerHtml: "<html>TRACKER_CANARY</html>" });
+  const server = await run({ root: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    const response = await getRaw(port, "/tracker.html");
+    assert.equal(response.status, 200);
+    assert.match(response.body, /TRACKER_CANARY/);
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
+test("serve-home returns a friendly page when tracker.html is missing", async () => {
+  const tmpDir = createHomeRoot();
+  writeCandidateWorkspace(tmpDir);
+  const server = await run({ root: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    const response = await getRaw(port, "/tracker.html");
+    assert.equal(response.status, 404);
+    assert.match(response.body, /Tracker not built yet/);
+    assert.match(response.body, /npm run workspace:tracker:html -- --workspace candidate/);
+    assert.doesNotMatch(response.body, /SECRET_PROFILE_CANARY/);
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
+test("serve-home missing tracker page HTML-escapes the workspace label", async () => {
+  const tmpDir = createHomeRoot();
+  const workspaceLabel = `<script>alert(1)</script>"&`;
+  const server = await run({ root: tmpDir, port: 0, noOpen: true, workspace: workspaceLabel });
+  const port = server.address().port;
+  try {
+    const response = await getRaw(port, "/tracker.html");
+    assert.equal(response.status, 404);
+    assert.match(response.body, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
+    assert.match(response.body, /&quot;/);
+    assert.match(response.body, /&amp;/);
+    assert.doesNotMatch(response.body, /<script>alert\(1\)<\/script>/);
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
+test("serve-home /tracker.html does not leak other candidate files or traversal", async () => {
+  const tmpDir = createHomeRoot();
+  writeCandidateWorkspace(tmpDir, { trackerHtml: "<html>TRACKER_CANARY</html>" });
+  const server = await run({ root: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  const blocked = [
+    "/candidate/profile.json",
+    "/outputs/tracker.html",
+    "/profile.json",
+    "/.onboarding-state.json",
+    "/../candidate/profile.json",
+    "/tracker.html/../profile.json",
+    "/%2e%2e%2fcandidate/profile.json",
+    "/%2Fcandidate/profile.json",
+    "/%252e%252e%252fcandidate/profile.json",
+  ];
+  try {
+    for (const requestPath of blocked) {
+      const response = await getRaw(port, requestPath);
+      assert.equal(response.status, 404, `${requestPath} should 404`);
+      assert.doesNotMatch(response.body, /SECRET_PROFILE_CANARY/, `${requestPath} leaked profile`);
+      assert.doesNotMatch(response.body, /SECRET_STATE_CANARY/, `${requestPath} leaked onboarding state`);
+      assert.doesNotMatch(response.body, /TRACKER_CANARY/, `${requestPath} leaked tracker`);
+    }
   } finally {
     server.close();
     cleanup(tmpDir);

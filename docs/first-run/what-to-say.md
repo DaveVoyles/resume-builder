@@ -70,10 +70,10 @@ Open `candidate/outputs/study-guides/<company>/study-guide.md` for them when it 
 | --- | --- |
 | Past resumes and notes | `my-documents` |
 | The resume | the Word file under `candidate/outputs/resumes/` |
-| The role list | `candidate/outputs/tracker.html` |
+| The role list | http://localhost:4321/tracker.html |
 | The interview brief | `candidate/outputs/study-guides/` |
 
-`npm run home` does not serve `tracker.html`. Rebuild it with `npm run workspace:tracker:html` and open `candidate/outputs/tracker.html`.
+Open the tracker from the home page link at http://localhost:4321/tracker.html. Rebuild it with `npm run workspace:tracker:html -- --workspace candidate` if it is missing. The file also lives at `candidate/outputs/tracker.html`.
 
 ## If they ask about the samples
 
