@@ -548,6 +548,40 @@ test("serve-home open-folder returns 200 when Windows explorer exits 1", async (
   }
 });
 
+test("serve-home open-folder times out when the opener never settles", async () => {
+  const tmpDir = createHomeRoot();
+  let resolveOpen;
+  const hung = new Promise((resolve) => {
+    resolveOpen = resolve;
+  });
+  const server = await run(
+    { root: tmpDir, port: 0, noOpen: true },
+    {
+      openFolder: () => hung,
+      openFolderTimeoutMs: 50,
+    },
+  );
+  const port = server.address().port;
+  try {
+    const started = Date.now();
+    const failed = await post(port, "/api/open-folder", { folder: "my-documents" });
+    const elapsed = Date.now() - started;
+    assert.ok(elapsed < 1000, `open-folder took ${elapsed}ms`);
+    assert.equal(failed.status, 504);
+    assert.deepEqual(JSON.parse(failed.body), {
+      opened: false,
+      error: "Could not confirm the folder opened.",
+    });
+    resolveOpen();
+    await new Promise((resolve) => setImmediate(resolve));
+    const stillUp = await post(port, "/api/open-folder", { folder: "candidate" });
+    assert.equal(stillUp.status, 400);
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
 test("home Introduction keeps the copy sentence and puts input paths in the agent note", async () => {
   const tmpDir = createHomeRoot();
   const server = await run({ root: tmpDir, port: 0, noOpen: true });

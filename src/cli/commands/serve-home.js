@@ -20,6 +20,8 @@ const {
 const REPO_ROOT = path.resolve(__dirname, "../../..");
 const HOME_PAGE = path.join(REPO_ROOT, "onboarding", "home.html");
 const BODY_LIMIT = 65536;
+const OPEN_FOLDER_TIMEOUT_MS = 5000;
+const OPEN_FOLDER_TIMEOUT_ERROR = "Could not confirm the folder opened.";
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -158,7 +160,7 @@ function onboardingPayload(workspace) {
   };
 }
 
-async function run(options, { openFolder = defaultOpenFolder, openHome = openInBrowser } = {}) {
+async function run(options, { openFolder = defaultOpenFolder, openHome = openInBrowser, openFolderTimeoutMs = OPEN_FOLDER_TIMEOUT_MS } = {}) {
   if (!fs.existsSync(HOME_PAGE)) {
     throw new Error(`Onboarding home page not found at ${HOME_PAGE}`);
   }
@@ -223,13 +225,26 @@ async function run(options, { openFolder = defaultOpenFolder, openHome = openInB
             sendJson(res, 400, { error: "Unknown folder." });
             return;
           }
+          let responded = false;
+          const respond = (status, payload) => {
+            if (responded) {
+              return;
+            }
+            responded = true;
+            sendJson(res, status, payload);
+          };
+          const timer = setTimeout(() => {
+            respond(504, { opened: false, error: OPEN_FOLDER_TIMEOUT_ERROR });
+          }, openFolderTimeoutMs);
           return Promise.resolve()
             .then(() => openFolder(folder))
             .then(() => {
-              sendJson(res, 200, { opened: true });
+              clearTimeout(timer);
+              respond(200, { opened: true });
             })
             .catch((error) => {
-              sendJson(res, 500, {
+              clearTimeout(timer);
+              respond(500, {
                 opened: false,
                 error: error && error.message ? String(error.message) : "Could not open folder.",
               });
