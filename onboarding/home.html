@@ -166,7 +166,7 @@
       <ol class="steps" data-home-checklist>
         <li data-home-step="downloadRb" class="done"><div><strong>Download RB</strong> <span class="who agent">Agent</span><br><span class="muted">Done. RB is now on your computer.</span></div></li>
         <li data-home-step="startRb" class="done"><div><strong>Start RB and open this page</strong> <span class="who agent">Agent</span><br><span class="muted">Done. You're looking at it.</span></div></li>
-        <li data-home-step="addFiles"><div><strong>Add your files to <code>my-documents</code></strong> <span class="who you">You</span><br><span class="muted">Drag old resumes and notes into <code>my-documents</code> at the top of the resume-builder folder. If Open folder fails, open <code>my-documents</code> yourself. Your agent copies them into <code>candidate/inputs/resumes</code> and <code>candidate/inputs/notes</code> and reads them.</span></div></li>
+        <li data-home-step="addFiles"><div><strong>Add your files to <code>my-documents</code></strong> <span class="who you">You</span><br><span class="muted">Drag old resumes and notes into <code>my-documents</code> at the top of the resume-builder folder. If Open folder fails, open <code>my-documents</code> yourself. Your AI agent copies your files into your private workspace so it can read them. Your originals stay where they are.</span></div></li>
         <li data-home-step="answerQuestions"><div><strong>Answer a few questions</strong> <span class="who you">You</span> <span class="who agent">Agent</span><br><span class="muted">The agent fills in what it can. You check it and click Save.</span></div></li>
         <li data-home-step="firstDraft"><div><strong>Get your first draft</strong> <span class="who agent">Agent</span><br><span class="muted">A new resume, after your files in my-documents are read in. Saving answers here is not a draft.</span></div></li>
         <li data-home-step="addJobs"><div><strong>Add jobs you want</strong> <span class="who you">You</span><br><span class="muted">Tell your agent about a job. Paste the posting link in chat. This Jobs tab does not add jobs from the page.</span></div></li>
@@ -180,6 +180,11 @@
       <p style="margin-top:1rem"><a class="btn ghost" href="/tracker.html">Open my tracker</a></p>
     </div>
   </div>
+
+  <details id="agentNote">
+    <summary>For your AI agent</summary>
+    <p class="muted">Copy files from <code>my-documents</code> into <code>candidate/inputs/resumes</code> or <code>candidate/inputs/notes</code>, then ingest. Do not ask the person to drop files into <code>candidate/inputs/</code>.</p>
+  </details>
 
   <div class="card" id="setup" hidden style="margin-top:1.25rem">
     <h2>About you</h2>
@@ -309,7 +314,7 @@
     <p class="hint">This page does not add jobs. Your agent tracks them.</p>
     <div class="row" style="justify-content:center">
       <a class="btn ghost" href="/tracker.html">Open my tracker</a>
-      <button class="btn primary" type="button" data-goto="intro">Go to setup</button>
+      <button class="btn primary" type="button" data-goto="setup">Go to setup</button>
     </div>
   </div>
 </section>
@@ -329,6 +334,15 @@
     });
     window.scrollTo(0,0);
   }
+  function openSetup(){
+    show("intro");
+    var setup=document.getElementById("setup");
+    var cb=document.getElementById("continueBtn");
+    setup.hidden=false;
+    cb.setAttribute("aria-expanded","true");
+    setup.scrollIntoView({behavior:"smooth"});
+    document.getElementById("name").focus({preventScroll:true});
+  }
   tabs.forEach(function(t,i){
     t.addEventListener("click",function(){show(t.getAttribute("aria-controls"));});
     t.addEventListener("keydown",function(e){
@@ -338,7 +352,11 @@
   });
   document.addEventListener("click",function(e){
     var g=e.target.closest("[data-goto]");
-    if(g){e.preventDefault();show(g.getAttribute("data-goto"));}
+    if(!g) return;
+    e.preventDefault();
+    var id=g.getAttribute("data-goto");
+    if(id==="setup"){openSetup();return;}
+    show(id);
   });
 
   var badge=document.getElementById("serverBadge");
@@ -384,10 +402,14 @@
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({folder:"my-documents"})
     }).then(function(r){return r.json().then(function(body){return {ok:r.ok,body:body};});}).then(function(result){
+      var opened=result.ok && result.body && result.body.opened===true;
+      if(opened){
+        note.hidden=true;
+        note.textContent="";
+        return;
+      }
       note.hidden=false;
-      note.textContent=result.ok
-        ? "Asked your computer to open my-documents. If nothing opened, open my-documents yourself from the resume-builder folder, or ask your agent to open it."
-        : "Could not open the folder. Open my-documents yourself from the resume-builder folder, or ask your agent to open it.";
+      note.textContent="Could not open the folder. Open my-documents yourself from the resume-builder folder, or ask your agent to open it.";
     }).catch(function(){
       note.hidden=false;
       note.textContent="Could not open the folder. Open my-documents yourself from the resume-builder folder, or ask your agent to open it.";
@@ -395,13 +417,7 @@
   });
 
   var cb=document.getElementById("continueBtn"),setup=document.getElementById("setup");
-  cb.addEventListener("click",function(){
-    setup.hidden=false;
-    cb.setAttribute("aria-expanded","true");
-    setup.scrollIntoView({behavior:"smooth"});
-    document.getElementById("name").focus({preventScroll:true});
-  });
-
+  cb.addEventListener("click",openSetup);
   var form=document.getElementById("intakeForm"),saved=document.getElementById("saved");
   var formError=document.getElementById("formError");
   form.addEventListener("submit",function(e){

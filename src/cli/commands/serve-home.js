@@ -107,7 +107,15 @@ function readBody(req) {
 
 function defaultOpenFolder(folderPath) {
   const opener = process.platform === "darwin" ? "open" : process.platform === "win32" ? "explorer" : "xdg-open";
-  execFile(opener, [folderPath], () => {});
+  return new Promise((resolve, reject) => {
+    execFile(opener, [folderPath], (error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve();
+    });
+  });
 }
 
 function listFiles(dir) {
@@ -202,8 +210,17 @@ async function run(options, { openFolder = defaultOpenFolder, openHome = openInB
             sendJson(res, 400, { error: "Unknown folder." });
             return;
           }
-          openFolder(folder);
-          sendJson(res, 200, { opened: folder });
+          return Promise.resolve()
+            .then(() => openFolder(folder))
+            .then(() => {
+              sendJson(res, 200, { opened: true });
+            })
+            .catch((error) => {
+              sendJson(res, 500, {
+                opened: false,
+                error: error && error.message ? String(error.message) : "Could not open folder.",
+              });
+            });
         })
         .catch((error) => {
           if (error.code === "PAYLOAD_TOO_LARGE") {

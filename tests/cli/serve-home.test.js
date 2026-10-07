@@ -345,6 +345,7 @@ test("serve-home open-folder only accepts my-documents or output", async () => {
   try {
     const ok = await post(port, "/api/open-folder", { folder: "my-documents" });
     assert.equal(ok.status, 200);
+    assert.deepEqual(JSON.parse(ok.body), { opened: true });
     assert.equal(opened.length, 1);
     assert.equal(opened[0], path.join(tmpDir, "my-documents"));
 
@@ -435,4 +436,66 @@ test("serve-home /tracker.html does not leak other candidate files or traversal"
     server.close();
     cleanup(tmpDir);
   }
+});
+
+test("serve-home open-folder reports opened false when the opener fails", async () => {
+  const tmpDir = createHomeRoot();
+  const server = await run(
+    { root: tmpDir, port: 0, noOpen: true },
+    { openFolder: () => Promise.reject(new Error("opener failed")) },
+  );
+  const port = server.address().port;
+  try {
+    const failed = await post(port, "/api/open-folder", { folder: "my-documents" });
+    assert.equal(failed.status, 500);
+    const body = JSON.parse(failed.body);
+    assert.equal(body.opened, false);
+    assert.match(body.error, /opener failed/);
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
+test("home Introduction keeps the copy sentence and puts input paths in the agent note", async () => {
+  const tmpDir = createHomeRoot();
+  const server = await run({ root: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    const response = await get(port, "/");
+    assert.equal(response.status, 200);
+    const agentNote = response.body.match(/<details id="agentNote">[\s\S]*?<\/details>/);
+    assert.ok(agentNote, "expected For your AI agent details");
+    assert.match(agentNote[0], /For your AI agent/);
+    assert.match(agentNote[0], /candidate\/inputs\/resumes/);
+    assert.match(agentNote[0], /candidate\/inputs\/notes/);
+
+    const withoutDetails = response.body.replace(/<details\b[^>]*>[\s\S]*?<\/details>/g, "");
+    assert.match(withoutDetails, /Your AI agent copies your files into your private workspace so it can read them/);
+    assert.match(withoutDetails, /Your originals stay where they are/);
+    assert.doesNotMatch(withoutDetails, /candidate\/inputs/);
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
+test("Go to setup targets the setup form and focuses the first input", () => {
+  const homePage = fs.readFileSync(path.join(__dirname, "../../onboarding/home.html"), "utf8");
+  assert.match(homePage, /data-goto="setup">Go to setup</);
+  assert.doesNotMatch(homePage, /data-goto="intro">Go to setup</);
+  const script = homePage.match(/<script>([\s\S]*?)<\/script>/)[1];
+  assert.match(script, /function openSetup\(/);
+  assert.match(script, /getElementById\("setup"\)/);
+  assert.match(script, /getElementById\("name"\)\.focus/);
+  assert.match(script, /id==="setup"\)\{openSetup\(\)/);
+});
+
+test("Open folder fallback note is shown only when opening is not confirmed", () => {
+  const homePage = fs.readFileSync(path.join(__dirname, "../../onboarding/home.html"), "utf8");
+  const script = homePage.match(/<script>([\s\S]*?)<\/script>/)[1];
+  assert.match(script, /opened===true/);
+  assert.match(script, /note\.hidden=true/);
+  assert.match(script, /Could not open the folder/);
+  assert.doesNotMatch(script, /If nothing opened/);
 });

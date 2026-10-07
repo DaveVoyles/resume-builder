@@ -152,6 +152,7 @@ No messaging — this state is a deliberate no-op. A candidate with a populated 
 - **One step at a time.** Don't dump all four states' instructions on the candidate at once — greet them at their actual state, wait for a response, then move forward.
 - **Re-check state, don't assume progression.** A candidate might add more resumes after grill intake, or skip straight from State 1 to sharing a GitHub username. Re-run the state check rather than assuming the next state always follows in order.
 - **The short-circuit is not a one-time check.** Run the four-state check at the start of every session in this repo — most sessions with a returning candidate will hit the short-circuit immediately and move on.
+- **Home page.** Introduction says the agent copies files, in plain words. Exact `candidate/inputs/` paths are in this playbook and in the collapsed "For your AI agent" note on home. Jobs **Go to setup** opens the About you form on Introduction, scrolls to it, and focuses the first field. **Open folder** shows a fallback note only when opening fails or the request fails. If that note appears, open `my-documents` yourself from the repo root.
 
 ---
 
