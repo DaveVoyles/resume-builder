@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resume Builder home</title>
+<style>
+  :root{
+    --navy:#0f2342; --navy-2:#1b3560; --slate:#475569; --slate-2:#64748b;
+    --line:#d8dee8; --bg:#f4f6fa; --white:#fff; --accent:#1d4ed8;
+    --ok:#166534; --ok-bg:#dcfce7; --warn:#854d0e; --warn-bg:#fef3c7;
+    --info:#1e3a8a; --info-bg:#dbeafe; --mute-bg:#e2e8f0; --bad:#991b1b; --bad-bg:#fee2e2;
+    --radius:12px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+       background:var(--bg);color:#0f172a;line-height:1.55;font-size:16px}
+  a{color:var(--accent)}
+  :focus-visible{outline:3px solid #f59e0b;outline-offset:2px}
+  header.top{background:var(--navy);color:#fff}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 1.25rem}
+  .top-inner{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem 0;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:.7rem}
+  .logo{width:38px;height:38px;border-radius:9px;background:#fff;color:var(--navy);
+        display:grid;place-items:center;font-weight:800}
+  .brand h1{font-size:1.15rem;margin:0}
+  .brand small{display:block;color:#cbd5e1;font-weight:400;font-size:.82rem}
+  .server{font-size:.85rem;color:#e2e8f0;background:var(--navy-2);padding:.35rem .7rem;border-radius:999px}
+  .server b{color:#86efac}
+  nav.tabs{display:flex;gap:.25rem;overflow-x:auto}
+  nav.tabs button{appearance:none;border:0;background:transparent;color:#cbd5e1;font:inherit;font-weight:600;
+       padding:.8rem 1.1rem;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
+  nav.tabs button[aria-selected="true"]{color:#fff;border-bottom-color:#fff}
+  nav.tabs button:hover{color:#fff}
+  main{padding:2rem 0 3rem}
+  .panel{display:none}
+  .panel.active{display:block}
+  .grid{display:grid;gap:1.25rem}
+  .g-2{grid-template-columns:2fr 1fr}
+  .g-3{grid-template-columns:repeat(3,1fr)}
+  .g-4{grid-template-columns:repeat(4,1fr)}
+  @media (max-width:820px){.g-2,.g-3{grid-template-columns:1fr}.g-4{grid-template-columns:repeat(2,1fr)}}
+  .card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:1.5rem}
+  .card h2{margin:0 0 .5rem;font-size:1.3rem;color:var(--navy)}
+  .card h3{margin:0 0 .4rem;font-size:1.05rem;color:var(--navy)}
+  .lead{font-size:1.1rem;color:var(--slate)}
+  .muted{color:var(--slate-2)}
+  .hero h2{font-size:1.7rem}
+  .benefit{display:flex;gap:.75rem;align-items:flex-start}
+  .dot{flex:0 0 34px;height:34px;border-radius:50%;background:var(--info-bg);color:var(--info);
+       display:grid;place-items:center;font-weight:700}
+  ol.steps{list-style:none;padding:0;margin:0;counter-reset:s}
+  ol.steps li{counter-increment:s;display:flex;gap:.85rem;padding:.8rem 0;border-top:1px solid var(--line)}
+  ol.steps li:first-child{border-top:0}
+  ol.steps li::before{content:counter(s);flex:0 0 30px;height:30px;border-radius:50%;
+       background:var(--navy);color:#fff;display:grid;place-items:center;font-weight:700;font-size:.9rem}
+  ol.steps li.done::before{content:"✓";background:var(--ok)}
+  .who{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;
+       padding:.1rem .45rem;border-radius:6px;margin-left:.35rem}
+  .who.agent{background:var(--info-bg);color:var(--info)}
+  .who.you{background:var(--warn-bg);color:var(--warn)}
+  .docs{background:#eef2ff;border:2px dashed #6366f1;border-radius:var(--radius);padding:1.25rem}
+  .docs h3{display:flex;align-items:center;gap:.5rem}
+  .path{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#fff;border:1px solid var(--line);
+        padding:.45rem .65rem;border-radius:8px;display:block;margin:.5rem 0;font-size:.9rem;overflow-wrap:normal;word-break:normal;color:var(--navy);font-weight:600}
+  .files{list-style:none;padding:0;margin:.5rem 0 0;font-size:.92rem}
+  .files li{padding:.3rem 0;border-top:1px solid #c7d2fe}
+  .tag{display:inline-block;font-size:.75rem;font-weight:700;padding:.1rem .45rem;border-radius:6px;background:var(--mute-bg);color:var(--slate)}
+  .btn{appearance:none;border:0;border-radius:10px;padding:.75rem 1.2rem;font:inherit;font-weight:700;cursor:pointer;display:inline-block;text-decoration:none}
+  .btn.primary{background:var(--navy);color:#fff}
+  .btn.primary:hover{background:var(--navy-2)}
+  .btn.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  .row{display:flex;gap:.75rem;flex-wrap:wrap;align-items:center}
+  form .field{margin-bottom:1.1rem}
+  label{display:block;font-weight:600;margin-bottom:.3rem;color:var(--navy)}
+  .hint{font-size:.88rem;color:var(--slate-2);margin:.15rem 0 .4rem}
+  input,select,textarea{width:100%;font:inherit;padding:.65rem .75rem;border:1px solid #94a3b8;border-radius:8px;background:#fff;color:#0f172a}
+  textarea{min-height:110px;resize:vertical}
+  .filled{background:#f0fdf4;border-color:#22c55e}
+  .agentnote{font-size:.82rem;color:var(--ok);font-weight:600}
+  .progress{height:8px;background:var(--mute-bg);border-radius:999px;overflow:hidden;margin:.5rem 0 1.25rem}
+  .progress span{display:block;height:100%;width:40%;background:var(--accent)}
+  details.faq{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:0 1.25rem;margin-bottom:.75rem}
+  details.faq summary{cursor:pointer;font-weight:700;color:var(--navy);padding:1rem 0;list-style:none;display:flex;justify-content:space-between;gap:1rem}
+  details.faq summary::after{content:"+";font-size:1.3rem;line-height:1}
+  details.faq[open] summary::after{content:"–"}
+  details.faq p{margin:0 0 1rem;color:#334155}
+  .stat{text-align:center}
+  .stat .n{font-size:2rem;font-weight:800;color:var(--navy);line-height:1.1}
+  .stat .l{color:var(--slate);font-size:.9rem}
+  .empty{text-align:center;padding:2.5rem 1rem}
+  .empty .icon{font-size:2.5rem}
+  footer{color:var(--slate-2);font-size:.85rem;text-align:center;padding:1rem 0 2rem}
+  .sr{position:absolute;left:-9999px}
+  .req{color:var(--bad);font-weight:800}
+  .reqnote{font-size:.88rem;color:var(--slate);margin:0 0 1rem}
+  .success{border:2px solid #22c55e;background:#f0fdf4}
+  .success h2{color:var(--ok)}
+  .form-error{color:var(--bad);font-weight:600;margin:0 0 1rem}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="top-inner">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">RB</div>
+        <h1>Resume Builder <small>Your home page — runs only on this computer</small></h1>
+      </div>
+      <div class="server" id="serverBadge" title="The agent started this for you">● RB is <b>running</b> at http://localhost:4321</div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Main sections">
+      <button type="button" role="tab" id="t-intro" aria-controls="intro" aria-selected="true">Introduction</button>
+      <button type="button" role="tab" id="t-faq" aria-controls="faq" aria-selected="false" tabindex="-1">FAQ</button>
+      <button type="button" role="tab" id="t-jobs" aria-controls="jobs" aria-selected="false" tabindex="-1">Jobs</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+<section id="intro" class="panel active" role="tabpanel" aria-labelledby="t-intro">
+  <div class="grid g-2">
+    <div class="card hero">
+      <h2>Welcome. You're in the right place.</h2>
+      <p class="lead">Your AI agent set this up for you. This page is your home for RB. Come back here any time — your agent can reopen it.</p>
+      <p class="muted">An <strong>AI agent</strong> is an AI helper that can do tasks on your computer, like downloading files and filling in forms. It asks before doing big things.</p>
+    </div>
+    <aside class="docs" aria-labelledby="docs-h">
+      <h3 id="docs-h">Your documents</h3>
+      <p style="margin:0">Put old resumes and work papers in this <strong>one</strong> folder:</p>
+      <span class="path">resume-builder / my-documents</span>
+      <p class="hint">Word, PDF, or text files are all fine. We put a sample there so you know you've found it.</p>
+      <ul class="files" id="docFiles" aria-label="Files in my-documents">
+        <li>START-HERE.txt <span class="tag">sample</span></li>
+        <li>sample-resume.txt <span class="tag">sample</span></li>
+      </ul>
+      <div class="row" style="margin-top:.9rem">
+        <button class="btn primary" type="button" id="openDocs">Open folder</button>
+      </div>
+      <p class="hint" id="openDocsNote" hidden></p>
+      <hr style="border:0;border-top:1px solid #c7d2fe;margin:1rem 0">
+      <p style="margin:0"><strong>New resumes appear here:</strong></p>
+      <span class="path">resume-builder / output</span>
+      <p class="hint" style="margin:0">RB saves every draft it writes in this folder, next to my-documents. You don't need to put anything here.</p>
+    </aside>
+  </div>
+
+  <h2 style="color:var(--navy);margin:2rem 0 1rem;font-size:1.3rem">What RB does for you</h2>
+  <div class="grid g-3">
+    <div class="card benefit"><div class="dot">1</div><div><h3>A fresh resume</h3><p class="muted" style="margin:0">Turns your old resumes and notes into one clean, current resume.</p></div></div>
+    <div class="card benefit"><div class="dot">2</div><div><h3>One per job</h3><p class="muted" style="margin:0">Writes a version that fits each job you apply to.</p></div></div>
+    <div class="card benefit"><div class="dot">3</div><div><h3>Track it all</h3><p class="muted" style="margin:0">Keeps a list of your applications and where each one stands.</p></div></div>
+  </div>
+
+  <div class="grid g-2" style="margin-top:1.25rem">
+    <div class="card">
+      <h2>Your steps</h2>
+      <p class="muted">Tags show who does each step: <span class="who agent">Agent</span> or <span class="who you">You</span>.</p>
+      <ol class="steps">
+        <li class="done"><div><strong>Download RB</strong> <span class="who agent">Agent</span><br><span class="muted">Done. RB is now on your computer.</span></div></li>
+        <li class="done"><div><strong>Start RB and open this page</strong> <span class="who agent">Agent</span><br><span class="muted">Done. You're looking at it.</span></div></li>
+        <li><div><strong>Add your files to <code>my-documents</code></strong> <span class="who you">You</span><br><span class="muted">Drag old resumes into the folder in the "Your documents" box.</span></div></li>
+        <li><div><strong>Answer a few questions</strong> <span class="who you">You</span> <span class="who agent">Agent</span><br><span class="muted">The agent fills in what it can. You check it and click Save.</span></div></li>
+        <li><div><strong>Get your first draft</strong> <span class="who agent">Agent</span><br><span class="muted">A new resume, ready for you to read and tweak.</span></div></li>
+        <li><div><strong>Add jobs you want</strong> <span class="who you">You</span><br><span class="muted">Paste a job link. It shows up in the Jobs tab.</span></div></li>
+      </ol>
+    </div>
+    <div class="card">
+      <h2>Ready?</h2>
+      <p class="muted">When your files are in the folder, continue. It takes about 5 minutes. You can stop and come back.</p>
+      <button class="btn primary" type="button" id="continueBtn" aria-expanded="false" aria-controls="setup">Continue setup →</button>
+      <p class="hint" style="margin-top:1rem">Nervous? Read the <a href="#faq" data-goto="faq">FAQ</a> first.</p>
+    </div>
+  </div>
+
+  <div class="card" id="setup" hidden style="margin-top:1.25rem">
+    <h2>About you</h2>
+    <p class="muted">Your agent can fill this from your files. Check every answer. Change anything that's wrong.</p>
+    <div class="progress" aria-label="Setup progress 40 percent"><span></span></div>
+    <p class="reqnote"><span class="req" aria-hidden="true">*</span> = required. Only your goal is required. Everything else is optional.</p>
+    <p class="form-error" id="formError" hidden></p>
+    <form id="intakeForm">
+      <!-- Agent pre-fill: add class="filled" on the input/textarea, unhide the .agentnote sibling, set its text (example: ✓ Filled by agent from sample-resume.txt). -->
+      <div class="grid g-2" style="grid-template-columns:1fr 1fr">
+        <div class="field">
+          <label for="name">Your name</label>
+          <input id="name" name="name" autocomplete="name">
+          <div class="agentnote" hidden></div>
+        </div>
+        <div class="field">
+          <label for="loc">Where do you live?</label>
+          <input id="loc" name="location" autocomplete="address-level2">
+          <div class="agentnote" hidden></div>
+        </div>
+      </div>
+      <div class="field">
+        <label for="hist">Your work history</label>
+        <p class="hint">Jobs you've had, newest first. Rough is fine.</p>
+        <textarea id="hist" name="history"></textarea>
+        <div class="agentnote" hidden></div>
+      </div>
+      <div class="field">
+        <label for="goal">What kind of job do you want next? <span class="req" aria-hidden="true">*</span> <span class="tag" style="background:var(--bad-bg);color:var(--bad)">Required</span></label>
+        <p class="hint">In your own words. Example: "Operations manager at a mid-size healthcare company."</p>
+        <input id="goal" name="goal" required aria-required="true" placeholder="Type your goal here">
+      </div>
+      <div class="grid" style="grid-template-columns:1fr 1fr">
+        <div class="field">
+          <label for="where">Where do you want to work?</label>
+          <select id="where" name="where">
+            <option value="">Choose one</option>
+            <option>Near where I live</option>
+            <option>Remote (from home)</option>
+            <option>Either is fine</option>
+            <option>Willing to move</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="when">When do you want to start?</label>
+          <select id="when" name="when">
+            <option value="">Choose one</option>
+            <option>As soon as possible</option>
+            <option>In 1–3 months</option>
+            <option>Just exploring</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="extra">Anything else? <span class="muted">(optional)</span></label>
+        <textarea id="extra" name="extra" placeholder="Gaps in work, career change, things to avoid…"></textarea>
+      </div>
+      <div class="row">
+        <button class="btn primary" type="submit">Save answers</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card success" id="saved" hidden tabindex="-1" role="status" style="margin-top:1.25rem">
+    <h2>✓ Saved. Your first draft is ready.</h2>
+    <p>Your answers are saved on this computer. RB wrote a first draft from those answers only. It did not read files in my-documents.</p>
+    <p class="hint">This first version writes a <strong>text stub</strong>, not a Word file yet.</p>
+    <p style="margin:.75rem 0 .25rem"><strong>Your first draft:</strong></p>
+    <span class="path" id="draftPath">resume-builder / output / resume-draft-1.txt</span>
+    <p class="hint">It is in the <strong>output</strong> folder, next to my-documents. You can open the text file now. A later version will write a Word file.</p>
+    <ol class="steps" style="margin:1rem 0">
+      <li class="done"><div><strong>Answers saved</strong></div></li>
+      <li class="done"><div><strong>First draft written</strong> <span class="who agent">Agent</span></div></li>
+      <li><div><strong>Read your draft</strong> <span class="who you">You</span><br><span class="muted">Ask your agent for changes in plain words, like "make it one page."</span></div></li>
+      <li><div><strong>Add a job you want</strong> <span class="who you">You</span><br><span class="muted">RB will write a version for that job and track it in Jobs.</span></div></li>
+    </ol>
+    <div class="row">
+      <a class="btn primary" id="openDraft" href="/output/resume-draft-1.txt">Open my draft</a>
+      <button class="btn ghost" type="button" data-goto="jobs">Go to Jobs →</button>
+      <button class="btn ghost" type="button" id="editAnswers">Edit my answers</button>
+    </div>
+  </div>
+</section>
+
+<section id="faq" class="panel" role="tabpanel" aria-labelledby="t-faq" hidden>
+  <div class="card" style="margin-bottom:1.25rem">
+    <h2>Questions people ask first</h2>
+    <p class="muted" style="margin:0">Plain answers. No tech knowledge needed.</p>
+  </div>
+  <details class="faq" open><summary>What is an AI agent?</summary>
+    <p>It's an AI helper, like Claude, that can do tasks on your computer — not just chat. It can download RB, start it, read your files, and fill in forms. It should ask you before doing anything big.</p></details>
+  <details class="faq"><summary>Do I need to know how to code?</summary>
+    <p>No. Your agent handles the technical parts. You read, click, drag files, and answer questions in plain words.</p></details>
+  <details class="faq"><summary>Does this cost money?</summary>
+    <p>RB itself is free. It uses your existing AI plan (about $20 a month for Claude or similar). Heavy use in one day may hit your plan's limit. If that happens, wait and try again later — your work is saved.</p></details>
+  <details class="faq"><summary>Where do my files go?</summary>
+    <p>Two folders, side by side on your computer. You put your files in <strong>resume-builder / my-documents</strong>. RB saves the new resumes it writes in <strong>resume-builder / output</strong>. You can open both folders any time.</p></details>
+  <details class="faq"><summary>Is my information private?</summary>
+    <p>RB runs on your computer. This page is not on the public internet. Your AI agent does read your files to help you, so your AI provider's privacy rules apply. Don't put things like your Social Security number in the folder.</p></details>
+  <details class="faq"><summary>Will it apply to jobs for me?</summary>
+    <p>No. RB writes resumes and tracks jobs. You decide what to send and you send it yourself.</p></details>
+  <details class="faq"><summary>Can I stop? Can I undo it?</summary>
+    <p>Yes. Close this tab to pause. Tell your agent "Stop the resume-builder server" to shut it off. To remove it, delete the resume-builder folder (save my-documents first if you want your files).</p></details>
+  <details class="faq"><summary>How do I get back here next time?</summary>
+    <p>Tell your agent: "Start resume-builder and open the home page." Your files and answers will still be there.</p></details>
+</section>
+
+<section id="jobs" class="panel" role="tabpanel" aria-labelledby="t-jobs" hidden>
+  <div class="row" style="justify-content:space-between;margin-bottom:1rem">
+    <h2 style="margin:0;color:var(--navy)">Your job applications</h2>
+  </div>
+  <div class="grid g-4" style="margin-bottom:1.25rem">
+    <div class="card stat"><div class="n">0</div><div class="l">Total jobs</div></div>
+    <div class="card stat"><div class="n">0</div><div class="l">Resume ready</div></div>
+    <div class="card stat"><div class="n">0</div><div class="l">Applied</div></div>
+    <div class="card stat"><div class="n">0</div><div class="l">Interview</div></div>
+  </div>
+  <div class="card empty">
+    <div class="icon" aria-hidden="true">•</div>
+    <h2>No jobs yet — that's normal.</h2>
+    <p class="muted">Finish setup on the Introduction tab first. Then tell your agent about a job you like, for example:<br><em>"Add this job to RB: [paste the job link]"</em></p>
+    <p class="hint">This first version does not add jobs from the page. Your agent will track them later.</p>
+    <div class="row" style="justify-content:center">
+      <button class="btn primary" type="button" data-goto="intro">Go to setup</button>
+    </div>
+  </div>
+</section>
+
+</main>
+<footer>RB runs only on this computer. Default address <code>http://localhost:4321</code>. The design mock used port 3000.</footer>
+
+<script>
+(function(){
+  var tabs=[].slice.call(document.querySelectorAll("[role=tab]"));
+  function show(id){
+    tabs.forEach(function(t){
+      var on=t.getAttribute("aria-controls")===id;
+      t.setAttribute("aria-selected",on);t.tabIndex=on?0:-1;
+      var p=document.getElementById(t.getAttribute("aria-controls"));
+      p.hidden=!on;p.classList.toggle("active",on);
+    });
+    window.scrollTo(0,0);
+  }
+  tabs.forEach(function(t,i){
+    t.addEventListener("click",function(){show(t.getAttribute("aria-controls"));});
+    t.addEventListener("keydown",function(e){
+      var d=e.key==="ArrowRight"?1:e.key==="ArrowLeft"?-1:0;
+      if(d){var n=tabs[(i+d+tabs.length)%tabs.length];n.focus();n.click();}
+    });
+  });
+  document.addEventListener("click",function(e){
+    var g=e.target.closest("[data-goto]");
+    if(g){e.preventDefault();show(g.getAttribute("data-goto"));}
+  });
+
+  var badge=document.getElementById("serverBadge");
+  badge.innerHTML="● RB is <b>running</b> at "+window.location.origin;
+
+  function escapeHtml(value){
+    return String(value).replace(/[&<>"']/g,function(ch){
+      return ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch];
+    });
+  }
+
+  fetch("/api/documents").then(function(r){return r.json();}).then(function(data){
+    var ul=document.getElementById("docFiles");
+    if(!ul || !data.files || !data.files.length) return;
+    ul.innerHTML=data.files.map(function(name){
+      var sample=name==="START-HERE.txt"||name==="sample-resume.txt";
+      return "<li>"+escapeHtml(name)+(sample?' <span class="tag">sample</span>':"")+"</li>";
+    }).join("");
+  }).catch(function(){});
+
+  document.getElementById("openDocs").addEventListener("click",function(){
+    var note=document.getElementById("openDocsNote");
+    fetch("/api/open-folder",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({folder:"my-documents"})
+    }).then(function(r){return r.json().then(function(body){return {ok:r.ok,body:body};});}).then(function(result){
+      note.hidden=false;
+      note.textContent=result.ok
+        ? "Asked your computer to open my-documents. If nothing opened, ask your agent: open the my-documents folder."
+        : "Could not open the folder. Ask your agent to open my-documents.";
+    }).catch(function(){
+      note.hidden=false;
+      note.textContent="Could not open the folder. Ask your agent to open my-documents.";
+    });
+  });
+
+  var cb=document.getElementById("continueBtn"),setup=document.getElementById("setup");
+  cb.addEventListener("click",function(){
+    setup.hidden=false;
+    cb.setAttribute("aria-expanded","true");
+    setup.scrollIntoView({behavior:"smooth"});
+    document.getElementById("name").focus({preventScroll:true});
+  });
+
+  var form=document.getElementById("intakeForm"),saved=document.getElementById("saved");
+  var formError=document.getElementById("formError");
+  form.addEventListener("submit",function(e){
+    e.preventDefault();
+    formError.hidden=true;
+    var payload={
+      name:document.getElementById("name").value,
+      location:document.getElementById("loc").value,
+      history:document.getElementById("hist").value,
+      goal:document.getElementById("goal").value,
+      where:document.getElementById("where").value,
+      when:document.getElementById("when").value,
+      extra:document.getElementById("extra").value
+    };
+    fetch("/api/save-intake",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(payload)
+    }).then(function(r){
+      return r.json().then(function(body){return {ok:r.ok,body:body};});
+    }).then(function(result){
+      if(!result.ok){
+        formError.hidden=false;
+        formError.textContent=result.body.error || "Could not save. Add a goal and try again.";
+        return;
+      }
+      setup.hidden=true;
+      saved.hidden=false;
+      document.getElementById("draftPath").textContent=result.body.displayPath;
+      document.getElementById("openDraft").setAttribute("href",result.body.url);
+      saved.scrollIntoView({behavior:"smooth"});
+      saved.focus({preventScroll:true});
+    }).catch(function(){
+      formError.hidden=false;
+      formError.textContent="Could not save. Is RB still running?";
+    });
+  });
+  document.getElementById("editAnswers").addEventListener("click",function(){
+    saved.hidden=true;
+    setup.hidden=false;
+    setup.scrollIntoView({behavior:"smooth"});
+  });
+})();
+</script>
+</body>
+</html>

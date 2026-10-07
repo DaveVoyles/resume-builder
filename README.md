@@ -28,6 +28,8 @@ Your assistant will open a one-page briefing. It describes a private profile bui
 
 The page is also here: [docs/first-run/guide.html](docs/first-run/guide.html).
 
+The three-tab home page (Introduction, FAQ, Jobs) opens with `npm run home` at http://localhost:4321. The design mock used port 3000. Put your files in `my-documents/`. RB writes drafts in `output/`. `npm run workspace:serve` still opens the candidate tracker.
+
 Free and open source, no API key required. See [why it's free](#-why-this-is-free).
 
 ## For agents and developers
@@ -223,6 +225,9 @@ Every top-level folder has its own README explaining what it holds:
 | [`scripts/`](scripts/) | Standalone scripts behind `npm run check:*` and `npm start`. |
 | [`templates/`](templates/) | Blank starter files scaffolded into a new candidate workspace. |
 | [`tests/`](tests/) | Test suite, mirroring `src/`'s folder layout. |
+| [`onboarding/`](onboarding/) | The public three-tab home page served by `npm run home`. |
+| [`my-documents/`](my-documents/) | Where you put resumes and notes. Starts with two sample files. |
+| [`output/`](output/) | Where RB writes drafts. You do not put files here. |
 
 ## ✅ Requirements
 

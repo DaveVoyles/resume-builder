@@ -45,3 +45,13 @@ outputs/
 /scripts/board-seed.sh
 /scripts/gh-app-token.sh
 /scripts/gh-auth-doctor.sh
+
+# Public onboarding inbox: keep the two samples, ignore user-dropped files
+/my-documents/*
+!/my-documents/START-HERE.txt
+!/my-documents/sample-resume.txt
+
+# Public onboarding drafts: keep folder markers, ignore generated drafts
+/output/*
+!/output/.gitkeep
+!/output/README.txt

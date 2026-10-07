@@ -1,0 +1,9 @@
+This folder is where YOU put files.
+
+Drop old resumes, job descriptions, performance reviews, awards, project notes, or a LinkedIn PDF here.
+
+Word, PDF, and text files are all fine.
+
+RB does not put new drafts here. New resumes go in the output folder next to this one.
+
+You can delete this note and sample-resume.txt after your own files are in.
