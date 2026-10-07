@@ -35,6 +35,7 @@
     "workspace:set-status": "node src/cli/index.js set-status",
     "workspace:validate": "node src/cli/index.js validate",
     "workspace:serve": "node src/cli/index.js serve",
+    "home": "node src/cli/index.js serve-home",
     "workspace:add-lead": "node src/cli/index.js add-lead",
     "workspace:export-pdf": "node src/cli/index.js export-pdf",
     "workspace:approve-apply": "node src/cli/index.js approve-apply",
