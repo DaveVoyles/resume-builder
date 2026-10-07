@@ -46,8 +46,9 @@ function formatFit(role) {
 function formatApplied(role) {
   // An explicit application.status (set by the `set-status` command) is the
   // deterministic source of truth once present — combine it with the date so
-  // statusBucket()'s keyword match (below) still classifies it correctly,
-  // instead of letting a bare appliedAt date shadow the status entirely.
+  // statusBucket()'s explicit status-to-stage map (below) still classifies
+  // "Applied 2026-06-08" as applied, instead of letting a bare appliedAt date
+  // shadow the status entirely.
   const status = role.application?.status;
   if (status) {
     const date = firstNonEmpty(role.application?.appliedAt, role.application?.appliedDate);
@@ -76,23 +77,35 @@ function formatNotes(role) {
   return notes.concat(actions, questions).join("<br>");
 }
 
-// Buckets a role's free-text "applied" status into a small, stable set of
-// statuses so renderers can filter/color consistently regardless of the
-// exact wording a candidate or agent used (e.g. "Applied 2026-06-08",
-// "Rejected", "not yet"). interview/offer/withdrawn/ghosted are their own buckets
-// (not "other") so set-status's whole point — deterministic, visible status
-// — actually shows up distinctly in the tracker UI, not lumped in with any
-// unrecognized/garbage status text.
+// Maps a role's free-text or enum application status onto a closed set of
+// funnel stages. Exact phrases only (after lowercasing and stripping an ISO
+// date) so "Not applied" cannot match applied. interview/offer/withdrawn/ghosted
+// stay their own buckets (not "other") so set-status's whole point —
+// deterministic, visible status — actually shows up distinctly in the tracker UI.
+const STATUS_TO_STAGE = {
+  "": "not-applied",
+  interested: "not-applied",
+  "not applied": "not-applied",
+  "not yet": "not-applied",
+  ready: "not-applied",
+  "ready to apply": "not-applied",
+  applied: "applied",
+  interview: "interview",
+  interviewing: "interview",
+  offer: "offer",
+  rejected: "rejected",
+  denied: "rejected",
+  withdrawn: "withdrawn",
+  ghosted: "ghosted",
+};
+
 function statusBucket(appliedText) {
-  const status = String(appliedText || "").toLowerCase();
-  if (status.includes("rejected") || status.includes("denied")) return "rejected";
-  if (status.includes("withdrawn")) return "withdrawn";
-  if (status.includes("ghosted")) return "ghosted";
-  if (status.includes("offer")) return "offer";
-  if (status.includes("interview")) return "interview";
-  if (status.includes("applied")) return "applied";
-  if (status === "" || status === "not yet" || status.includes("ready") || status.includes("interested")) return "not-applied";
-  return "other";
+  const normalized = String(appliedText || "")
+    .toLowerCase()
+    .replace(/\d{4}-\d{2}-\d{2}/g, " ")
+    .replace(/[^a-z]+/g, " ")
+    .trim();
+  return STATUS_TO_STAGE[normalized] || "other";
 }
 
 // A "not-applied" role with a rendered resume already has everything it
