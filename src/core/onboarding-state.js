@@ -56,7 +56,7 @@ const SETUP_STEP = {
 };
 const INGEST_STEP = {
   key: "materialIngested",
-  label: "Material ingested",
+  label: "Your resumes and notes are read in",
   howTo: "Put old resumes and notes in `my-documents` at the top of the resume-builder folder. Tell your agent when they are in. The agent copies them into `candidate/inputs/resumes` and `candidate/inputs/notes`, then reads them. If Open folder fails, open `my-documents` yourself.",
 };
 const FINAL_STEP = {

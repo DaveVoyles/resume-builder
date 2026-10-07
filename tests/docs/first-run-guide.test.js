@@ -29,6 +29,10 @@ const readme = fs.readFileSync(
   path.join(__dirname, "../../README.md"),
   "utf8"
 );
+const transcript = fs.readFileSync(
+  path.join(__dirname, "../../docs/playbooks/onboarding-sample-transcript.md"),
+  "utf8"
+);
 
 test("the briefing states the four outcomes and keeps samples fictional", () => {
   assert.equal((guide.match(/<details/g) || []).length, 4);
@@ -90,3 +94,15 @@ test("the FAQ and getting started agree with the briefing", () => {
   assert.match(agentWorkflow, /Open docs\/first-run\/guide\.html/);
   assert.match(readme, /practice sample only/);
 });
+
+test("the onboarding sample transcript drops files in my-documents and the agent copies them", () => {
+  assert.match(transcript, /drops a career notes file in `my-documents`/);
+  assert.match(transcript, /cat my-documents\/career-notes.md/);
+  assert.match(transcript, /copies the notes file into `candidate\/inputs\/notes`/);
+  assert.match(transcript, /candidate\/inputs\/notes\/career-notes.md/);
+  assert.match(transcript, /writes `candidate\/inputs\/links.md`/);
+  assert.match(transcript, /The person does not edit `links.md`/);
+  assert.doesNotMatch(transcript, /fills in `links.md`/);
+  assert.doesNotMatch(readme, /Drop resumes, notes, and links into `candidate\/inputs\/`/);
+});
+

@@ -23,7 +23,16 @@ Immediately re-checks state: `profile.json` now exists, `inputs/resumes/` is emp
 
 **Agent:** "Your workspace is ready. Put old resumes and notes in `my-documents` at the top of the resume-builder folder. I will copy them into `candidate/inputs/resumes` or `candidate/inputs/notes` and read them. You can also paste a link or a GitHub username. Tell me when the files are in."
 
-**Candidate action (simulated):** drops a career notes file and fills in `links.md`:
+**Candidate action (simulated):** drops a career notes file in `my-documents`:
+
+```
+$ cat my-documents/career-notes.md
+I'm a backend engineer at a mid-size logistics company. Led the migration of our
+order-tracking service from a monolith to a set of Node.js microservices, cutting
+p99 latency by 35%. Mentored two junior engineers.
+```
+
+**Agent action:** copies the notes file into `candidate/inputs/notes` (resumes would go into `candidate/inputs/resumes`) and writes `candidate/inputs/links.md`. The person does not edit `links.md`.
 
 ```
 $ cat candidate/inputs/notes/career-notes.md

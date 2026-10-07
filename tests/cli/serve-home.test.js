@@ -80,6 +80,8 @@ test("serve-home serves the three-tab dashboard at / with Introduction selected"
     assert.match(response.body, /No jobs yet/);
     assert.match(response.body, /This Jobs tab does not add jobs from the page/);
     assert.match(response.body, /This page does not add jobs/);
+    assert.match(response.body, /candidate\/inputs\/resumes/);
+    assert.match(response.body, /candidate\/inputs\/notes/);
     assert.doesNotMatch(response.body, /It shows up in the Jobs tab/);
     assert.doesNotMatch(response.body, /SAMPLE DATA/);
   } finally {

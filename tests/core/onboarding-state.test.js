@@ -90,11 +90,12 @@ describe("onboardingSteps", () => {
     assert.strictEqual(steps.length, 10);
     assert.deepEqual(
       steps.map((s) => s.label),
-      ["Workspace created", "Material ingested", ...SECTIONS.map((s) => s.label), "First role added"],
+      ["Workspace created", "Your resumes and notes are read in", ...SECTIONS.map((s) => s.label), "First role added"],
     );
     assert.ok(steps.every((s) => typeof s.howTo === "string" && s.howTo.length > 0));
     assert.match(steps[1].howTo, /my-documents/);
     assert.match(steps[1].howTo, /candidate\/inputs\/resumes/);
+    assert.match(steps[1].howTo, /candidate\/inputs\/notes/);
   });
 
   test("isOnboardingComplete is exactly 'every step in onboardingSteps is done' — not a separately-maintained check", () => {
