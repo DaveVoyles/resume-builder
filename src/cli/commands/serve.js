@@ -5,7 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const { execFile } = require("child_process");
 const { resolveWorkspace, workspacePaths } = require("../../core/workspace");
-const { STATUS_ENDPOINT } = require("../../core/server-config");
+const { STATUS_ENDPOINT, identityHeaders } = require("../../core/server-config");
 
 const CONTENT_TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -65,7 +65,7 @@ async function run(options) {
     const requestedPath = decodeURIComponent(req.url.split("?")[0]);
 
     if (requestedPath === STATUS_ENDPOINT) {
-      res.writeHead(200, { "Content-Type": "application/json" });
+      res.writeHead(200, identityHeaders({ "Content-Type": "application/json" }));
       res.end(JSON.stringify(trackerStatus(root)));
       return;
     }
@@ -74,19 +74,19 @@ async function run(options) {
     const filePath = path.resolve(path.join(root, relativePath));
 
     if (!filePath.startsWith(root)) {
-      res.writeHead(403);
+      res.writeHead(403, identityHeaders());
       res.end("Forbidden");
       return;
     }
 
     fs.readFile(filePath, (error, data) => {
       if (error) {
-        res.writeHead(404, { "Content-Type": "text/plain" });
+        res.writeHead(404, identityHeaders({ "Content-Type": "text/plain" }));
         res.end(`Not found: ${relativePath}`);
         return;
       }
       const contentType = CONTENT_TYPES[path.extname(filePath)] || "application/octet-stream";
-      res.writeHead(200, { "Content-Type": contentType });
+      res.writeHead(200, identityHeaders({ "Content-Type": contentType }));
       res.end(data);
     });
   });

@@ -6,6 +6,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const command = require("../../src/cli/commands/ingest");
+const init = require("../../src/cli/commands/init");
 const { readJson, readJsonLines, workspacePaths, writeJson, ensureDir } = require("../../src/core/workspace");
 const { createDefaultProfile } = require("../../src/core/candidate-profile");
 const { defaultOnboardingState } = require("../../src/core/onboarding-state");
@@ -278,5 +279,84 @@ test("ingest default scan after a successful read updates onboarding state", asy
     fs.writeFileSync(path.join(paths.notes, "facts.md"), "I shipped a search API.\n");
     await command.run({ workspace });
     assert.equal(readJson(paths.onboardingState).materialIngested, true);
+  });
+});
+
+test("ingest after setup skips blank intake.md template and does not mark materialIngested", async () => {
+  const workspace = fs.mkdtempSync(path.join(os.tmpdir(), "ingest-setup-"));
+  try {
+    await init.run({ workspace, noServe: true });
+    const paths = workspacePaths(workspace);
+    const logs = await captureLogs(() => command.run({ workspace }));
+    const joined = logs.join("\n");
+    assert.match(joined, /Skipped inputs\/notes\/intake\.md: blank template/);
+    assert.equal(readJson(paths.onboardingState).materialIngested, false);
+    assert.equal(readJsonLines(paths.evidence).length, 0);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("ingest reads an edited intake.md", async () => {
+  const workspace = fs.mkdtempSync(path.join(os.tmpdir(), "ingest-intake-"));
+  try {
+    await init.run({ workspace, noServe: true });
+    const paths = workspacePaths(workspace);
+    const intakePath = path.join(paths.notes, "intake.md");
+    const original = fs.readFileSync(intakePath, "utf8");
+    fs.writeFileSync(intakePath, original.replace("- Preferred name:", "- Preferred name: Sam Test"));
+    const logs = await captureLogs(() => command.run({ workspace }));
+    assert.match(logs.join("\n"), /Read inputs\/notes\/intake\.md/);
+    const entries = readJsonLines(paths.evidence);
+    assert.equal(entries.length, 1);
+    assert.equal(entries[0].source.kind, "notes");
+    assert.match(entries[0].snippet, /Sam Test/);
+    assert.equal(readJson(paths.onboardingState).materialIngested, true);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("ingest default scan skips links.md with only comments", async () => {
+  await withWorkspace(async ({ workspace, paths }) => {
+    writeJson(paths.onboardingState, defaultOnboardingState());
+    ensureDir(path.dirname(paths.links));
+    fs.writeFileSync(paths.links, "# Public source links\n#\n# One link per line\n\n");
+    const logs = await captureLogs(() => command.run({ workspace }));
+    assert.match(logs.join("\n"), /Skipped inputs\/links\.md: no links \(only blank or comment lines\)/);
+    assert.equal(readJsonLines(paths.evidence).length, 0);
+    assert.equal(readJson(paths.onboardingState).materialIngested, false);
+  });
+});
+
+test("ingest default scan reads links.md when it has a URL", async () => {
+  await withWorkspace(async ({ workspace, paths }) => {
+    ensureDir(path.dirname(paths.links));
+    fs.writeFileSync(paths.links, "# comment\nhttps://github.com/sample-user\n");
+    await command.run({ workspace });
+    const entries = readJsonLines(paths.evidence);
+    assert.equal(entries.length, 1);
+    assert.equal(entries[0].type, "links");
+    assert.match(entries[0].snippet, /github.com\/sample-user/);
+  });
+});
+
+test("ingest --links plus folders reads both", async () => {
+  await withWorkspace(async ({ workspace, paths }) => {
+    ensureDir(paths.resumes);
+    fs.writeFileSync(path.join(paths.resumes, "resume.txt"), "Engineer at Contoso.\n");
+    const extraDir = fs.mkdtempSync(path.join(os.tmpdir(), "extra-links-"));
+    const extra = path.join(extraDir, "more.md");
+    fs.writeFileSync(extra, "https://portfolio.example.invalid/me\n");
+    try {
+      const logs = await captureLogs(() => command.run({ workspace, links: extra }));
+      assert.match(logs.join("\n"), /Read inputs\/resumes\/resume\.txt/);
+      const entries = readJsonLines(paths.evidence);
+      assert.equal(entries.length, 2);
+      assert.ok(entries.some((entry) => entry.source.kind === "resume"));
+      assert.ok(entries.some((entry) => entry.source.kind === "links"));
+    } finally {
+      fs.rmSync(extraDir, { recursive: true, force: true });
+    }
   });
 });

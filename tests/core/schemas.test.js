@@ -193,6 +193,10 @@ describe("validatePreferences skip markers", () => {
     const errors = validatePreferences({ compensation: { skiped: true } });
     assert.equal(errors.length > 0, true);
     assert.match(errors.join("\n"), /skiped/);
+    assert.match(
+      errors.join("\n"),
+      /allowed: currency, baseMinimum, totalMinimum, totalTarget, publiclyShare, skipped/,
+    );
   });
 
   test("rejects compensation skipped yes string", () => {

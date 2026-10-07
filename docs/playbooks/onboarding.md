@@ -125,7 +125,7 @@ Once they confirm, copy files from `my-documents` into `candidate/inputs/resumes
 npm run workspace:ingest -- --workspace candidate
 ```
 
-With no source flags, ingest reads `candidate/inputs/resumes` and `candidate/inputs/notes` (non-recursive). It prints each file it read and each file it skipped, with the reason. Pass `--resume`, `--notes`, `--links`, `--input`, or `--github` only when you want those specific sources instead of the folder scan. Report back what was ingested (the command prints a source/entry count).
+With no `--resume`, `--notes`, `--input`, or `--github`, ingest reads `candidate/inputs/resumes` and `candidate/inputs/notes` (non-recursive), plus `candidate/inputs/links.md`. It prints each file it read and each file it skipped, with the reason. Unchanged setup templates are skipped: `inputs/notes/intake.md` while it still matches the blank template, and `inputs/links.md` when every line is blank or a `#` comment. `--links` adds extra link files on top of that scan. `--resume`, `--notes`, `--input`, or `--github` skip the folder scan and read only the sources you pass. `--links` still adds if you pass it too. Report back what was ingested (the command prints a source/entry count).
 
 Then move to State 3's messaging.
 

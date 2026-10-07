@@ -5,6 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const { execFile } = require("child_process");
 const { openInBrowser, resolvePort, DEFAULT_PORT, CONTENT_TYPES } = require("./serve");
+const { identityHeaders } = require("../../core/server-config");
 const { saveHomeAnswers } = require("../../core/home-answers");
 const { workspacePaths } = require("../../core/workspace");
 
@@ -20,9 +21,17 @@ const REPO_ROOT = path.resolve(__dirname, "../../..");
 const HOME_PAGE = path.join(REPO_ROOT, "onboarding", "home.html");
 const BODY_LIMIT = 65536;
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/gu, "&amp;")
+    .replace(/</gu, "&lt;")
+    .replace(/>/gu, "&gt;")
+    .replace(/"/gu, "&quot;");
+}
+
 function missingTrackerPage(workspaceLabel) {
-  const command = `npm run workspace:tracker:html -- --workspace ${workspaceLabel}`;
-  const filePath = `${workspaceLabel}/outputs/tracker.html`;
+  const command = escapeHtml(`npm run workspace:tracker:html -- --workspace ${workspaceLabel}`);
+  const filePath = escapeHtml(`${workspaceLabel}/outputs/tracker.html`);
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -55,12 +64,12 @@ function resolveUnder(root, relativePath) {
 }
 
 function sendJson(res, status, body) {
-  res.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
+  res.writeHead(status, identityHeaders({ "Content-Type": "application/json; charset=utf-8" }));
   res.end(JSON.stringify(body));
 }
 
 function sendText(res, status, body) {
-  res.writeHead(status, { "Content-Type": "text/plain; charset=utf-8" });
+  res.writeHead(status, identityHeaders({ "Content-Type": "text/plain; charset=utf-8" }));
   res.end(body);
 }
 
@@ -71,7 +80,7 @@ function serveFile(filePath, res) {
       return;
     }
     const contentType = CONTENT_TYPES[path.extname(filePath)] || "application/octet-stream";
-    res.writeHead(200, { "Content-Type": contentType });
+    res.writeHead(200, identityHeaders({ "Content-Type": contentType }));
     res.end(data);
   });
 }
@@ -157,7 +166,7 @@ async function run(options, { openFolder = defaultOpenFolder, openHome = openInB
     if (method === "GET" && requestedPath === "/tracker.html") {
       fs.stat(trackerFile, (error, stats) => {
         if (error || !stats.isFile()) {
-          res.writeHead(404, { "Content-Type": "text/html; charset=utf-8" });
+          res.writeHead(404, identityHeaders({ "Content-Type": "text/html; charset=utf-8" }));
           res.end(missingTrackerPage(workspaceLabel));
           return;
         }

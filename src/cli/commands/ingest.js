@@ -16,7 +16,8 @@ const {
   writeJson,
 } = require("../../core/workspace");
 
-const SOURCE_OPTION_KEYS = ["resume", "notes", "links", "input", "source"];
+const REPLACE_SCAN_KEYS = ["resume", "notes", "input", "source"];
+const INTAKE_TEMPLATE_PATH = path.resolve(__dirname, "../../../templates/candidate-intake.md");
 const SUPPORTED_EXTENSIONS = new Set([
   ".docx",
   ".pptx",
@@ -29,9 +30,9 @@ const SUPPORTED_EXTENSIONS = new Set([
   ".tsv",
 ]);
 
-function hasSourceFlags(options) {
+function hasReplaceScanFlags(options) {
   if (options.github) return true;
-  return SOURCE_OPTION_KEYS.some((key) => asArray(options[key]).length > 0);
+  return REPLACE_SCAN_KEYS.some((key) => asArray(options[key]).length > 0);
 }
 
 function collectFlagSources(options) {
@@ -52,12 +53,48 @@ function skipEntry(workspace, filePath, reason) {
   console.log(`Skipped ${displayPath(workspace, filePath)}: ${reason}`);
 }
 
+function normalizeTemplateText(text) {
+  return String(text)
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .split("\n")
+    .map((line) => line.trimEnd())
+    .join("\n")
+    .trimEnd();
+}
+
+function isUnchangedIntakeTemplate(filePath, templateNormalized) {
+  let text;
+  try {
+    text = fs.readFileSync(filePath, "utf8");
+  } catch (error) {
+    return false;
+  }
+  return normalizeTemplateText(text) === templateNormalized;
+}
+
+function hasLinkContent(text) {
+  return String(text)
+    .split(/\r?\n/)
+    .some((line) => {
+      const trimmed = line.trim();
+      return trimmed.length > 0 && !trimmed.startsWith("#");
+    });
+}
+
+
 function collectDefaultFolderSources(workspace, paths) {
   const sources = [];
   const folders = [
     { dir: paths.resumes, kind: "resume" },
     { dir: paths.notes, kind: "notes" },
   ];
+  let intakeTemplateNormalized = "";
+  try {
+    intakeTemplateNormalized = normalizeTemplateText(fs.readFileSync(INTAKE_TEMPLATE_PATH, "utf8"));
+  } catch (error) {
+    intakeTemplateNormalized = "";
+  }
 
   for (const { dir, kind } of folders) {
     if (!fs.existsSync(dir)) continue;
@@ -98,17 +135,56 @@ function collectDefaultFolderSources(workspace, paths) {
         skipEntry(workspace, fullPath, "empty");
         continue;
       }
+      if (kind === "notes" && entry.name === "intake.md" && isUnchangedIntakeTemplate(fullPath, intakeTemplateNormalized)) {
+        skipEntry(workspace, fullPath, "blank template");
+        continue;
+      }
       console.log(`Read ${displayPath(workspace, fullPath)}`);
       sources.push({ file: fullPath, kind });
     }
   }
+
+  const linksPath = paths.links;
+  if (fs.existsSync(linksPath)) {
+    let linksStat;
+    try {
+      linksStat = fs.statSync(linksPath);
+    } catch (error) {
+      linksStat = null;
+    }
+    if (linksStat && linksStat.isFile()) {
+      let linksText = "";
+      try {
+        linksText = fs.readFileSync(linksPath, "utf8");
+      } catch (error) {
+        linksText = null;
+      }
+      if (linksText !== null) {
+        if (!hasLinkContent(linksText)) {
+          skipEntry(workspace, linksPath, "no links (only blank or comment lines)");
+        } else {
+          console.log(`Read ${displayPath(workspace, linksPath)}`);
+          sources.push({ file: linksPath, kind: "links" });
+        }
+      }
+    }
+  }
+
   return sources;
 }
 
 function collectSources(options, workspace, paths) {
-  if (hasSourceFlags(options)) return collectFlagSources(options);
-  if (!workspace || !paths) return collectFlagSources(options);
-  return collectDefaultFolderSources(workspace, paths);
+  const flagSources = collectFlagSources(options);
+  if (hasReplaceScanFlags(options) || !workspace || !paths) return flagSources;
+  const folderSources = collectDefaultFolderSources(workspace, paths);
+  const seen = new Set(folderSources.map((source) => path.resolve(source.file)));
+  for (const source of flagSources) {
+    const resolved = path.resolve(source.file);
+    if (seen.has(resolved)) continue;
+    folderSources.push(source);
+    seen.add(resolved);
+  }
+  return folderSources;
 }
 
 async function ingestLocalSources(sources, workspace, paths, profile) {

@@ -389,6 +389,24 @@ test("serve-home returns a friendly page when tracker.html is missing", async ()
   }
 });
 
+test("serve-home missing tracker page HTML-escapes the workspace label", async () => {
+  const tmpDir = createHomeRoot();
+  const workspaceLabel = `<script>alert(1)</script>"&`;
+  const server = await run({ root: tmpDir, port: 0, noOpen: true, workspace: workspaceLabel });
+  const port = server.address().port;
+  try {
+    const response = await getRaw(port, "/tracker.html");
+    assert.equal(response.status, 404);
+    assert.match(response.body, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
+    assert.match(response.body, /&quot;/);
+    assert.match(response.body, /&amp;/);
+    assert.doesNotMatch(response.body, /<script>alert\(1\)<\/script>/);
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
 test("serve-home /tracker.html does not leak other candidate files or traversal", async () => {
   const tmpDir = createHomeRoot();
   writeCandidateWorkspace(tmpDir, { trackerHtml: "<html>TRACKER_CANARY</html>" });

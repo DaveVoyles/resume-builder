@@ -85,7 +85,7 @@ function validatePreferences(preferences) {
     if (!requireObject(compensation, "preferences.compensation", errors)) return errors;
     Object.keys(compensation).forEach((key) => {
       if (!COMPENSATION_KEYS.has(key)) {
-        errors.push(`preferences.compensation.${key}: unknown key`);
+        errors.push(`preferences.compensation.${key}: unknown key (allowed: ${[...COMPENSATION_KEYS].join(", ")})`);
       }
     });
     if (compensation.skipped !== undefined) {
