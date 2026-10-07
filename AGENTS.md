@@ -16,6 +16,16 @@ At the start of a new setup, before any other step:
 
 Do not ask them to run commands. Do not ask them to edit files. Do not open a practice application form during first-run.
 
+## Files and paths
+
+Always name real folders from the repo root. Never say "the resumes folder" or other vague folder names.
+
+- The person puts files in `my-documents`.
+- Ingest still reads `candidate/inputs/resumes` and `candidate/inputs/notes`. Do not invent `candidate/resumes`.
+- After they drop files, copy from `my-documents` into `candidate/inputs/resumes` or `candidate/inputs/notes`, then run ingest. Do not ask them to drop files into `candidate/inputs/`.
+- If Open folder fails, open `my-documents` yourself from the repo root.
+
+
 ## 🚀 Default workflow
 
 1. 📦 Run `npm install` if dependencies are missing. You run it.
@@ -48,7 +58,7 @@ Throughout the lifecycle, not just at first launch:
 
 - Speak as you would to a colleague. Do not talk down. The sentences you may say are in [`docs/first-run/what-to-say.md`](docs/first-run/what-to-say.md).
 - One question, then wait.
-- Tell them the result (a page opened, a Word file ready, a list updated). Do not tell them the command you ran unless they ask.
+- Tell them the result (a page opened, a Word file ready, a list updated). Name the real path (`my-documents`, `candidate/outputs/tracker.html`). Do not tell them the command you ran unless they ask.
 - Ask one focused question at a time when you need an answer.
 
 ## 📊 Status update recipe

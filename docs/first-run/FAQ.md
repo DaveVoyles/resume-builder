@@ -30,9 +30,9 @@ Do not skip ahead. Do not show them a pile of commands.
 
    Say sentence 2. The setup command opens an empty job list in the browser. Tell them the emptiness is normal.
 
-5. **Collect old material.** Open `candidate/inputs/` for them (`open` / `start` / `xdg-open` on that folder). Both the resumes folder and the notes folder are inside it. Say both sentences in section 3 of [what-to-say.md](what-to-say.md). Wait until they say the files are in, or they ask what to include.
+5. **Collect old material.** Open `my-documents` for them (`open` / `start` / `xdg-open` on that folder). If Open folder fails, open `my-documents` yourself from the repo root. Say both sentences in section 3 of [what-to-say.md](what-to-say.md). Wait until they say the files are in, or they ask what to include.
 
-   Resumes go in `resumes/`. Notes go in `notes/`. A link can be pasted in chat, or you write it into `links.md`. Enough to start: one old resume, or a notes file, or a GitHub username. More is better. LinkedIn pages are behind a login, so you cannot pull a LinkedIn profile the way you can pull public GitHub repos. If they want LinkedIn included, ask them to export their data from LinkedIn settings, or paste the parts they care about into a notes file.
+   They put files in `my-documents`. You copy resumes into `candidate/inputs/resumes` and notes into `candidate/inputs/notes`, then ingest from those paths. A link can be pasted in chat, or you write it into `candidate/inputs/links.md`. Enough to start: one old resume, or a notes file, or a GitHub username. More is better. LinkedIn pages are behind a login, so you cannot pull a LinkedIn profile the way you can pull public GitHub repos. If they want LinkedIn included, ask them to export their data from LinkedIn settings, or paste the parts they care about into a notes file.
 
 6. **Read the files.** Say sentence 4. Wait for a yes. Then run ingest with only the flags that match what they gave you:
 
@@ -65,7 +65,7 @@ At the start of a later session, check before you greet them:
 | If this is true | You are here |
 | --- | --- |
 | `candidate/profile.json` is missing | Step 4. They have not started. Open the start page again if they have never seen it. |
-| The private folder exists but `candidate/inputs/` has no real files | Step 5. Ask for old material. |
+| The private folder exists but `my-documents` has no real files (ignore `START-HERE.txt` and `sample-resume.txt`) and `candidate/inputs/` is still scaffold-only | Step 5. Ask for old material. |
 | Files are there and `candidate/evidence.jsonl` is empty | Step 6. Read the files. |
 | Evidence exists and `profile.json` has an empty `experience` list | Step 7. Interview. |
 | `experience` has at least one job | They are set up. Do the thing they asked. Do not restart onboarding. |
@@ -81,7 +81,7 @@ No. You run the steps. They answer questions and read the resume.
 Claude, Grok, or Gemini, including Google Antigravity. Copilot or ChatGPT also work if they can read this repo and run commands. This program does not call an AI and does not need an API key.
 
 **Where do my files go?**
-In a folder named `candidate/` on their machine. Say "a private folder on your computer." Open `candidate/inputs/` when they are adding files. When they ask for the resume, the list, or the brief, open that file. The paths are in [what-to-say.md](what-to-say.md), under "If they ask where a file is." It is not uploaded with the project. Do not commit it. Before any commit of project files, run `npm run check:privacy`.
+They put files in `my-documents`. You copy them into `candidate/inputs/resumes` or `candidate/inputs/notes` before ingest. When they ask for the resume, the list, or the brief, open that file and name the path. The paths are in [what-to-say.md](what-to-say.md), under "If they ask where a file is." Do not commit `candidate/` or files they dropped in `my-documents`. Before any commit of project files, run `npm run check:privacy`.
 
 **Will this apply to jobs for me?**
 No. A resume is written for them to review. Nothing is submitted unless they later say so, on a real application site, themselves. If you see a page titled like a practice application for a fictional company, that page is a test fixture. Do not open it during first-run. It is not their application.
@@ -90,7 +90,7 @@ No. A resume is written for them to review. Nothing is submitted unless they lat
 Take it out. Do not soften a false claim. If you do not have a source, ask, or leave it off.
 
 **What if I only have a LinkedIn profile?**
-Ask them to paste the jobs and projects they want included, or to drop an export into the notes folder. Do not pretend you read a logged-in LinkedIn page.
+Ask them to paste the jobs and projects they want included, or to drop an export into `my-documents`. Do not pretend you read a logged-in LinkedIn page.
 
 **What is the job list?**
 One page in the browser. Each row is a job. The status is a plain word. They do not keep a spreadsheet.

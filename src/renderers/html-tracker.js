@@ -46,6 +46,10 @@ function jsonScriptSafe(value) {
 // renderHtmlTracker with an onboardingState option, so this is the one place
 // that turns onboardingSteps()'s canonical list (src/core/onboarding-state.js
 // — the same list isOnboardingComplete() itself derives from) into markup.
+function formatHowTo(text) {
+  return escapeHtml(text).replace(/`([^`]+)`/g, "<code>$1</code>");
+}
+
 function renderOnboardingChecklist(onboardingState) {
   const steps = onboardingSteps(onboardingState);
   const doneCount = steps.filter((step) => step.done).length;
@@ -53,11 +57,16 @@ function renderOnboardingChecklist(onboardingState) {
     .map((step) => {
       const statusClass = step.done ? "onboarding-check-done" : "onboarding-check-pending";
       const labelClass = step.done ? "onboarding-item-label" : "onboarding-item-label onboarding-item-label-pending";
+      const howTo = step.howTo
+        ? `<p class="onboarding-item-howto">${formatHowTo(step.howTo)}</p>`
+        : "";
       return (
         '<div class="onboarding-item">' +
         `<span class="onboarding-check ${statusClass}">${step.done ? "✓" : ""}</span>` +
+        '<div class="onboarding-item-text">' +
         `<span class="${labelClass}">${escapeHtml(step.label)}</span>` +
-        "</div>"
+        howTo +
+        "</div></div>"
       );
     })
     .join("");
@@ -197,17 +206,11 @@ function renderHtmlTracker(roles, options = {}) {
     color: #0f172a;
   }
   h1 {
-    margin: 0 0 0.5rem;
+    margin: 0 0 1.5rem;
     font-size: 2.125rem;
     font-weight: 800;
     letter-spacing: -0.02em;
     color: #0f172a;
-  }
-  .subtitle {
-    color: #64748b;
-    margin: 0 0 2rem;
-    font-size: 0.9rem;
-    line-height: 1.5;
   }
   .stats {
     display: grid;
@@ -440,9 +443,9 @@ function renderHtmlTracker(roles, options = {}) {
   }
   .onboarding-item {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 0.75rem;
-    padding: 0.75rem 0;
+    padding: 0.85rem 0;
     border-bottom: 1px solid #f1f5f9;
   }
   .onboarding-item:last-child {
@@ -467,12 +470,30 @@ function renderHtmlTracker(roles, options = {}) {
     background: #f1f5f9;
     border: 1px dashed #cbd5e1;
   }
+  .onboarding-item-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+  }
   .onboarding-item-label {
     font-size: 0.9rem;
     color: #334155;
   }
   .onboarding-item-label-pending {
-    color: #94a3b8;
+    color: #64748b;
+  }
+  .onboarding-item-howto {
+    margin: 0;
+    font-size: 0.8rem;
+    line-height: 1.45;
+    color: #64748b;
+  }
+  .onboarding-item-howto code {
+    font-size: 0.78rem;
+    background: #f1f5f9;
+    padding: 0.05rem 0.3rem;
+    border-radius: 0.25rem;
   }
   a {
     color: #0284c7;
@@ -499,7 +520,7 @@ function renderHtmlTracker(roles, options = {}) {
   <h1>${escapeHtml(title)}</h1>
   ${notice ? `<div class="notice-banner">${escapeHtml(notice)}</div>` : ""}
   ${showCompletePill ? '<div class="onboarding-progress-pill onboarding-progress-pill-complete">✓ Onboarding complete</div>' : ""}
-  <p class="subtitle">Generated ${escapeHtml(generatedAt)} from <code>roles.tracked.json</code>. Rebuild with <code>build-tracker --format html</code>; do not hand-edit.</p>
+  <!-- Generated ${escapeHtml(generatedAt)} from roles.tracked.json. Rebuild with build-tracker --format html; do not hand-edit. -->
 
   <div class="onboarding-section" style="display:${showChecklist ? "block" : "none"}">
     ${renderOnboardingChecklist(onboardingState)}

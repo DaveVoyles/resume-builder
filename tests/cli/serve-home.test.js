@@ -71,13 +71,16 @@ test("serve-home serves the three-tab dashboard at / with Introduction selected"
     assert.match(response.body, />FAQ</);
     assert.match(response.body, />Jobs</);
     assert.match(response.body, /http:\/\/localhost:4321/);
-    assert.match(response.body, /design mock used port 3000/);
+    assert.doesNotMatch(response.body, /design mock used port 3000/);
     assert.match(response.body, /resume-builder \/ my-documents/);
     assert.match(response.body, /resume-builder \/ output/);
     assert.match(response.body, /Continue setup/);
     assert.match(response.body, /Required/);
     assert.match(response.body, /What is an AI agent\?/);
     assert.match(response.body, /No jobs yet/);
+    assert.match(response.body, /This Jobs tab does not add jobs from the page/);
+    assert.match(response.body, /This page does not add jobs/);
+    assert.doesNotMatch(response.body, /It shows up in the Jobs tab/);
     assert.doesNotMatch(response.body, /SAMPLE DATA/);
   } finally {
     server.close();

@@ -26,8 +26,9 @@ Check whether `candidate/profile.json` exists (substitute the candidate's actual
 
 ### 2. Are the input folders still just their scaffolded template state?
 
-`npm run setup` scaffolds `inputs/resumes/` (empty except `.gitkeep`), `inputs/notes/intake.md` (a blank question template), and `inputs/links.md` (a commented one-link-per-line template) — see [Candidate workspace](../candidate-workspace.md). Check whether any of these hold real candidate material yet:
+The person drops files in `my-documents`. You copy them into `candidate/inputs/` before ingest. `npm run setup` scaffolds `candidate/inputs/resumes/` (empty except `.gitkeep`), `candidate/inputs/notes/intake.md` (a blank question template), and `candidate/inputs/links.md` (a commented one-link-per-line template) — see [Candidate workspace](../candidate-workspace.md). Check whether any of these hold real candidate material yet:
 
+- `my-documents/` has any file besides `START-HERE.txt` and `sample-resume.txt`.
 - `inputs/resumes/` has any file besides `.gitkeep`.
 - `inputs/notes/intake.md` has been edited — real answers under its headings, not just the blank template from `templates/candidate-intake.md`.
 - `inputs/notes/` has any other file besides `intake.md` and `.gitkeep`.
@@ -85,7 +86,7 @@ Then move straight into State 1's messaging below — the candidate is now in th
 
 ## State 1: Workspace scaffolded, nothing real added yet
 
-**Do:** Open `candidate/inputs/` (`open` / `start` / `xdg-open`). Do not recite the path. The resumes folder and the notes folder are both inside it.
+**Do:** Open `my-documents` (`open` / `start` / `xdg-open`). Name the path. If Open folder fails, open `my-documents` from the repo root yourself.
 
 **Say:**
 
@@ -95,7 +96,7 @@ If they ask about LinkedIn, then say you cannot read a page behind a login, and 
 
 **Wait** for the candidate to confirm they've dropped material, or to ask for help deciding what to include (in which case, point them at the "before you begin" checklist in [Getting started](../getting-started.md) and wait again).
 
-Once they confirm, move to State 2's messaging.
+Once they confirm, copy files from `my-documents` into `candidate/inputs/resumes` or `candidate/inputs/notes`, then move to State 2's messaging.
 
 ---
 
