@@ -158,5 +158,29 @@ test("ingest with zero sources leaves onboarding-state.materialIngested untouche
 
     const state = readJson(paths.onboardingState);
     assert.strictEqual(state.materialIngested, false, "a no-op ingest call must not flip materialIngested");
+    Object.keys(state.sections).forEach((key) => {
+      assert.strictEqual(state.sections[key], false, `ingest with no sources must not mark sections.${key}`);
+    });
+  });
+});
+
+test("ingest with a source marks materialIngested only, not intake sections", async () => {
+  await withWorkspace(async ({ workspace, paths }) => {
+    writeJson(paths.onboardingState, defaultOnboardingState());
+    const linksFixture = fs.mkdtempSync(path.join(os.tmpdir(), "links-fixture-"));
+    const linksFile = path.join(linksFixture, "links.md");
+    fs.writeFileSync(linksFile, "https://github.com/sample-user");
+
+    try {
+      await command.run({ workspace, links: linksFile });
+      const state = readJson(paths.onboardingState);
+      assert.strictEqual(state.materialIngested, true);
+      Object.keys(state.sections).forEach((key) => {
+        assert.strictEqual(state.sections[key], false, `ingest must not mark sections.${key} without that data`);
+      });
+      assert.strictEqual(state.firstRoleAdded, false);
+    } finally {
+      fs.rmSync(linksFixture, { recursive: true, force: true });
+    }
   });
 });

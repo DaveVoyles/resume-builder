@@ -7,12 +7,18 @@ const os = require("os");
 const path = require("path");
 const {
   SECTIONS,
+  HOME_STEP_TO_TRACKER_STEPS,
+  HOME_STEPS,
   defaultOnboardingState,
   isOnboardingComplete,
   onboardingSteps,
+  homeStepsFromOnboarding,
   readOnboardingState,
   updateOnboardingState,
+  deriveOnboardingState,
+  syncOnboardingState,
 } = require("../../src/core/onboarding-state");
+const { writeJson, workspacePaths } = require("../../src/core/workspace");
 
 function tempFile() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "onboarding-state-"));
@@ -162,5 +168,119 @@ describe("readOnboardingState / updateOnboardingState", () => {
     SECTIONS.forEach(({ key }) => {
       if (key !== "workHistory") assert.strictEqual(state.sections[key], false, `sections.${key} must backfill to false, not be missing`);
     });
+  });
+});
+
+describe("HOME_STEP_TO_TRACKER_STEPS", () => {
+  test("maps each of the six home steps onto tracker keys", () => {
+    assert.deepEqual(
+      HOME_STEPS.map((step) => step.key),
+      ["downloadRb", "startRb", "addFiles", "answerQuestions", "firstDraft", "addJobs"],
+    );
+    assert.deepEqual(HOME_STEP_TO_TRACKER_STEPS.downloadRb, ["setupComplete"]);
+    assert.deepEqual(HOME_STEP_TO_TRACKER_STEPS.startRb, ["setupComplete"]);
+    assert.deepEqual(HOME_STEP_TO_TRACKER_STEPS.addFiles, ["materialIngested"]);
+    assert.deepEqual(HOME_STEP_TO_TRACKER_STEPS.answerQuestions, ["basicInfo", "targetRole"]);
+    assert.deepEqual(HOME_STEP_TO_TRACKER_STEPS.firstDraft, []);
+    assert.deepEqual(HOME_STEP_TO_TRACKER_STEPS.addJobs, ["firstRoleAdded"]);
+  });
+
+  test("a home step is done only when every mapped tracker step is done", () => {
+    const state = defaultOnboardingState();
+    let home = homeStepsFromOnboarding(state);
+    assert.equal(home.find((step) => step.key === "downloadRb").done, true);
+    assert.equal(home.find((step) => step.key === "addFiles").done, false);
+    assert.equal(home.find((step) => step.key === "answerQuestions").done, false);
+    assert.equal(home.find((step) => step.key === "firstDraft").done, false);
+
+    state.sections.basicInfo = true;
+    home = homeStepsFromOnboarding(state);
+    assert.equal(home.find((step) => step.key === "answerQuestions").done, false, "targetRole still pending");
+
+    state.sections.targetRole = true;
+    home = homeStepsFromOnboarding(state);
+    assert.equal(home.find((step) => step.key === "answerQuestions").done, true);
+    assert.equal(home.find((step) => step.key === "firstDraft").done, false);
+  });
+});
+
+describe("deriveOnboardingState", () => {
+  function tempWorkspace() {
+    return fs.mkdtempSync(path.join(os.tmpdir(), "onboarding-derive-"));
+  }
+
+  test("marks a section done only when its data exists", () => {
+    const workspace = tempWorkspace();
+    try {
+      const paths = workspacePaths(workspace);
+      writeJson(paths.profile, {
+        candidate: { preferredName: "Jordan Sample" },
+        experience: [],
+        education: [],
+        sources: [],
+      });
+      writeJson(paths.preferences, { roleTargets: [], locations: { workModes: [] }, dealBreakers: [] });
+      writeJson(paths.rolesTracked, []);
+
+      const state = deriveOnboardingState(workspace);
+      assert.equal(state.setupComplete, true);
+      assert.equal(state.materialIngested, false);
+      assert.equal(state.sections.basicInfo, true);
+      assert.equal(state.sections.workHistory, false);
+      assert.equal(state.sections.education, false);
+      assert.equal(state.sections.targetRole, false);
+      assert.equal(state.sections.location, false);
+      assert.equal(state.sections.compensation, false);
+      assert.equal(state.sections.dealBreakers, false);
+      assert.equal(state.firstRoleAdded, false);
+    } finally {
+      fs.rmSync(workspace, { recursive: true, force: true });
+    }
+  });
+
+  test("does not treat empty init dealBreakers or missing compensation as done", () => {
+    const workspace = tempWorkspace();
+    try {
+      const paths = workspacePaths(workspace);
+      writeJson(paths.profile, { candidate: {}, experience: [], education: [], sources: [] });
+      writeJson(paths.preferences, { roleTargets: [], locations: { workModes: [] }, dealBreakers: [] });
+      const state = deriveOnboardingState(workspace);
+      assert.equal(state.sections.dealBreakers, false);
+      assert.equal(state.sections.compensation, false);
+    } finally {
+      fs.rmSync(workspace, { recursive: true, force: true });
+    }
+  });
+
+  test("syncOnboardingState writes derived flags, not caller claims", () => {
+    const workspace = tempWorkspace();
+    try {
+      const paths = workspacePaths(workspace);
+      writeJson(paths.profile, {
+        candidate: { preferredName: "Jordan Sample" },
+        experience: [{ organization: "Example Corp", title: "Analyst" }],
+        education: [],
+        sources: [{ id: "src-001", kind: "notes", path: "inputs/notes/sample.md" }],
+      });
+      writeJson(paths.preferences, {
+        roleTargets: [{ titles: ["Operations manager"] }],
+        locations: { workModes: ["remote"] },
+        dealBreakers: [],
+      });
+      writeJson(paths.rolesTracked, []);
+      writeJson(paths.onboardingState, defaultOnboardingState());
+
+      const state = syncOnboardingState(workspace);
+      assert.equal(state.materialIngested, true);
+      assert.equal(state.sections.basicInfo, true);
+      assert.equal(state.sections.workHistory, true);
+      assert.equal(state.sections.targetRole, true);
+      assert.equal(state.sections.location, true);
+      assert.equal(state.sections.education, false);
+      assert.equal(state.firstRoleAdded, false);
+      assert.deepEqual(readOnboardingState(paths.onboardingState), state);
+    } finally {
+      fs.rmSync(workspace, { recursive: true, force: true });
+    }
   });
 });

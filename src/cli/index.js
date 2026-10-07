@@ -53,7 +53,7 @@ function help() {
     "  tailor --workspace <dir> --config <resume-config.json> (--url <url> | --title <title> [--company <name>]) [--applyUrl <url>] [--location <text>] [--compensation <text>] [--fit <text>] [--notes <text>] [--keywords <keywords.json>] [--cover-letter <cover-letter-config.json>]",
     "  validate --workspace <dir>",
     "  serve --workspace <dir> [--port <n>] [--noOpen]",
-    "  serve-home [--port <n>] [--noOpen]",
+    "  serve-home [--port <n>] [--noOpen] [--workspace <dir>]",
     "  add-lead --workspace <dir> --company <name> --title <name> --url <url> [--fit <text>] [--notes <text>]",
     "  export-pdf --docx <file.docx> [--out <file.pdf>]",
     "  approve-apply --workspace <dir> --company <name> --title <name> [--note <text>]",

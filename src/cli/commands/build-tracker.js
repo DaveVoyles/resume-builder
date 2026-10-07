@@ -3,8 +3,9 @@
 const fs = require("fs");
 const { renderTracker } = require("../../renderers/markdown-tracker");
 const { renderHtmlTracker } = require("../../renderers/html-tracker");
-const { readJson, resolveWorkspace, workspacePaths, writeTextIfMissing } = require("../../core/workspace");
+const { readJson, resolveWorkspace, workspacePaths, writeJson, writeTextIfMissing } = require("../../core/workspace");
 const { DEFAULT_THRESHOLDS } = require("../../core/staleness");
+const { deriveOnboardingState } = require("../../core/onboarding-state");
 
 function run(options) {
   const workspace = resolveWorkspace(options.workspace);
@@ -29,7 +30,9 @@ function run(options) {
     let onboardingState;
     if (fs.existsSync(paths.onboardingState)) {
       try {
-        onboardingState = readJson(paths.onboardingState);
+        readJson(paths.onboardingState);
+        onboardingState = deriveOnboardingState(workspace);
+        writeJson(paths.onboardingState, onboardingState);
       } catch (error) {
         console.warn(`Warning: ignoring unreadable .onboarding-state.json (${error.message})`);
       }

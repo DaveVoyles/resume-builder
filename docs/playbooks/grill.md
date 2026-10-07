@@ -38,27 +38,15 @@ When ingested material already answers the question, skip the blind "Ask" and go
 
 ## Onboarding state
 
-Each section below ends with a **Mark progress** step, once its answers are confirmed: update `candidate/.onboarding-state.json` and rebuild the tracker, so the tracker page's visual onboarding checklist reflects the interview as it goes. Create the file with this shape the first time a Mark progress step needs it (it's also created empty — every step pending — by `npm run setup`, so it will usually already exist):
+Home and the tracker share `candidate/.onboarding-state.json`. After you write a section's answers into `profile.json` or `preferences.json`, rebuild the tracker. The CLI derives done-ness from those files. Do not flip section flags by hand, and do not mark a section done unless the data is really there.
 
-```json
-{
-  "schemaVersion": "1.0",
-  "setupComplete": true,
-  "materialIngested": false,
-  "sections": {
-    "basicInfo": false,
-    "workHistory": false,
-    "education": false,
-    "targetRole": false,
-    "location": false,
-    "compensation": false,
-    "dealBreakers": false
-  },
-  "firstRoleAdded": false
-}
+```bash
+npm run workspace:tracker:html -- --workspace candidate
 ```
 
-A Mark progress step only ever flips its own `sections.<name>` key to `true` — never infer completion from whether a field is empty (an empty `dealBreakers` array is a valid "no deal breakers" answer, not "not asked yet," and `compensation` is optional, so its absence doesn't mean incomplete).
+`npm run setup` creates the file with every step pending except `setupComplete`. An empty `dealBreakers` array from setup is not done. Missing compensation is not done.
+
+See the home-to-tracker mapping in [`onboarding.md`](onboarding.md).
 
 ---
 
@@ -100,7 +88,7 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
   - `confidence`: "source-text"
   - `category`: "other"
 
-**Mark progress:** create `candidate/.onboarding-state.json` from the template in [Onboarding state](#onboarding-state) if it doesn't exist yet, set `sections.basicInfo` to `true`, then run `npm run workspace:tracker:html -- --workspace candidate` so the checklist on the tracker page reflects it immediately.
+**Mark progress:** after the basic information is in `candidate/profile.json`, run `npm run workspace:tracker:html -- --workspace candidate`. The tracker marks Basic information done only if that data exists.
 
 ---
 
@@ -187,7 +175,7 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
 - The candidate says they've shared all relevant roles, or
 - You've captured the most recent 5–10 years (adjust for the candidate's preferences).
 
-**Mark progress:** set `sections.workHistory` to `true` in `candidate/.onboarding-state.json`, then run `npm run workspace:tracker:html -- --workspace candidate` so the checklist on the tracker page reflects it immediately.
+**Mark progress:** after work history is in `candidate/profile.json`, run `npm run workspace:tracker:html -- --workspace candidate`. The tracker marks Work history done only if that data exists.
 
 ---
 
@@ -231,7 +219,7 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
 
 **Repeat** for each additional degree or credential the candidate wants included.
 
-**Mark progress:** set `sections.education` to `true` in `candidate/.onboarding-state.json`, then run `npm run workspace:tracker:html -- --workspace candidate` so the checklist on the tracker page reflects it immediately.
+**Mark progress:** after education is in `candidate/profile.json`, run `npm run workspace:tracker:html -- --workspace candidate`. The tracker marks Education done only if that data exists.
 
 ---
 
@@ -277,7 +265,7 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
   - `name`: Industry or domain name
   - `priority`: `"must"`, `"should"`, `"could"`, or `"avoid"`
 
-**Mark progress:** set `sections.targetRole` to `true` in `candidate/.onboarding-state.json`, then run `npm run workspace:tracker:html -- --workspace candidate` so the checklist on the tracker page reflects it immediately.
+**Mark progress:** after target role is in `candidate/preferences.json`, run `npm run workspace:tracker:html -- --workspace candidate`. The tracker marks Target role done only if that data exists.
 
 ---
 
@@ -305,7 +293,7 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
   - `excludedRegions`: Array of avoided locations, or `[]` if none — this is a flat set with no ranking, since exclusions don't need a "how much I don't want it" order
   - `priority`: `"must"`, `"should"`, or `"could"`
 
-**Mark progress:** set `sections.location` to `true` in `candidate/.onboarding-state.json`, then run `npm run workspace:tracker:html -- --workspace candidate` so the checklist on the tracker page reflects it immediately.
+**Mark progress:** after location preferences are in `candidate/preferences.json`, run `npm run workspace:tracker:html -- --workspace candidate`. The tracker marks Location and work mode done only if that data exists.
 
 ---
 
@@ -338,7 +326,7 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
 
 **Example:** If the candidate says "$300k total is my ideal, and I'm flexible on how base, bonus, and equity mix — but I wouldn't go below $250k total," that's a total-comp floor, not a base floor. Write `totalTarget: 300000` and `totalMinimum: 250000`, and omit `baseMinimum` rather than repurposing it to hold the $250k figure.
 
-**Mark progress:** set `sections.compensation` to `true` in `candidate/.onboarding-state.json`, then run `npm run workspace:tracker:html -- --workspace candidate` so the checklist on the tracker page reflects it immediately.
+**Mark progress:** after compensation is in `candidate/preferences.json`, run `npm run workspace:tracker:html -- --workspace candidate`. The tracker marks Salary and compensation done only if that data exists.
 
 ---
 
@@ -365,7 +353,7 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
   - `text`: The deal breaker condition
   - `priority`: `"must"`
 
-**Mark progress:** set `sections.dealBreakers` to `true` in `candidate/.onboarding-state.json` (create the file from the template in [Onboarding state](#onboarding-state) if it doesn't exist yet), then run `npm run workspace:tracker:html -- --workspace candidate` so the checklist on the tracker page reflects it immediately.
+**Mark progress:** after deal breakers are in `candidate/preferences.json`, run `npm run workspace:tracker:html -- --workspace candidate`. The tracker marks Constraints and deal breakers done only if that data exists. An empty array from setup is not enough.
 
 ---
 

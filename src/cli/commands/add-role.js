@@ -2,6 +2,7 @@
 
 const { createRole } = require("../../adapters/job-posting");
 const { readJson, resolveWorkspace, workspacePaths, writeJson } = require("../../core/workspace");
+const { syncOnboardingState } = require("../../core/onboarding-state");
 
 function roleListPath(paths, role) {
   return role.status === "tracked" ? paths.rolesTracked : paths.rolesSeed;
@@ -24,10 +25,12 @@ function run(options) {
 
   if (isDuplicate(roles, role)) {
     console.log(`Role already exists in ${role.status}: ${role.company} — ${role.title}`);
+    if (role.status === "tracked") syncOnboardingState(workspace);
     return;
   }
 
   writeJson(file, roles.concat(role));
+  if (role.status === "tracked") syncOnboardingState(workspace);
   console.log(`Added ${role.status} role: ${role.company} — ${role.title}`);
   if (role.status === "tracked") console.log("Run build-tracker to refresh outputs/tracker.md.");
 }
