@@ -106,7 +106,6 @@ test("serve-home intake copy is answers-only and keeps agent fill cues", async (
     assert.doesNotMatch(response.body, /Your first draft is ready/);
     assert.doesNotMatch(response.body, /from those answers only/);
     assert.doesNotMatch(response.body, /text stub/);
-    assert.doesNotMatch(response.body, /resume-draft-1\.txt/);
     assert.match(response.body, /\.filled\{background:#f0fdf4;border-color:#22c55e\}/);
     assert.match(response.body, /\.agentnote\{font-size:\.82rem;color:var\(--ok\);font-weight:600\}/);
     assert.match(response.body, /class="agentnote" hidden/);
@@ -163,7 +162,7 @@ test("GET /api/onboarding-state exposes the shared mapping and default steps", a
     assert.equal(download.done, true);
     assert.equal(answers.done, false);
     assert.equal(draft.done, false);
-    assert.deepEqual(draft.trackerKeys, []);
+    assert.deepEqual(draft.trackerKeys, ["firstDraftReady"]);
   } finally {
     server.close();
     cleanup(tmpDir);
@@ -184,7 +183,7 @@ test("serve-home save-intake writes answers, not a fake resume draft", async () 
     assert.equal(body.message, "Answers saved.");
     assert.doesNotMatch(body.message, /draft/i);
     assert.equal(body.filename, HOME_ANSWERS_FILENAME);
-    assert.equal(fs.existsSync(path.join(tmpDir, "output", "resume-draft-1.txt")), false);
+    assert.equal(body.state.firstDraftReady, false);
 
     const answersPath = path.join(tmpDir, "candidate", HOME_ANSWERS_FILENAME);
     assert.equal(fs.existsSync(answersPath), true);
@@ -213,7 +212,6 @@ test("serve-home save-intake returns 400 when goal is missing", async () => {
     const response = await post(port, "/api/save-intake", { name: "Jordan Sample" });
     assert.equal(response.status, 400);
     assert.match(response.body, /Goal is required/);
-    assert.equal(fs.existsSync(path.join(tmpDir, "output", "resume-draft-1.txt")), false);
     assert.equal(fs.existsSync(path.join(tmpDir, "candidate", HOME_ANSWERS_FILENAME)), false);
   } finally {
     server.close();

@@ -23,7 +23,7 @@ test("saveHomeAnswers writes home-answers.json and shared onboarding state", () 
     });
     assert.equal(result.message, "Answers saved.");
     assert.equal(result.filename, HOME_ANSWERS_FILENAME);
-    assert.equal(fs.existsSync(path.join(workspace, "output", "resume-draft-1.txt")), false);
+    assert.doesNotMatch(result.message, /draft/i);
 
     const answers = JSON.parse(fs.readFileSync(path.join(workspace, HOME_ANSWERS_FILENAME), "utf8"));
     assert.equal(answers.name, "Jordan Sample");
@@ -36,6 +36,8 @@ test("saveHomeAnswers writes home-answers.json and shared onboarding state", () 
     assert.equal(state.sections.targetRole, true);
     assert.equal(state.sections.education, false);
     assert.equal(state.sections.compensation, false);
+    assert.equal(state.sections.dealBreakers, false);
+    assert.equal(state.firstDraftReady, false);
   } finally {
     fs.rmSync(workspace, { recursive: true, force: true });
   }
@@ -48,6 +50,87 @@ test("saveHomeAnswers rejects a missing or blank goal", () => {
     assert.throws(() => saveHomeAnswers(workspace, { goal: "   " }), { code: "GOAL_REQUIRED" });
     assert.equal(fs.existsSync(path.join(workspace, HOME_ANSWERS_FILENAME)), false);
     assert.equal(fs.existsSync(path.join(workspace, ".onboarding-state.json")), false);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("extra text alone leaves Deal breakers not done", () => {
+  const workspace = tempWorkspace();
+  try {
+    const result = saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+      extra: "Please avoid night shifts if possible",
+    });
+    assert.equal(result.state.sections.dealBreakers, false);
+    const paths = workspacePaths(workspace);
+    const preferences = JSON.parse(fs.readFileSync(paths.preferences, "utf8"));
+    assert.equal(preferences.dealBreakersSkip, undefined);
+    assert.deepEqual(preferences.dealBreakers, []);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("deal breakers text marks Deal breakers done", () => {
+  const workspace = tempWorkspace();
+  try {
+    const result = saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+      dealBreakers: "No unpaid overtime",
+    });
+    assert.equal(result.state.sections.dealBreakers, true);
+    const paths = workspacePaths(workspace);
+    const preferences = JSON.parse(fs.readFileSync(paths.preferences, "utf8"));
+    assert.equal(preferences.dealBreakers[0].text, "No unpaid overtime");
+    assert.equal(preferences.dealBreakersSkip, undefined);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("deal breakers None marks Deal breakers done", () => {
+  const workspace = tempWorkspace();
+  try {
+    const result = saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+      dealBreakersChoice: "none",
+    });
+    assert.equal(result.state.sections.dealBreakers, true);
+    const paths = workspacePaths(workspace);
+    const preferences = JSON.parse(fs.readFileSync(paths.preferences, "utf8"));
+    assert.deepEqual(preferences.dealBreakersSkip, { none: true });
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("deal breakers Skip marks Deal breakers done", () => {
+  const workspace = tempWorkspace();
+  try {
+    const result = saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+      dealBreakersChoice: "skip",
+    });
+    assert.equal(result.state.sections.dealBreakers, true);
+    const paths = workspacePaths(workspace);
+    const preferences = JSON.parse(fs.readFileSync(paths.preferences, "utf8"));
+    assert.deepEqual(preferences.dealBreakersSkip, { skipped: true });
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("untouched deal breakers field does not write a skip", () => {
+  const workspace = tempWorkspace();
+  try {
+    const result = saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+    });
+    assert.equal(result.state.sections.dealBreakers, false);
+    const paths = workspacePaths(workspace);
+    const preferences = JSON.parse(fs.readFileSync(paths.preferences, "utf8"));
+    assert.equal(preferences.dealBreakersSkip, undefined);
   } finally {
     fs.rmSync(workspace, { recursive: true, force: true });
   }

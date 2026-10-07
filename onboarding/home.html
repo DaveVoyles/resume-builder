@@ -229,7 +229,18 @@
       </div>
       <div class="field">
         <label for="extra">Anything else? <span class="muted">(optional)</span></label>
-        <textarea id="extra" name="extra" placeholder="Gaps in work, career change, things to avoid…"></textarea>
+        <textarea id="extra" name="extra" placeholder="Gaps in work, career change, other notes…"></textarea>
+      </div>
+      <div class="field">
+        <label for="dealBreakers">Deal breakers</label>
+        <p class="hint">Things you will not do. Or choose None or Skip. This is separate from Anything else.</p>
+        <textarea id="dealBreakers" name="dealBreakers" placeholder="No night shifts, no relocation…"></textarea>
+        <label for="dealBreakersChoice" class="hint" style="margin-top:.5rem">If you have none, or want to skip this:</label>
+        <select id="dealBreakersChoice" name="dealBreakersChoice">
+          <option value="">Leave unanswered</option>
+          <option value="none">None</option>
+          <option value="skip">Skip</option>
+        </select>
       </div>
       <div class="row">
         <button class="btn primary" type="submit">Save answers</button>
@@ -396,7 +407,9 @@
       goal:document.getElementById("goal").value,
       where:document.getElementById("where").value,
       when:document.getElementById("when").value,
-      extra:document.getElementById("extra").value
+      extra:document.getElementById("extra").value,
+      dealBreakers:document.getElementById("dealBreakers").value,
+      dealBreakersChoice:document.getElementById("dealBreakersChoice").value
     };
     fetch("/api/save-intake",{
       method:"POST",

@@ -23,6 +23,35 @@ function emptyPreferences() {
   };
 }
 
+function applyDealBreakers(preferences, answers) {
+  const text = trimmed(answers && answers.dealBreakers);
+  const choice = trimmed(answers && answers.dealBreakersChoice).toLowerCase();
+  if (text) {
+    delete preferences.dealBreakersSkip;
+    const existing = Array.isArray(preferences.dealBreakers) ? preferences.dealBreakers : [];
+    const already = existing.some((item) => trimmed(item && item.text) === text);
+    if (!already) {
+      preferences.dealBreakers = existing.concat([
+        {
+          id: `deal-${String(existing.length + 1).padStart(3, "0")}`,
+          text,
+          priority: "must",
+        },
+      ]);
+    }
+    return { dealBreakers: text, dealBreakersChoice: "" };
+  }
+  if (choice === "skip") {
+    preferences.dealBreakersSkip = { skipped: true };
+    return { dealBreakers: "", dealBreakersChoice: "skip" };
+  }
+  if (choice === "none") {
+    preferences.dealBreakersSkip = { none: true };
+    return { dealBreakers: "", dealBreakersChoice: "none" };
+  }
+  return { dealBreakers: "", dealBreakersChoice: "" };
+}
+
 function saveHomeAnswers(workspace, answers) {
   const goal = trimmed(answers && answers.goal);
   if (!goal) {
@@ -34,6 +63,8 @@ function saveHomeAnswers(workspace, answers) {
   ensureDir(workspace);
   const paths = workspacePaths(workspace);
   const savedAt = new Date().toISOString();
+  const preferences = readJson(paths.preferences, emptyPreferences());
+  const dealBreakersRecord = applyDealBreakers(preferences, answers);
   const payload = {
     name: trimmed(answers.name),
     location: trimmed(answers.location),
@@ -42,6 +73,8 @@ function saveHomeAnswers(workspace, answers) {
     where: trimmed(answers.where),
     when: trimmed(answers.when),
     extra: trimmed(answers.extra),
+    dealBreakers: dealBreakersRecord.dealBreakers,
+    dealBreakersChoice: dealBreakersRecord.dealBreakersChoice,
     savedAt,
   };
 
@@ -60,7 +93,6 @@ function saveHomeAnswers(workspace, answers) {
   profile.updatedAt = savedAt;
   writeJson(paths.profile, profile);
 
-  const preferences = readJson(paths.preferences, emptyPreferences());
   const hasTitles =
     Array.isArray(preferences.roleTargets) &&
     preferences.roleTargets.some((row) => Array.isArray(row.titles) && row.titles.some(trimmed));

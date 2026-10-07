@@ -7,7 +7,7 @@ const os = require("os");
 const path = require("path");
 const command = require("../../src/cli/commands/add-role");
 const { createDefaultProfile } = require("../../src/core/candidate-profile");
-const { defaultOnboardingState } = require("../../src/core/onboarding-state");
+const { defaultOnboardingState, isFirstRoleAddedDone, syncOnboardingState } = require("../../src/core/onboarding-state");
 const { ensureDir, readJson, workspacePaths, writeJson } = require("../../src/core/workspace");
 
 function withWorkspace(fn) {
@@ -34,7 +34,9 @@ test("add-role --tracked marks firstRoleAdded when a tracked role exists", () =>
       title: "Operations Manager",
     });
     const state = readJson(paths.onboardingState);
-    assert.equal(state.firstRoleAdded, true);
+    assert.equal(isFirstRoleAddedDone(state.firstRoleAdded), true);
+    assert.equal(state.firstRoleAdded.done, true);
+    assert.equal(typeof state.firstRoleAdded.at, "string");
     assert.equal(readJson(paths.rolesTracked).length, 1);
   });
 });
@@ -50,5 +52,21 @@ test("add-role without --tracked does not mark firstRoleAdded", () => {
     assert.equal(state.firstRoleAdded, false);
     assert.equal(readJson(paths.rolesSeed).length, 1);
     assert.equal(readJson(paths.rolesTracked).length, 0);
+  });
+});
+
+test("firstRoleAdded stays done after tracked roles are emptied and sync runs again", () => {
+  withWorkspace(({ workspace, paths }) => {
+    command.run({
+      workspace,
+      tracked: true,
+      company: "Example Corp",
+      title: "Operations Manager",
+    });
+    const originalAt = readJson(paths.onboardingState).firstRoleAdded.at;
+    writeJson(paths.rolesTracked, []);
+    const state = syncOnboardingState(workspace);
+    assert.equal(state.firstRoleAdded.done, true);
+    assert.equal(state.firstRoleAdded.at, originalAt);
   });
 });

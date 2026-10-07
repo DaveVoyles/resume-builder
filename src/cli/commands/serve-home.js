@@ -9,9 +9,9 @@ const { saveHomeAnswers } = require("../../core/home-answers");
 const {
   HOME_STEP_TO_TRACKER_STEPS,
   defaultOnboardingState,
-  deriveOnboardingState,
   homeStepsFromOnboarding,
   onboardingSteps,
+  syncOnboardingState,
 } = require("../../core/onboarding-state");
 
 const REPO_ROOT = path.resolve(__dirname, "../../..");
@@ -92,10 +92,11 @@ function resolveHomeWorkspace(root, options) {
 }
 
 function onboardingPayload(workspace) {
-  const state =
-    fs.existsSync(workspace) && (fs.existsSync(path.join(workspace, "profile.json")) || fs.existsSync(path.join(workspace, ".onboarding-state.json")))
-      ? deriveOnboardingState(workspace)
-      : defaultOnboardingState();
+  const hasWorkspace =
+    fs.existsSync(workspace) &&
+    (fs.existsSync(path.join(workspace, "profile.json")) ||
+      fs.existsSync(path.join(workspace, ".onboarding-state.json")));
+  const state = hasWorkspace ? syncOnboardingState(workspace) : defaultOnboardingState();
   return {
     state,
     trackerSteps: onboardingSteps(state),

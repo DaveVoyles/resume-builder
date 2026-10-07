@@ -2,7 +2,7 @@
 
 const { test, describe } = require("node:test");
 const assert = require("node:assert/strict");
-const { validateEvidence, validateOnboardingState } = require("../../src/core/schemas");
+const { validateEvidence, validateOnboardingState, validateProfile } = require("../../src/core/schemas");
 const { defaultOnboardingState } = require("../../src/core/onboarding-state");
 
 // ---------------------------------------------------------------------------
@@ -88,6 +88,20 @@ describe("validateOnboardingState", () => {
     assert.deepEqual(validateOnboardingState(state), []);
   });
 
+  test("passes firstRoleAdded object form and firstDraftReady boolean", () => {
+    const state = defaultOnboardingState();
+    state.firstRoleAdded = { done: true, at: "2026-10-07T12:00:00.000Z" };
+    state.firstDraftReady = true;
+    assert.deepEqual(validateOnboardingState(state), []);
+  });
+
+  test("flags firstRoleAdded object done without at", () => {
+    const state = defaultOnboardingState();
+    state.firstRoleAdded = { done: true };
+    const errors = validateOnboardingState(state);
+    assert.ok(errors.some((e) => /firstRoleAdded\.at/.test(e)));
+  });
+
   test("flags a missing top-level boolean field", () => {
     const state = defaultOnboardingState();
     delete state.materialIngested;
@@ -119,5 +133,20 @@ describe("validateOnboardingState", () => {
     state.schemaVersion = "2.0";
     const errors = validateOnboardingState(state);
     assert.ok(errors.some((e) => /schemaVersion: must be "1\.0"/.test(e)));
+  });
+});
+
+describe("validateProfile educationSkip", () => {
+  test("accepts educationSkip skipped true with an education array", () => {
+    const profile = {
+      candidate: { links: [] },
+      skills: [],
+      experience: [],
+      projects: [],
+      education: [],
+      sources: [],
+      educationSkip: { skipped: true },
+    };
+    assert.deepEqual(validateProfile(profile), []);
   });
 });

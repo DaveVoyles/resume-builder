@@ -44,7 +44,7 @@ Home and the tracker share `candidate/.onboarding-state.json`. After you write a
 npm run workspace:tracker:html -- --workspace candidate
 ```
 
-`npm run setup` creates the file with every step pending except `setupComplete`. An empty `dealBreakers` array from setup is not done. Missing compensation is not done.
+`npm run setup` creates the file with every step pending except `setupComplete`. An empty `dealBreakers` array from setup is not done. Missing compensation is not done. An explicit skip the person chose is done. Write the skip shapes below. Never invent a skip. Never default one in setup, templates, or home Save when the person left the field untouched.
 
 See the home-to-tracker mapping in [`onboarding.md`](onboarding.md).
 
@@ -219,7 +219,7 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
 
 **Repeat** for each additional degree or credential the candidate wants included.
 
-**Mark progress:** after education is in `candidate/profile.json`, run `npm run workspace:tracker:html -- --workspace candidate`. The tracker marks Education done only if that data exists.
+**Mark progress:** after education is in `candidate/profile.json`, run `npm run workspace:tracker:html -- --workspace candidate`. The tracker marks Education done only if that data exists, or if the person skipped. If they skip, leave `education` as an array (empty is fine) and write `"educationSkip": { "skipped": true }` on `profile.json`. Do not invent schools or degrees. Do not write `educationSkip` unless they said skip.
 
 ---
 
@@ -326,7 +326,7 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
 
 **Example:** If the candidate says "$300k total is my ideal, and I'm flexible on how base, bonus, and equity mix — but I wouldn't go below $250k total," that's a total-comp floor, not a base floor. Write `totalTarget: 300000` and `totalMinimum: 250000`, and omit `baseMinimum` rather than repurposing it to hold the $250k figure.
 
-**Mark progress:** after compensation is in `candidate/preferences.json`, run `npm run workspace:tracker:html -- --workspace candidate`. The tracker marks Salary and compensation done only if that data exists.
+**Mark progress:** after compensation is in `candidate/preferences.json`, run `npm run workspace:tracker:html -- --workspace candidate`. The tracker marks Salary and compensation done only if that data exists, or if the person skipped. If they skip, write `"compensation": { "skipped": true }`. Do not write that object unless they said skip. An absent `compensation` object is not done.
 
 ---
 
@@ -353,7 +353,7 @@ Mirrors [`intake.md`](../../templates/candidate-intake.md)'s "👤 Basic informa
   - `text`: The deal breaker condition
   - `priority`: `"must"`
 
-**Mark progress:** after deal breakers are in `candidate/preferences.json`, run `npm run workspace:tracker:html -- --workspace candidate`. The tracker marks Constraints and deal breakers done only if that data exists. An empty array from setup is not enough.
+**Mark progress:** after deal breakers are in `candidate/preferences.json`, run `npm run workspace:tracker:html -- --workspace candidate`. The tracker marks Constraints and deal breakers done only if that data exists. An empty array from setup is not enough. If they skip, write `"dealBreakersSkip": { "skipped": true }`. If they say they have none, write `"dealBreakersSkip": { "none": true }`. Do not write either marker unless they said skip or none. Home "Anything else" (`extra`) is not a deal breaker.
 
 ---
 

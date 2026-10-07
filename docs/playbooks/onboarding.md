@@ -17,18 +17,18 @@ Work through these four checks, in order. The first one that's true tells you wh
 
 `candidate/.onboarding-state.json` is the one progress record home and the tracker both read. `src/core/onboarding-state.js` derives each step from workspace files. `materialIngested` tracks check 3. The seven `sections` track grill intake. The tracker shows this list while onboarding is incomplete, then a "✓ Onboarding complete" pill once every step is done. If the file is missing (older workspaces), use the checks below.
 
-Home still shows six steps. Those map onto the ten tracker steps through `HOME_STEP_TO_TRACKER_STEPS` in `src/core/onboarding-state.js`. A home step is done only when every mapped tracker step is done.
+Home still shows six steps. Those map through `HOME_STEP_TO_TRACKER_STEPS` in `src/core/onboarding-state.js`. A home step is done only when every mapped key is done, except Download RB and Start RB, which are done as soon as the home page is served.
 
 | Home step | Tracker step(s) |
 | --- | --- |
-| Download RB | Workspace created (`setupComplete`) |
-| Start RB and open this page | Workspace created (`setupComplete`) |
+| Download RB | none. Done when the home page loads. The running server is the proof. Not a tracker step. |
+| Start RB and open this page | none. Done when the home page loads. Not a tracker step. |
 | Add your files to `my-documents` | Your resumes and notes are read in (`materialIngested`) |
 | Answer a few questions | Basic information (`basicInfo`) and Target role (`targetRole`) |
-| Get your first draft | none. Typed answers are not a draft. This home step stays pending until a real resume is built from ingested files, and it has no tracker checkbox. |
+| Get your first draft | `firstDraftReady` (home-only). Ticks when `candidate/outputs/resumes` has at least one real resume file. Dotfiles and README placeholders do not count. Not a tracker checkbox. |
 | Add jobs you want | First role added (`firstRoleAdded`) |
 
-The other grill sections (work history, education, location, compensation, deal breakers) appear only on the tracker. They turn done when those files contain that data.
+The other grill sections (work history, education, location, compensation, deal breakers) appear only on the tracker. They turn done when those files contain that data, or when the person recorded an explicit skip.
 
 ### 1. Does the workspace exist?
 
