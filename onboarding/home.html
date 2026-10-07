@@ -77,6 +77,8 @@
   .hint{font-size:.88rem;color:var(--slate-2);margin:.15rem 0 .4rem}
   input,select,textarea{width:100%;font:inherit;padding:.65rem .75rem;border:1px solid #94a3b8;border-radius:8px;background:#fff;color:#0f172a}
   textarea{min-height:110px;resize:vertical}
+  .filled{background:#f0fdf4;border-color:#22c55e}
+  .agentnote{font-size:.82rem;color:var(--ok);font-weight:600}
   .progress{height:8px;background:var(--mute-bg);border-radius:999px;overflow:hidden;margin:.5rem 0 1.25rem}
   .progress span{display:block;height:100%;width:40%;background:var(--accent)}
   details.faq{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:0 1.25rem;margin-bottom:.75rem}
@@ -180,20 +182,24 @@
     <p class="reqnote"><span class="req" aria-hidden="true">*</span> = required. Only your goal is required. Everything else is optional.</p>
     <p class="form-error" id="formError" hidden></p>
     <form id="intakeForm">
+      <!-- Agent pre-fill: add class="filled" on the input/textarea, unhide the .agentnote sibling, set its text (example: ✓ Filled by agent from sample-resume.txt). -->
       <div class="grid g-2" style="grid-template-columns:1fr 1fr">
         <div class="field">
           <label for="name">Your name</label>
           <input id="name" name="name" autocomplete="name">
+          <div class="agentnote" hidden></div>
         </div>
         <div class="field">
           <label for="loc">Where do you live?</label>
           <input id="loc" name="location" autocomplete="address-level2">
+          <div class="agentnote" hidden></div>
         </div>
       </div>
       <div class="field">
         <label for="hist">Your work history</label>
         <p class="hint">Jobs you've had, newest first. Rough is fine.</p>
         <textarea id="hist" name="history"></textarea>
+        <div class="agentnote" hidden></div>
       </div>
       <div class="field">
         <label for="goal">What kind of job do you want next? <span class="req" aria-hidden="true">*</span> <span class="tag" style="background:var(--bad-bg);color:var(--bad)">Required</span></label>
@@ -227,14 +233,13 @@
       </div>
       <div class="row">
         <button class="btn primary" type="submit">Save answers</button>
-        <button class="btn ghost" type="submit">Save and finish later</button>
       </div>
     </form>
   </div>
 
   <div class="card success" id="saved" hidden tabindex="-1" role="status" style="margin-top:1.25rem">
     <h2>✓ Saved. Your first draft is ready.</h2>
-    <p>Your answers are saved on this computer. Your agent used them and your files to write your first resume.</p>
+    <p>Your answers are saved on this computer. RB wrote a first draft from those answers only. It did not read files in my-documents.</p>
     <p class="hint">This first version writes a <strong>text stub</strong>, not a Word file yet.</p>
     <p style="margin:.75rem 0 .25rem"><strong>Your first draft:</strong></p>
     <span class="path" id="draftPath">resume-builder / output / resume-draft-1.txt</span>

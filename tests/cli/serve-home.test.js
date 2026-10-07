@@ -85,6 +85,29 @@ test("serve-home serves the three-tab dashboard at / with Introduction selected"
   }
 });
 
+test("serve-home intake copy is answers-only and keeps agent fill cues", async () => {
+  const tmpDir = createHomeRoot();
+  const server = await run({ root: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    const response = await get(port, "/");
+    assert.equal(response.status, 200);
+    assert.match(response.body, /Save answers/);
+    assert.doesNotMatch(response.body, /Save and finish later/);
+    assert.doesNotMatch(response.body, /used them and your files/);
+    assert.match(response.body, /from those answers only/);
+    assert.match(response.body, /did not read files in my-documents/);
+    assert.match(response.body, /text stub/);
+    assert.match(response.body, /\.filled\{background:#f0fdf4;border-color:#22c55e\}/);
+    assert.match(response.body, /\.agentnote\{font-size:\.82rem;color:var\(--ok\);font-weight:600\}/);
+    assert.match(response.body, /class="agentnote" hidden/);
+    assert.doesNotMatch(response.body, /value="Jordan Sample"/);
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
 test("serve-home lists sample files and serves them from my-documents", async () => {
   const tmpDir = createHomeRoot();
   const server = await run({ root: tmpDir, port: 0, noOpen: true });
