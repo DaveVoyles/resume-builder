@@ -53,6 +53,7 @@ Use these conventions across all workspace files:
 | `summary` | string | Candidate-approved summary paragraph. |
 | `workAuthorization` | object | Countries and sponsorship requirements. |
 | `education` | array | Education entries. |
+| `educationSkip` | object | `{ "skipped": true }` when the person skipped education. Leave `education` as an array. Do not write this unless they said skip. |
 | `certifications` | array | Certification entries. |
 | `projects` | array | Portfolio or public-work entries. |
 | `languages` | array | Spoken or written languages. |
@@ -126,7 +127,7 @@ Use these conventions across all workspace files:
 | `schemaVersion` | string | Must be `"1.0"`. |
 | `roleTargets` | array | Desired titles, seniority, and employment types. |
 | `locations` | object | Location and work-mode preferences. |
-| `dealBreakers` | array | Conditions that should exclude a role. |
+| `dealBreakers` | array | Conditions that should exclude a role. An empty array from setup is not a skip. |
 
 ### Useful enum values
 
@@ -155,6 +156,7 @@ Use these conventions across all workspace files:
 | `companyStages` | array | Startup, growth, enterprise, nonprofit, or public-sector preferences. |
 | `technologies` | array | Technologies to highlight or avoid. |
 | `compensation` | object | Candidate-provided range and currency — see [`compensation` fields](#compensation-fields) below. |
+| `dealBreakersSkip` | object | `{ "skipped": true }` when the person skipped this question, or `{ "none": true }` when they said they have none. Do not write either unless they said so. |
 | `availability` | object | Start date, notice period, and interview windows. |
 | `resumeStyle` | object | Tone, length, and emphasis preferences. |
 | `stalenessThresholds` | object | Overrides the tracker's per-status-bucket stale-flag day thresholds (see [Staleness computation](#staleness-computation) under `roles.tracked.json`). Any subset of `not-applied`, `applied`, `interview`, `offer`, `other`; omitted keys keep the built-in default. |
@@ -169,6 +171,7 @@ Use these conventions across all workspace files:
 | `totalMinimum` | number | Minimum acceptable **total compensation** (base + bonus + equity). Use this instead of `baseMinimum` when the candidate frames their floor in total-comp terms rather than base-only terms — don't misuse `baseMinimum` as a stand-in for a total-comp floor. |
 | `totalTarget` | number | Target total compensation, or omit if not discussed. |
 | `publiclyShare` | boolean | Whether the candidate allows this range to be shared publicly. |
+| `skipped` | boolean | `true` when the person skipped pay. Write `{ "skipped": true }` and omit the number fields. Do not write this unless they said skip. An absent `compensation` object is not a skip. |
 
 ### Example
 
@@ -279,7 +282,7 @@ The validator flags evidence before output when:
 
 ## `.onboarding-state.json`
 
-`.onboarding-state.json` tracks onboarding progress as an explicit marker file (design plan 0006 D1) rather than inferring it from `profile.json`/`preferences.json`'s own shape — `compensation` is an optional `preferences.json` field, and an empty `dealBreakers` array is a valid *complete* answer ("no deal breakers"), not "not asked yet," so data shape alone can't tell those apart. `npm run setup` creates it with every step pending except `setupComplete`; [`grill.md`](playbooks/grill.md) flips each `sections.<name>` key as its section is confirmed; `ingest` flips `materialIngested`; `tailor` flips `firstRoleAdded` once the first role is tracked. `build-tracker`/`init` pass it to the HTML tracker renderer (design plan 0006 D5), which shows it as a visual checklist in place of the roles table while onboarding is incomplete, collapsing to a small completion pill once it's done. It's optional — a workspace created before this feature existed validates fine without it.
+`.onboarding-state.json` is the one progress record home and the tracker both read. `src/core/onboarding-state.js` derives each flag from workspace files, then writes this file. `materialIngested` is true when `profile.json` has sources or `evidence.jsonl` has entries. Each `sections` key is true only when that grill section's data exists in `profile.json`, `preferences.json`, or `home-answers.json`, or when the person recorded an explicit skip. `firstRoleAdded` becomes `{ "done": true, "at": "<ISO timestamp>" }` the first time a role lands in `roles.tracked.json`. That record is sticky: emptying the tracked list later does not unset it, and later writes keep the original `at`. Old files with `firstRoleAdded: true` still count as done; the next write upgrades them to the object form and sets `at` then. `firstDraftReady` is true when `candidate/outputs/resumes` has at least one real resume file (dotfiles and README placeholders do not count). It is home-only. It is not a tracker step. The tracker stays at 10 steps. `npm run setup` creates the file with every step pending except `setupComplete`. `ingest`, `add-role --tracked`, home Save, and `build-tracker` refresh it. Home maps its six steps through `HOME_STEP_TO_TRACKER_STEPS` (see [`playbooks/onboarding.md`](playbooks/onboarding.md)). Download RB and Start RB are not tracker steps. They are done when the home page is served.
 
 ### Required fields
 
@@ -289,7 +292,13 @@ The validator flags evidence before output when:
 | `setupComplete` | boolean | Always `true` from the moment `npm run setup` creates the file. |
 | `materialIngested` | boolean | Set once `ingest` runs with at least one real source. |
 | `sections` | object | One boolean per `grill.md` section — see below. |
-| `firstRoleAdded` | boolean | Set once the first role lands in `roles.tracked.json`. |
+| `firstRoleAdded` | boolean or object | `false` until a role is tracked. Then `{ "done": true, "at": "<ISO timestamp>" }`. Legacy `true` still means done. |
+
+### Optional fields
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `firstDraftReady` | boolean | Home-only. True when `outputs/resumes` has a real resume file. Missing on old files means false. |
 
 ### `sections` fields
 
@@ -297,11 +306,11 @@ The validator flags evidence before output when:
 | --- | --- | --- |
 | `basicInfo` | boolean | grill.md Section 1: Basic information. |
 | `workHistory` | boolean | grill.md Section 2: Work history. |
-| `education` | boolean | grill.md Section 3: Education. |
+| `education` | boolean | grill.md Section 3: Education, or `educationSkip.skipped`. |
 | `targetRole` | boolean | grill.md Section 4: Target role. |
 | `location` | boolean | grill.md Section 5: Location and work mode. |
-| `compensation` | boolean | grill.md Section 6: Salary and compensation. |
-| `dealBreakers` | boolean | grill.md Section 7: Constraints and deal breakers. |
+| `compensation` | boolean | grill.md Section 6: Salary and compensation, or `compensation.skipped`. |
+| `dealBreakers` | boolean | grill.md Section 7: Constraints and deal breakers, or `dealBreakersSkip`. |
 
 ### Example
 
@@ -319,7 +328,8 @@ The validator flags evidence before output when:
     "compensation": false,
     "dealBreakers": false
   },
-  "firstRoleAdded": false
+  "firstRoleAdded": false,
+  "firstDraftReady": false
 }
 ```
 
@@ -328,7 +338,9 @@ The validator flags evidence before output when:
 The validator flags the onboarding state, when present, before output when:
 
 - The entry is not an object.
-- `setupComplete`, `materialIngested`, or `firstRoleAdded` is missing or not a boolean.
+- `setupComplete` or `materialIngested` is missing or not a boolean.
+- `firstRoleAdded` is missing, not a boolean, and not `{ "done": boolean, "at": string }`.
+- `firstDraftReady` is present and not a boolean.
 - `sections` is missing, not an object, or any of its 7 keys is missing or not a boolean.
 
 ## `feedback.jsonl`

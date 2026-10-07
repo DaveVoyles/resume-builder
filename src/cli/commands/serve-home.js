@@ -5,7 +5,14 @@ const fs = require("fs");
 const path = require("path");
 const { execFile } = require("child_process");
 const { openInBrowser, resolvePort, DEFAULT_PORT, CONTENT_TYPES } = require("./serve");
-const { DRAFT_FILENAME, writeFirstDraft } = require("../../core/first-draft");
+const { saveHomeAnswers } = require("../../core/home-answers");
+const {
+  HOME_STEP_TO_TRACKER_STEPS,
+  defaultOnboardingState,
+  homeStepsFromOnboarding,
+  onboardingSteps,
+  syncOnboardingState,
+} = require("../../core/onboarding-state");
 
 const REPO_ROOT = path.resolve(__dirname, "../../..");
 const HOME_PAGE = path.join(REPO_ROOT, "onboarding", "home.html");
@@ -80,12 +87,31 @@ function listFiles(dir) {
     .sort();
 }
 
+function resolveHomeWorkspace(root, options) {
+  return path.resolve(root, options.workspace || "candidate");
+}
+
+function onboardingPayload(workspace) {
+  const hasWorkspace =
+    fs.existsSync(workspace) &&
+    (fs.existsSync(path.join(workspace, "profile.json")) ||
+      fs.existsSync(path.join(workspace, ".onboarding-state.json")));
+  const state = hasWorkspace ? syncOnboardingState(workspace) : defaultOnboardingState();
+  return {
+    state,
+    trackerSteps: onboardingSteps(state),
+    homeSteps: homeStepsFromOnboarding(state),
+    mapping: HOME_STEP_TO_TRACKER_STEPS,
+  };
+}
+
 async function run(options, { openFolder = defaultOpenFolder, openHome = openInBrowser } = {}) {
   if (!fs.existsSync(HOME_PAGE)) {
     throw new Error(`Onboarding home page not found at ${HOME_PAGE}`);
   }
 
   const root = path.resolve(options.root || REPO_ROOT);
+  const workspace = resolveHomeWorkspace(root, options);
   const documentsDir = path.join(root, "my-documents");
   const outputDir = path.join(root, "output");
   fs.mkdirSync(documentsDir, { recursive: true });
@@ -104,6 +130,11 @@ async function run(options, { openFolder = defaultOpenFolder, openHome = openInB
 
     if (method === "GET" && requestedPath === "/api/documents") {
       sendJson(res, 200, { files: listFiles(documentsDir) });
+      return;
+    }
+
+    if (method === "GET" && requestedPath === "/api/onboarding-state") {
+      sendJson(res, 200, onboardingPayload(workspace));
       return;
     }
 
@@ -151,12 +182,16 @@ async function run(options, { openFolder = defaultOpenFolder, openHome = openInB
             return;
           }
           try {
-            const draft = writeFirstDraft({ outputDir, answers });
+            const saved = saveHomeAnswers(workspace, answers);
+            const payload = onboardingPayload(workspace);
             sendJson(res, 200, {
-              filename: draft.filename,
-              displayPath: `resume-builder / output / ${draft.filename}`,
-              url: `/output/${draft.filename}`,
-              stub: true,
+              message: saved.message,
+              filename: saved.filename,
+              displayPath: saved.displayPath,
+              state: payload.state,
+              homeSteps: payload.homeSteps,
+              trackerSteps: payload.trackerSteps,
+              mapping: payload.mapping,
             });
           } catch (error) {
             if (error.code === "GOAL_REQUIRED") {
@@ -230,7 +265,6 @@ module.exports = {
   homeUrl,
   resolveUnder,
   DEFAULT_PORT,
-  DRAFT_FILENAME,
   HOME_PAGE,
   REPO_ROOT,
 };

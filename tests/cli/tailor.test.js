@@ -681,7 +681,8 @@ test("tailor marks onboarding-state.firstRoleAdded true after the first tracked 
     });
 
     const state = readJson(paths.onboardingState);
-    assert.strictEqual(state.firstRoleAdded, true);
+    assert.equal(state.firstRoleAdded.done, true);
+    assert.equal(typeof state.firstRoleAdded.at, "string");
   });
 });
 
@@ -709,6 +710,7 @@ test("tailor does not touch onboarding-state on a second tracked role (already t
     const roles = readJson(paths.rolesTracked);
     assert.strictEqual(roles.length, 2, "sanity check: a second distinct role was actually tracked");
     const state = readJson(paths.onboardingState);
-    assert.strictEqual(state.firstRoleAdded, true, "still true after a second role — never reset");
+    assert.equal(state.firstRoleAdded.done, true, "still true after a second role — never reset");
+    assert.equal(typeof state.firstRoleAdded.at, "string");
   });
 });

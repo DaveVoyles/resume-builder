@@ -158,13 +158,13 @@
     <div class="card">
       <h2>Your steps</h2>
       <p class="muted">Tags show who does each step: <span class="who agent">Agent</span> or <span class="who you">You</span>.</p>
-      <ol class="steps">
-        <li class="done"><div><strong>Download RB</strong> <span class="who agent">Agent</span><br><span class="muted">Done. RB is now on your computer.</span></div></li>
-        <li class="done"><div><strong>Start RB and open this page</strong> <span class="who agent">Agent</span><br><span class="muted">Done. You're looking at it.</span></div></li>
-        <li><div><strong>Add your files to <code>my-documents</code></strong> <span class="who you">You</span><br><span class="muted">Drag old resumes and notes into <code>my-documents</code> at the top of the resume-builder folder. If Open folder fails, open <code>my-documents</code> yourself. Your agent copies them into <code>candidate/inputs/resumes</code> and <code>candidate/inputs/notes</code> and reads them.</span></div></li>
-        <li><div><strong>Answer a few questions</strong> <span class="who you">You</span> <span class="who agent">Agent</span><br><span class="muted">The agent fills in what it can. You check it and click Save.</span></div></li>
-        <li><div><strong>Get your first draft</strong> <span class="who agent">Agent</span><br><span class="muted">A new resume, ready for you to read and tweak.</span></div></li>
-        <li><div><strong>Add jobs you want</strong> <span class="who you">You</span><br><span class="muted">Tell your agent about a job. Paste the posting link in chat. This Jobs tab does not add jobs from the page.</span></div></li>
+      <ol class="steps" data-home-checklist>
+        <li data-home-step="downloadRb" class="done"><div><strong>Download RB</strong> <span class="who agent">Agent</span><br><span class="muted">Done. RB is now on your computer.</span></div></li>
+        <li data-home-step="startRb" class="done"><div><strong>Start RB and open this page</strong> <span class="who agent">Agent</span><br><span class="muted">Done. You're looking at it.</span></div></li>
+        <li data-home-step="addFiles"><div><strong>Add your files to <code>my-documents</code></strong> <span class="who you">You</span><br><span class="muted">Drag old resumes and notes into <code>my-documents</code> at the top of the resume-builder folder. If Open folder fails, open <code>my-documents</code> yourself. Your agent copies them into <code>candidate/inputs/resumes</code> and <code>candidate/inputs/notes</code> and reads them.</span></div></li>
+        <li data-home-step="answerQuestions"><div><strong>Answer a few questions</strong> <span class="who you">You</span> <span class="who agent">Agent</span><br><span class="muted">The agent fills in what it can. You check it and click Save.</span></div></li>
+        <li data-home-step="firstDraft"><div><strong>Get your first draft</strong> <span class="who agent">Agent</span><br><span class="muted">A new resume, after your files in my-documents are read in. Saving answers here is not a draft.</span></div></li>
+        <li data-home-step="addJobs"><div><strong>Add jobs you want</strong> <span class="who you">You</span><br><span class="muted">Tell your agent about a job. Paste the posting link in chat. This Jobs tab does not add jobs from the page.</span></div></li>
       </ol>
     </div>
     <div class="card">
@@ -229,7 +229,18 @@
       </div>
       <div class="field">
         <label for="extra">Anything else? <span class="muted">(optional)</span></label>
-        <textarea id="extra" name="extra" placeholder="Gaps in work, career change, things to avoid…"></textarea>
+        <textarea id="extra" name="extra" placeholder="Gaps in work, career change, other notes…"></textarea>
+      </div>
+      <div class="field">
+        <label for="dealBreakers">Deal breakers</label>
+        <p class="hint">Things you will not do. Or choose None or Skip. This is separate from Anything else.</p>
+        <textarea id="dealBreakers" name="dealBreakers" placeholder="No night shifts, no relocation…"></textarea>
+        <label for="dealBreakersChoice" class="hint" style="margin-top:.5rem">If you have none, or want to skip this:</label>
+        <select id="dealBreakersChoice" name="dealBreakersChoice">
+          <option value="">Leave unanswered</option>
+          <option value="none">None</option>
+          <option value="skip">Skip</option>
+        </select>
       </div>
       <div class="row">
         <button class="btn primary" type="submit">Save answers</button>
@@ -238,20 +249,14 @@
   </div>
 
   <div class="card success" id="saved" hidden tabindex="-1" role="status" style="margin-top:1.25rem">
-    <h2>✓ Saved. Your first draft is ready.</h2>
-    <p>Your answers are saved on this computer. RB wrote a first draft from those answers only. It did not read files in my-documents.</p>
-    <p class="hint">This first version writes a <strong>text stub</strong>, not a Word file yet.</p>
-    <p style="margin:.75rem 0 .25rem"><strong>Your first draft:</strong></p>
-    <span class="path" id="draftPath">resume-builder / output / resume-draft-1.txt</span>
-    <p class="hint">It is in the <strong>output</strong> folder, next to my-documents. You can open the text file now. A later version will write a Word file.</p>
+    <h2 id="savedHeading">Answers saved.</h2>
+    <p id="savedMessage">Your answers are saved on this computer.</p>
+    <p class="hint">This is not a resume draft. A draft comes later, after files in my-documents are read in.</p>
     <ol class="steps" style="margin:1rem 0">
       <li class="done"><div><strong>Answers saved</strong></div></li>
-      <li class="done"><div><strong>First draft written</strong> <span class="who agent">Agent</span></div></li>
-      <li><div><strong>Read your draft</strong> <span class="who you">You</span><br><span class="muted">Ask your agent for changes in plain words, like "make it one page."</span></div></li>
       <li><div><strong>Add a job you want</strong> <span class="who you">You</span><br><span class="muted">Tell your agent the posting link in chat. The agent tracks it. This Jobs tab does not add jobs from the page.</span></div></li>
     </ol>
     <div class="row">
-      <a class="btn primary" id="openDraft" href="/output/resume-draft-1.txt">Open my draft</a>
       <button class="btn ghost" type="button" data-goto="jobs">Go to Jobs →</button>
       <button class="btn ghost" type="button" id="editAnswers">Edit my answers</button>
     </div>
@@ -338,6 +343,24 @@
     });
   }
 
+  function applyHomeSteps(homeSteps){
+    if(!homeSteps) return;
+    homeSteps.forEach(function(step){
+      var li=document.querySelector('[data-home-checklist] [data-home-step="'+step.key+'"]');
+      if(li) li.classList.toggle("done", Boolean(step.done));
+    });
+    var done=homeSteps.filter(function(step){return step.done;}).length;
+    var bar=document.querySelector(".progress span");
+    if(bar && homeSteps.length){
+      bar.style.width=Math.round((done/homeSteps.length)*100)+"%";
+    }
+  }
+
+  fetch("/api/onboarding-state").then(function(r){return r.json();}).then(function(data){
+    applyHomeSteps(data.homeSteps);
+  }).catch(function(){});
+
+
   fetch("/api/documents").then(function(r){return r.json();}).then(function(data){
     var ul=document.getElementById("docFiles");
     if(!ul || !data.files || !data.files.length) return;
@@ -384,7 +407,9 @@
       goal:document.getElementById("goal").value,
       where:document.getElementById("where").value,
       when:document.getElementById("when").value,
-      extra:document.getElementById("extra").value
+      extra:document.getElementById("extra").value,
+      dealBreakers:document.getElementById("dealBreakers").value,
+      dealBreakersChoice:document.getElementById("dealBreakersChoice").value
     };
     fetch("/api/save-intake",{
       method:"POST",
@@ -400,8 +425,8 @@
       }
       setup.hidden=true;
       saved.hidden=false;
-      document.getElementById("draftPath").textContent=result.body.displayPath;
-      document.getElementById("openDraft").setAttribute("href",result.body.url);
+      document.getElementById("savedHeading").textContent=result.body.message || "Answers saved.";
+      applyHomeSteps(result.body.homeSteps);
       saved.scrollIntoView({behavior:"smooth"});
       saved.focus({preventScroll:true});
     }).catch(function(){

@@ -37,9 +37,11 @@ test("build-tracker renders the normal dashboard when .onboarding-state.json is 
 
 test("build-tracker shows the checklist when .onboarding-state.json is present and incomplete", () => {
   withTempWorkspace(({ workspace, paths }) => {
-    const state = defaultOnboardingState();
-    state.materialIngested = true;
-    writeJson(paths.onboardingState, state);
+    writeJson(paths.profile, {
+      candidate: {},
+      sources: [{ id: "src-001", kind: "resume", path: "inputs/resumes/sample.md" }],
+    });
+    writeJson(paths.onboardingState, defaultOnboardingState());
 
     command.run({ workspace, format: "html" });
     const html = fs.readFileSync(paths.htmlTracker, "utf8");
@@ -48,13 +50,22 @@ test("build-tracker shows the checklist when .onboarding-state.json is present a
   });
 });
 
-test("build-tracker shows the completion pill once .onboarding-state.json reports every step done", () => {
+test("build-tracker shows the completion pill once workspace files cover every step", () => {
   withTempWorkspace(({ workspace, paths }) => {
-    const state = defaultOnboardingState();
-    state.materialIngested = true;
-    state.firstRoleAdded = true;
-    Object.keys(state.sections).forEach((key) => { state.sections[key] = true; });
-    writeJson(paths.onboardingState, state);
+    writeJson(paths.profile, {
+      candidate: { preferredName: "Jordan Sample" },
+      experience: [{ organization: "Example Corp", title: "Analyst" }],
+      education: [{ institution: "Example University", degree: "BA" }],
+      sources: [{ id: "src-001", kind: "resume", path: "inputs/resumes/sample.md" }],
+    });
+    writeJson(paths.preferences, {
+      roleTargets: [{ titles: ["Operations manager"] }],
+      locations: { workModes: ["remote"], preferredRegions: [], excludedRegions: [] },
+      compensation: { baseMinimum: 80000 },
+      dealBreakers: [{ id: "deal-001", text: "No unpaid overtime" }],
+    });
+    writeJson(paths.rolesTracked, [{ id: "role-001", company: "Example Corp", title: "Analyst" }]);
+    writeJson(paths.onboardingState, defaultOnboardingState());
 
     command.run({ workspace, format: "html" });
     const html = fs.readFileSync(paths.htmlTracker, "utf8");

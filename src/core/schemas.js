@@ -43,6 +43,12 @@ function validateProfile(profile) {
     const value = field === "links" ? profile.candidate?.links : profile[field];
     requireArray(value, field === "links" ? "profile.candidate.links" : `profile.${field}`, errors);
   });
+  if (profile.educationSkip !== undefined) {
+    const skip = profile.educationSkip;
+    if (!skip || typeof skip !== "object" || Array.isArray(skip) || typeof skip.skipped !== "boolean") {
+      errors.push("profile.educationSkip must be an object with boolean skipped");
+    }
+  }
   return errors;
 }
 
@@ -147,6 +153,22 @@ function validateFeedback(entries) {
   return errors;
 }
 
+function requireFirstRoleAdded(value, label, errors) {
+  if (typeof value === "boolean") return true;
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    if (typeof value.done !== "boolean") {
+      errors.push(`${label}.done must be a boolean`);
+      return false;
+    }
+    if (value.done === true && (typeof value.at !== "string" || value.at.trim() === "")) {
+      errors.push(`${label}.at must be an ISO timestamp when done is true`);
+    }
+    return true;
+  }
+  errors.push(`${label} must be a boolean or { "done": boolean, "at": string }`);
+  return false;
+}
+
 function validateOnboardingState(state) {
   const errors = [];
   if (!requireObject(state, "onboarding-state", errors)) return errors;
@@ -155,7 +177,10 @@ function validateOnboardingState(state) {
   }
   requireBoolean(state.setupComplete, "onboarding-state.setupComplete", errors);
   requireBoolean(state.materialIngested, "onboarding-state.materialIngested", errors);
-  requireBoolean(state.firstRoleAdded, "onboarding-state.firstRoleAdded", errors);
+  requireFirstRoleAdded(state.firstRoleAdded, "onboarding-state.firstRoleAdded", errors);
+  if (state.firstDraftReady !== undefined) {
+    requireBoolean(state.firstDraftReady, "onboarding-state.firstDraftReady", errors);
+  }
   if (requireObject(state.sections, "onboarding-state.sections", errors)) {
     SECTIONS.forEach(({ key }) => {
       requireBoolean(state.sections[key], `onboarding-state.sections.${key}`, errors);

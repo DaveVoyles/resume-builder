@@ -1,13 +1,20 @@
 "use strict";
 
-// Onboarding progress is tracked via an explicit marker file rather than
-// inferred from profile.json/preferences.json's own shape — compensation is
-// an optional preferences field, and an empty dealBreakers array is a valid
-// *complete* answer ("no deal breakers"), not "not asked yet." Inferring
-// completion from data shape alone can't tell those apart; an explicit
-// per-section flag can. See design plan 0006 D1 for the full rationale.
+// Onboarding progress is one record: candidate/.onboarding-state.json.
+// Home and the tracker both read it through this module.
+//
+// Done-ness is derived from workspace files, then written back. A section is
+// done only when its data exists, including an explicit skip the person
+// recorded. Empty dealBreakers from init and an absent compensation object
+// are not "done." See deriveOnboardingState().
 
-const { readJson, writeJson } = require("./workspace");
+const fs = require("fs");
+const path = require("path");
+const { readJson, writeJson, workspacePaths } = require("./workspace");
+
+const HOME_ANSWERS_FILENAME = "home-answers.json";
+
+const PLACEHOLDER_RESUME_NAMES = new Set(["readme", "readme.md", "readme.txt", "gitkeep"]);
 
 // Ordered to match grill.md's own section numbers (1-7) — every renderer
 // that walks this list produces a checklist in the interview's real order.
@@ -65,6 +72,33 @@ const FINAL_STEP = {
   howTo: "Tell your agent about a job you want. Paste the posting link in chat. This page does not add jobs from a form.",
 };
 
+// Single mapping used by the home server, home page (via GET /api/onboarding-state),
+// and tests. Do not copy this object elsewhere.
+//
+// A home step is done only when every mapped key is done, except downloadRb
+// and startRb: those are done whenever the home server serves this mapping
+// (the running page is the proof) and they map to no tracker step.
+// firstDraft maps to firstDraftReady, a home-only flag, not a tracker checkbox.
+const HOME_STEPS = [
+  { key: "downloadRb", label: "Download RB" },
+  { key: "startRb", label: "Start RB and open this page" },
+  { key: "addFiles", label: "Add your files to my-documents" },
+  { key: "answerQuestions", label: "Answer a few questions" },
+  { key: "firstDraft", label: "Get your first draft" },
+  { key: "addJobs", label: "Add jobs you want" },
+];
+
+const HOME_STEP_TO_TRACKER_STEPS = {
+  downloadRb: [],
+  startRb: [],
+  addFiles: ["materialIngested"],
+  // Home form captures name (basicInfo) and goal (targetRole). The other five
+  // grill sections stay tracker-only until their files actually contain data.
+  answerQuestions: ["basicInfo", "targetRole"],
+  firstDraft: ["firstDraftReady"],
+  addJobs: ["firstRoleAdded"],
+};
+
 function defaultOnboardingState() {
   return {
     schemaVersion: "1.0",
@@ -72,17 +106,54 @@ function defaultOnboardingState() {
     materialIngested: false,
     sections: Object.fromEntries(SECTIONS.map((section) => [section.key, false])),
     firstRoleAdded: false,
+    firstDraftReady: false,
   };
 }
 
-function readOnboardingState(path) {
-  return readJson(path, defaultOnboardingState());
+function readOnboardingState(filePath) {
+  return readJson(filePath, defaultOnboardingState());
+}
+
+function isRecord(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function isSkipped(value) {
+  return isRecord(value) && value.skipped === true;
+}
+
+function isFirstRoleAddedDone(value) {
+  if (value === true) return true;
+  return isRecord(value) && value.done === true;
+}
+
+function parseFirstRoleAdded(value) {
+  if (value === true) return { done: true, at: null };
+  if (isRecord(value)) {
+    return {
+      done: value.done === true,
+      at: typeof value.at === "string" && value.at.trim() ? value.at.trim() : null,
+    };
+  }
+  return { done: false, at: null };
+}
+
+function mergeFirstRoleAdded(previous, incoming, now = new Date().toISOString()) {
+  const prev = parseFirstRoleAdded(previous);
+  const next = parseFirstRoleAdded(incoming);
+  if (!prev.done && !next.done) return false;
+  return { done: true, at: prev.at || next.at || now };
+}
+
+function isFirstDraftReady(value) {
+  return value === true;
 }
 
 // The single canonical list of every onboarding step, in order, with its
 // done/pending status — isOnboardingComplete() and every checklist renderer
 // (src/renderers/html-tracker.js) both derive from this one list rather than
 // each hand-maintaining their own copy of "which fields count."
+// firstDraftReady is home-only and is not a tracker step.
 function onboardingSteps(onboardingState) {
   const state = onboardingState || {};
   const sections = state.sections || {};
@@ -95,12 +166,32 @@ function onboardingSteps(onboardingState) {
       howTo: section.howTo,
       done: Boolean(sections[section.key]),
     })),
-    { key: FINAL_STEP.key, label: FINAL_STEP.label, howTo: FINAL_STEP.howTo, done: Boolean(state[FINAL_STEP.key]) },
+    {
+      key: FINAL_STEP.key,
+      label: FINAL_STEP.label,
+      howTo: FINAL_STEP.howTo,
+      done: isFirstRoleAddedDone(state[FINAL_STEP.key]),
+    },
   ];
 }
 
 function isOnboardingComplete(state) {
   return onboardingSteps(state).every((step) => step.done);
+}
+
+function homeStepsFromOnboarding(onboardingState) {
+  const state = onboardingState || {};
+  const doneByKey = Object.fromEntries(onboardingSteps(state).map((step) => [step.key, step.done]));
+  doneByKey.firstDraftReady = isFirstDraftReady(state.firstDraftReady);
+  doneByKey.firstRoleAdded = isFirstRoleAddedDone(state.firstRoleAdded);
+  return HOME_STEPS.map((step) => {
+    const trackerKeys = HOME_STEP_TO_TRACKER_STEPS[step.key] || [];
+    const done =
+      step.key === "downloadRb" || step.key === "startRb"
+        ? true
+        : trackerKeys.length > 0 && trackerKeys.every((key) => Boolean(doneByKey[key]));
+    return { key: step.key, label: step.label, trackerKeys, done };
+  });
 }
 
 // Merges a partial update into the existing (or default) state and writes
@@ -109,24 +200,158 @@ function isOnboardingComplete(state) {
 // `sections` against the default shape (not just `current.sections`) so a
 // state file that predates a since-added section key — or was hand-edited
 // down to a subset — never silently drops keys instead of defaulting them
-// to false.
-function updateOnboardingState(path, patch) {
-  const current = readOnboardingState(path);
+// to false. Legacy `firstRoleAdded: true` upgrades to `{ done, at }` on write.
+function updateOnboardingState(filePath, patch) {
+  const current = readOnboardingState(filePath);
   const next = {
     ...defaultOnboardingState(),
     ...current,
     ...patch,
     sections: { ...defaultOnboardingState().sections, ...current.sections, ...patch.sections },
   };
-  writeJson(path, next);
+  next.firstRoleAdded = mergeFirstRoleAdded(current.firstRoleAdded, next.firstRoleAdded);
+  writeJson(filePath, next);
+  return next;
+}
+
+function nonempty(value) {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function hasLedgerEntries(filePath) {
+  if (!fs.existsSync(filePath)) return false;
+  const text = fs.readFileSync(filePath, "utf8");
+  return text.split(/\r?\n/u).some((line) => line.trim());
+}
+
+function hasEducation(profile) {
+  if (isSkipped(profile.educationSkip)) return true;
+  return (
+    Array.isArray(profile.education) &&
+    profile.education.some((row) => nonempty(row.institution) || nonempty(row.degree))
+  );
+}
+
+function hasCompensation(preferences) {
+  const compensation = preferences.compensation;
+  if (!isRecord(compensation)) return false;
+  if (compensation.skipped === true) return true;
+  return ["baseMinimum", "totalMinimum", "totalTarget"].some((key) => Number.isFinite(Number(compensation[key])));
+}
+
+function hasDealBreakers(preferences) {
+  const skip = preferences.dealBreakersSkip;
+  if (isRecord(skip) && (skip.skipped === true || skip.none === true)) return true;
+  return (
+    Array.isArray(preferences.dealBreakers) &&
+    preferences.dealBreakers.some((item) => nonempty(item && item.text) || nonempty(item))
+  );
+}
+
+function isPlaceholderResumeName(name) {
+  const base = String(name || "").trim().toLowerCase();
+  if (!base || base.startsWith(".")) return true;
+  return PLACEHOLDER_RESUME_NAMES.has(base);
+}
+
+function hasFirstDraftFile(dir) {
+  if (!dir || !fs.existsSync(dir)) return false;
+  const stack = [dir];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    let entries;
+    try {
+      entries = fs.readdirSync(current, { withFileTypes: true });
+    } catch (error) {
+      continue;
+    }
+    for (const entry of entries) {
+      if (entry.name.startsWith(".")) continue;
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(full);
+        continue;
+      }
+      if (entry.isFile() && !isPlaceholderResumeName(entry.name)) return true;
+    }
+  }
+  return false;
+}
+
+function deriveOnboardingState(workspace) {
+  const paths = workspacePaths(workspace);
+  const profile = readJson(paths.profile, {});
+  const preferences = readJson(paths.preferences, {});
+  const homeAnswers = readJson(path.join(workspace, HOME_ANSWERS_FILENAME), {});
+  const tracked = readJson(paths.rolesTracked, []);
+  const candidate = profile.candidate || {};
+
+  const setupComplete = fs.existsSync(paths.profile);
+  const materialIngested =
+    (Array.isArray(profile.sources) && profile.sources.length > 0) || hasLedgerEntries(paths.evidence);
+  const firstRoleAdded = Array.isArray(tracked) && tracked.length > 0;
+  const firstDraftReady = hasFirstDraftFile(paths.outputResumes);
+
+  const sections = {
+    basicInfo: nonempty(candidate.preferredName) || nonempty(candidate.name) || nonempty(homeAnswers.name),
+    workHistory:
+      (Array.isArray(profile.experience) &&
+        profile.experience.some((row) => nonempty(row.organization) || nonempty(row.title))) ||
+      nonempty(homeAnswers.history),
+    education: hasEducation(profile),
+    targetRole:
+      (Array.isArray(preferences.roleTargets) &&
+        preferences.roleTargets.some((row) => Array.isArray(row.titles) && row.titles.some(nonempty))) ||
+      nonempty(homeAnswers.goal),
+    location:
+      Boolean(
+        preferences.locations &&
+          ((Array.isArray(preferences.locations.workModes) && preferences.locations.workModes.length > 0) ||
+            (Array.isArray(preferences.locations.preferredRegions) &&
+              preferences.locations.preferredRegions.length > 0)),
+      ) || nonempty(homeAnswers.where),
+    compensation: hasCompensation(preferences),
+    dealBreakers: hasDealBreakers(preferences),
+  };
+
+  return {
+    schemaVersion: "1.0",
+    setupComplete,
+    materialIngested,
+    sections,
+    firstRoleAdded,
+    firstDraftReady,
+  };
+}
+
+function syncOnboardingState(workspace) {
+  const paths = workspacePaths(workspace);
+  const previous = fs.existsSync(paths.onboardingState)
+    ? readOnboardingState(paths.onboardingState)
+    : defaultOnboardingState();
+  const derived = deriveOnboardingState(workspace);
+  const next = {
+    ...derived,
+    firstRoleAdded: mergeFirstRoleAdded(previous.firstRoleAdded, derived.firstRoleAdded),
+  };
+  writeJson(paths.onboardingState, next);
   return next;
 }
 
 module.exports = {
   SECTIONS,
+  HOME_STEPS,
+  HOME_STEP_TO_TRACKER_STEPS,
+  HOME_ANSWERS_FILENAME,
   defaultOnboardingState,
   isOnboardingComplete,
+  isFirstRoleAddedDone,
   onboardingSteps,
+  homeStepsFromOnboarding,
   readOnboardingState,
   updateOnboardingState,
+  deriveOnboardingState,
+  syncOnboardingState,
+  mergeFirstRoleAdded,
+  hasFirstDraftFile,
 };
