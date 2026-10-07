@@ -799,7 +799,7 @@ test("renderOnboardingChecklist covers all 10 steps in order and counts done acc
   // setupComplete is already true in defaultOnboardingState() (setup itself
   // just ran) — so this is 4, not 3: setup + materialIngested + 2 sections.
   assert.match(html, /Onboarding: 4 of 10 steps/);
-  ["Workspace created", "Material ingested", "Basic information", "Work history", "Education", "Target role", "Location and work mode", "Salary and compensation", "Constraints and deal breakers", "First role added"].forEach(
+  ["Workspace created", "Your resumes and notes are read in", "Basic information", "Work history", "Education", "Target role", "Location and work mode", "Salary and compensation", "Constraints and deal breakers", "First role added"].forEach(
     (label) => assert.match(html, new RegExp(label)),
   );
 });
@@ -812,6 +812,7 @@ test("renderOnboardingChecklist shows 1 of 10 for the fresh default state (setup
   assert.match(html, /onboarding-item-howto/);
   assert.match(html, /my-documents/);
   assert.match(html, /candidate\/inputs\/resumes/);
+  assert.match(html, /candidate\/inputs\/notes/);
 });
 
 test("renderOnboardingChecklist shows 10 of 10 once every step is complete", () => {

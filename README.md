@@ -95,7 +95,7 @@ the reason I'm walking into interviews prepared instead of scrambling the night 
 
 | Stage | What happens | Playbook / command |
 | --- | --- | --- |
-| 1. Onboarding | Drop resumes, notes, and links into `candidate/inputs/` (or share a GitHub username); your agent ingests them. | [`docs/playbooks/onboarding.md`](docs/playbooks/onboarding.md) · `npm run workspace:ingest` |
+| 1. Onboarding | You put resumes and notes in `my-documents` (or share a GitHub username). The agent copies them into `candidate/inputs/resumes` and `candidate/inputs/notes`, writes `candidate/inputs/links.md`, and ingests them. | [`docs/playbooks/onboarding.md`](docs/playbooks/onboarding.md) · `npm run workspace:ingest` |
 | 2. Grill intake | The agent interviews you one question at a time — work history, target roles, location, compensation, constraints — and writes `profile.json`, `preferences.json`, `evidence.jsonl`. | [`docs/playbooks/grill.md`](docs/playbooks/grill.md) |
 | 3. Find roles | The agent searches, vets postings against your preferences, verifies links are live, and maintains `leads.json`; you accept or skip each lead. | [`docs/playbooks/find-roles.md`](docs/playbooks/find-roles.md) |
 | 4. Tailor | The agent drafts a resume config for one posting; `tailor` validates it, audits every claim against your evidence ledger, renders the DOCX, and tracks the role — all in one pass. Add `--cover-letter` for an evidence-audited cover letter alongside it. | [`docs/playbooks/tailor.md`](docs/playbooks/tailor.md) · `npm run workspace:tailor` |
