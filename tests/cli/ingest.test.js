@@ -37,6 +37,26 @@ async function withWorkspace(fn) {
   }
 }
 
+async function captureLogs(fn) {
+  const logs = [];
+  const origLog = console.log;
+  const origWarn = console.warn;
+  console.log = (...args) => {
+    logs.push(args.map(String).join(" "));
+  };
+  console.warn = (...args) => {
+    logs.push(args.map(String).join(" "));
+  };
+  try {
+    await fn();
+  } finally {
+    console.log = origLog;
+    console.warn = origWarn;
+  }
+  return logs;
+}
+
+
 test("ingest with --links creates evidence entries with type='links' and source.kind='links'", async () => {
   await withWorkspace(async ({ workspace, paths }) => {
     // Create a fixture links.md file outside the workspace
@@ -182,5 +202,81 @@ test("ingest with a source marks materialIngested only, not intake sections", as
     } finally {
       fs.rmSync(linksFixture, { recursive: true, force: true });
     }
+  });
+});
+
+test("ingest with no source flags reads inputs/resumes and inputs/notes and lists skips", async () => {
+  await withWorkspace(async ({ workspace, paths }) => {
+    writeJson(paths.onboardingState, defaultOnboardingState());
+    ensureDir(paths.resumes);
+    ensureDir(paths.notes);
+    fs.writeFileSync(path.join(paths.resumes, "resume.txt"), "Senior engineer at Contoso.\n");
+    fs.writeFileSync(path.join(paths.notes, "career.md"), "Led a platform rewrite.\n");
+    fs.writeFileSync(path.join(paths.resumes, ".hidden.txt"), "dotfile should skip\n");
+    fs.writeFileSync(path.join(paths.notes, "empty.txt"), "");
+    fs.writeFileSync(path.join(paths.resumes, "photo.bin"), "not a supported type");
+    fs.mkdirSync(path.join(paths.notes, "subdir"));
+
+    const logs = await captureLogs(() => command.run({ workspace }));
+    const joined = logs.join("\n");
+
+    assert.match(joined, /Read inputs\/resumes\/resume\.txt/);
+    assert.match(joined, /Read inputs\/notes\/career\.md/);
+    assert.match(joined, /Skipped inputs\/resumes\/\.hidden\.txt: dotfile/);
+    assert.match(joined, /Skipped inputs\/notes\/empty\.txt: empty/);
+    assert.match(joined, /Skipped inputs\/resumes\/photo\.bin: unsupported type/);
+    assert.match(joined, /Skipped inputs\/notes\/subdir: directory/);
+
+    const entries = readJsonLines(paths.evidence);
+    assert.equal(entries.length, 2);
+    assert.ok(entries.some((entry) => entry.source.kind === "resume" && entry.source.path.includes("resume.txt")));
+    assert.ok(entries.some((entry) => entry.source.kind === "notes" && entry.source.path.includes("career.md")));
+    assert.equal(readJson(paths.onboardingState).materialIngested, true);
+  });
+});
+
+test("ingest with an explicit source flag does not scan input folders", async () => {
+  await withWorkspace(async ({ workspace, paths }) => {
+    ensureDir(paths.resumes);
+    ensureDir(paths.notes);
+    fs.writeFileSync(path.join(paths.resumes, "decoy.txt"), "should not be ingested\n");
+    const notesFixture = fs.mkdtempSync(path.join(os.tmpdir(), "notes-fixture-"));
+    const notesFile = path.join(notesFixture, "explicit.md");
+    fs.writeFileSync(notesFile, "explicit notes only\n");
+
+    try {
+      const logs = await captureLogs(() => command.run({ workspace, notes: notesFile }));
+      const joined = logs.join("\n");
+      assert.doesNotMatch(joined, /decoy\.txt/);
+      assert.doesNotMatch(joined, /Read inputs\/resumes/);
+      const entries = readJsonLines(paths.evidence);
+      assert.equal(entries.length, 1);
+      assert.equal(entries[0].source.kind, "notes");
+      assert.match(entries[0].snippet, /explicit notes only/);
+    } finally {
+      fs.rmSync(notesFixture, { recursive: true, force: true });
+    }
+  });
+});
+
+test("ingest with empty or missing input folders prints a clear message and exits", async () => {
+  await withWorkspace(async ({ workspace, paths }) => {
+    writeJson(paths.onboardingState, defaultOnboardingState());
+    const logs = await captureLogs(() => command.run({ workspace }));
+    const joined = logs.join("\n");
+    assert.match(joined, /No files found in .*inputs\/resumes or .*inputs\/notes\. Add files there or pass --resume\/--notes\./);
+    assert.doesNotMatch(joined, /No sources provided/);
+    assert.equal(readJsonLines(paths.evidence).length, 0);
+    assert.equal(readJson(paths.onboardingState).materialIngested, false);
+  });
+});
+
+test("ingest default scan after a successful read updates onboarding state", async () => {
+  await withWorkspace(async ({ workspace, paths }) => {
+    writeJson(paths.onboardingState, defaultOnboardingState());
+    ensureDir(paths.notes);
+    fs.writeFileSync(path.join(paths.notes, "facts.md"), "I shipped a search API.\n");
+    await command.run({ workspace });
+    assert.equal(readJson(paths.onboardingState).materialIngested, true);
   });
 });

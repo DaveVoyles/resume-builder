@@ -296,6 +296,33 @@ test("init treats an already-running server on the configured port as success, a
   });
 });
 
+test("init already-running path does not print reusing it, and starts at most once", async () => {
+  await withTempWorkspaceAsync(async (workspace) => {
+    let launches = 0;
+    const logs = [];
+    const origLog = console.log;
+    console.log = (...args) => {
+      logs.push(args.map(String).join(" "));
+    };
+    try {
+      await command.run(
+        { workspace, port: "5555", noOpen: true },
+        {
+          serveRunner: async () => {
+            launches += 1;
+            throw eaddrinuseError(5555);
+          },
+          openInBrowser: () => {},
+        },
+      );
+    } finally {
+      console.log = origLog;
+    }
+    assert.equal(launches, 1);
+    assert.equal(logs.some((line) => /reusing it/i.test(line)), false);
+  });
+});
+
 test("init reusing an already-running server respects --noOpen (no browser tab either)", async () => {
   await withTempWorkspaceAsync(async (workspace) => {
     let opened = false;

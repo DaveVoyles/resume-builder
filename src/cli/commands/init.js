@@ -111,13 +111,10 @@ async function run(options, { serveRunner = serve.run, openInBrowser = serve.ope
     await serveRunner({ workspace, port: options.port, noOpen: options.noOpen });
   } catch (error) {
     if (error.code !== "EADDRINUSE") throw error;
-    // Setup's job is "make sure the candidate sees a result immediately" —
-    // a server already running on this port (from a previous setup, or a
-    // manually-started `workspace:serve`) already satisfies that, so treat
-    // it as success rather than failing the whole `npm run setup` run.
-    const port = serve.resolvePort(options.port);
-    console.log(`A server is already running on port ${port} — reusing it.`);
-    if (!options.noOpen) openInBrowser(serve.trackerUrl(port));
+    // Port already bound (home or a previous serve). Do not start a second
+    // server and do not print a "reusing it" line. Opening the tracker tab
+    // still happens unless --noOpen, because the running server is the UI.
+    if (!options.noOpen) openInBrowser(serve.trackerUrl(serve.resolvePort(options.port)));
   }
 }
 

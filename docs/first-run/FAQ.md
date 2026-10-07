@@ -34,13 +34,13 @@ Do not skip ahead. Do not show them a pile of commands.
 
    They put files in `my-documents`. You copy resumes into `candidate/inputs/resumes` and notes into `candidate/inputs/notes`, then ingest from those paths. A link can be pasted in chat, or you write it into `candidate/inputs/links.md`. Enough to start: one old resume, or a notes file, or a GitHub username. More is better. LinkedIn pages are behind a login, so you cannot pull a LinkedIn profile the way you can pull public GitHub repos. If they want LinkedIn included, ask them to export their data from LinkedIn settings, or paste the parts they care about into a notes file.
 
-6. **Read the files.** Say sentence 4. Wait for a yes. Then run ingest with only the flags that match what they gave you:
+6. **Read the files.** Say sentence 4. Wait for a yes. Then run ingest. With no source flags it reads `candidate/inputs/resumes` and `candidate/inputs/notes`:
 
    ```bash
-   npm run workspace:ingest -- --workspace candidate --resume <file> --notes <file> --links candidate/inputs/links.md --github <username>
+   npm run workspace:ingest -- --workspace candidate
    ```
 
-   Tell them how many sources you read, in one sentence. Do not dump a log.
+   Pass `--resume`, `--notes`, `--links`, or `--github` only when you need a specific file or GitHub username. Tell them how many sources you read, in one sentence. Do not dump a log.
 
 7. **Interview them.** Say sentence 5. Follow `docs/playbooks/grill.md`, one question at a time. Write answers to `candidate/profile.json`, `candidate/preferences.json`, and `candidate/evidence.jsonl`. You never ask them to edit those files.
 

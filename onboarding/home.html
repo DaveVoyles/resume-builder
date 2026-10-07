@@ -71,6 +71,8 @@
   .btn.primary{background:var(--navy);color:#fff}
   .btn.primary:hover{background:var(--navy-2)}
   .btn.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  .btn.light{background:#fff;color:var(--navy)}
+  .btn.light:hover{background:#e2e8f0}
   .row{display:flex;gap:.75rem;flex-wrap:wrap;align-items:center}
   form .field{margin-bottom:1.1rem}
   label{display:block;font-weight:600;margin-bottom:.3rem;color:var(--navy)}
@@ -108,7 +110,10 @@
         <div class="logo" aria-hidden="true">RB</div>
         <h1>Resume Builder <small>Your home page — runs only on this computer</small></h1>
       </div>
-      <div class="server" id="serverBadge" title="The agent started this for you">● RB is <b>running</b> at http://localhost:4321</div>
+      <div class="row">
+        <a class="btn light" href="/tracker.html">Open my tracker</a>
+        <div class="server" id="serverBadge" title="The agent started this for you">● RB is <b>running</b> at http://localhost:4321</div>
+      </div>
     </div>
     <nav class="tabs" role="tablist" aria-label="Main sections">
       <button type="button" role="tab" id="t-intro" aria-controls="intro" aria-selected="true">Introduction</button>
@@ -172,6 +177,7 @@
       <p class="muted">When your files are in the folder, continue. It takes about 5 minutes. You can stop and come back.</p>
       <button class="btn primary" type="button" id="continueBtn" aria-expanded="false" aria-controls="setup">Continue setup →</button>
       <p class="hint" style="margin-top:1rem">Nervous? Read the <a href="#faq" data-goto="faq">FAQ</a> first.</p>
+      <p style="margin-top:1rem"><a class="btn ghost" href="/tracker.html">Open my tracker</a></p>
     </div>
   </div>
 
@@ -302,6 +308,7 @@
     <p class="muted">Finish setup on the Introduction tab first. Then tell your agent about a job you like, for example:<br><em>"Add this job to RB: [paste the job link]"</em></p>
     <p class="hint">This page does not add jobs. Your agent tracks them.</p>
     <div class="row" style="justify-content:center">
+      <a class="btn ghost" href="/tracker.html">Open my tracker</a>
       <button class="btn primary" type="button" data-goto="intro">Go to setup</button>
     </div>
   </div>

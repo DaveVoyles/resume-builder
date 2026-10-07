@@ -6,6 +6,8 @@ const path = require("path");
 const { execFile } = require("child_process");
 const { openInBrowser, resolvePort, DEFAULT_PORT, CONTENT_TYPES } = require("./serve");
 const { saveHomeAnswers } = require("../../core/home-answers");
+const { workspacePaths } = require("../../core/workspace");
+
 const {
   HOME_STEP_TO_TRACKER_STEPS,
   defaultOnboardingState,
@@ -17,6 +19,27 @@ const {
 const REPO_ROOT = path.resolve(__dirname, "../../..");
 const HOME_PAGE = path.join(REPO_ROOT, "onboarding", "home.html");
 const BODY_LIMIT = 65536;
+
+function missingTrackerPage(workspaceLabel) {
+  const command = `npm run workspace:tracker:html -- --workspace ${workspaceLabel}`;
+  const filePath = `${workspaceLabel}/outputs/tracker.html`;
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tracker not built yet</title>
+</head>
+<body>
+<h1>Tracker not built yet</h1>
+<p>The job list is not on disk yet. Build it with:</p>
+<pre>${command}</pre>
+<p>Then open <a href="/tracker.html">/tracker.html</a> from the home page. The file also lives at <code>${filePath}</code> if you need a file fallback.</p>
+<p><a href="/">Back to home</a></p>
+</body>
+</html>`;
+}
+
 
 function homeUrl(port) {
   return `http://localhost:${port}/`;
@@ -112,6 +135,9 @@ async function run(options, { openFolder = defaultOpenFolder, openHome = openInB
 
   const root = path.resolve(options.root || REPO_ROOT);
   const workspace = resolveHomeWorkspace(root, options);
+  const trackerFile = workspacePaths(workspace).htmlTracker;
+  const workspaceLabel = options.workspace || "candidate";
+
   const documentsDir = path.join(root, "my-documents");
   const outputDir = path.join(root, "output");
   fs.mkdirSync(documentsDir, { recursive: true });
@@ -127,6 +153,19 @@ async function run(options, { openFolder = defaultOpenFolder, openHome = openInB
       serveFile(HOME_PAGE, res);
       return;
     }
+
+    if (method === "GET" && requestedPath === "/tracker.html") {
+      fs.stat(trackerFile, (error, stats) => {
+        if (error || !stats.isFile()) {
+          res.writeHead(404, { "Content-Type": "text/html; charset=utf-8" });
+          res.end(missingTrackerPage(workspaceLabel));
+          return;
+        }
+        serveFile(trackerFile, res);
+      });
+      return;
+    }
+
 
     if (method === "GET" && requestedPath === "/api/documents") {
       sendJson(res, 200, { files: listFiles(documentsDir) });

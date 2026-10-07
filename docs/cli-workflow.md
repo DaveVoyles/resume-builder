@@ -44,7 +44,7 @@ The CLI does not currently:
 | Run the sample workflow | `npm start` |
 | Create the default private workspace | `npm run setup` (also opens a browser tab to the tracker automatically — pass `--noServe` to skip, or `--noOpen` to start the server without opening a tab) |
 | Initialize a named workspace | `npm run workspace:init -- --workspace <dir>` |
-| Ingest resumes, notes, text, or public GitHub metadata | `npm run workspace:ingest -- --workspace <dir> --resume <file> --notes <file> --github <user>` |
+| Ingest resumes and notes from `inputs/resumes` and `inputs/notes` by default, or pass `--resume`/`--notes`/`--github` | `npm run workspace:ingest -- --workspace <dir>` |
 | Add a seed or tracked role | `npm run workspace:add-role -- --workspace <dir> --url <url>` or add `--tracked` |
 | Build similar-role review output | `npm run workspace:similar -- --workspace <dir> [--candidates <file>]` |
 | Render the application tracker | `npm run workspace:tracker -- --workspace <dir>` |
@@ -62,7 +62,7 @@ The CLI does not currently:
 
 ```bash
 npm run setup
-npm run workspace:ingest -- --workspace candidate --resume ./my-resume.docx --notes ./notes.md
+npm run workspace:ingest -- --workspace candidate
 npm run workspace:add-role -- --workspace candidate --url https://example.com/job
 npm run workspace:similar -- --workspace candidate
 npm run workspace:tracker -- --workspace candidate
