@@ -202,6 +202,45 @@ test("GET /api/onboarding-state exposes the shared mapping and default steps", a
   }
 });
 
+test("GET /api/onboarding-state does not write .onboarding-state.json", async () => {
+  const tmpDir = createHomeRoot();
+  const workspace = path.join(tmpDir, "candidate");
+  fs.mkdirSync(workspace, { recursive: true });
+  fs.writeFileSync(path.join(workspace, "profile.json"), '{"candidate":{}}\n');
+  const statePath = path.join(workspace, ".onboarding-state.json");
+  const original = '{"schemaVersion":"1.0","setupComplete":false}\n';
+  fs.writeFileSync(statePath, original);
+
+  const server = await run({ root: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    const beforeBytes = fs.readFileSync(statePath);
+    const beforeStat = fs.statSync(statePath);
+    const response = await get(port, "/api/onboarding-state");
+    assert.equal(response.status, 200);
+    const afterBytes = fs.readFileSync(statePath);
+    const afterStat = fs.statSync(statePath);
+    assert.equal(Buffer.compare(beforeBytes, afterBytes), 0);
+    assert.equal(afterStat.mtimeMs, beforeStat.mtimeMs);
+  } finally {
+    server.close();
+  }
+
+  fs.rmSync(statePath, { force: true });
+  const serverMissing = await run({ root: tmpDir, port: 0, noOpen: true });
+  const portMissing = serverMissing.address().port;
+  try {
+    assert.equal(fs.existsSync(statePath), false);
+    const response = await get(portMissing, "/api/onboarding-state");
+    assert.equal(response.status, 200);
+    assert.equal(fs.existsSync(statePath), false);
+  } finally {
+    serverMissing.close();
+    cleanup(tmpDir);
+  }
+});
+
+
 test("serve-home save-intake writes answers, not a fake resume draft", async () => {
   const tmpDir = createHomeRoot();
   const server = await run({ root: tmpDir, port: 0, noOpen: true });

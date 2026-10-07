@@ -52,6 +52,55 @@ function validateProfile(profile) {
   return errors;
 }
 
+const COMPENSATION_KEYS = new Set([
+  "currency",
+  "baseMinimum",
+  "totalMinimum",
+  "totalTarget",
+  "publiclyShare",
+  "skipped",
+]);
+
+function isExclusiveTrueKey(value, key) {
+  return (
+    Boolean(value) &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    Object.keys(value).length === 1 &&
+    value[key] === true
+  );
+}
+
+function validatePreferences(preferences) {
+  const errors = [];
+  if (!requireObject(preferences, "preferences", errors)) return errors;
+  if (preferences.dealBreakersSkip !== undefined) {
+    const skip = preferences.dealBreakersSkip;
+    if (!isExclusiveTrueKey(skip, "skipped") && !isExclusiveTrueKey(skip, "none")) {
+      errors.push('preferences.dealBreakersSkip must be exactly { "skipped": true } or { "none": true }');
+    }
+  }
+  if (preferences.compensation !== undefined) {
+    const compensation = preferences.compensation;
+    if (!requireObject(compensation, "preferences.compensation", errors)) return errors;
+    Object.keys(compensation).forEach((key) => {
+      if (!COMPENSATION_KEYS.has(key)) {
+        errors.push(`preferences.compensation.${key}: unknown key`);
+      }
+    });
+    if (compensation.skipped !== undefined) {
+      if (compensation.skipped !== true) {
+        errors.push("preferences.compensation.skipped must be true");
+      }
+      const keys = Object.keys(compensation);
+      if (keys.length !== 1 || keys[0] !== "skipped") {
+        errors.push('preferences.compensation with skipped must be exactly { "skipped": true }');
+      }
+    }
+  }
+  return errors;
+}
+
 function validateEvidence(entries) {
   const errors = [];
   if (!requireArray(entries, "evidence", errors)) return errors;
@@ -189,4 +238,11 @@ function validateOnboardingState(state) {
   return errors;
 }
 
-module.exports = { validateEvidence, validateOnboardingState, validateProfile, validateRoles, validateFeedback };
+module.exports = {
+  validateEvidence,
+  validateOnboardingState,
+  validateProfile,
+  validatePreferences,
+  validateRoles,
+  validateFeedback,
+};
