@@ -580,6 +580,43 @@ test("html tracker funnel counts every stage from a mixed status set", () => {
   assert.strictEqual(counts.Ghosted, 1);
 });
 
+test("html tracker funnel counts a role with only application.appliedAt 2026-06-08 as Applied", () => {
+  const roles = [{ id: "role-001", company: "Northwind Tools", title: "Engineer", application: { appliedAt: "2026-06-08" } }];
+
+  const counts = funnelStageCounts(renderHtmlTracker(roles));
+
+  assert.strictEqual(counts.Applied, 1);
+  assert.strictEqual(counts["Not Applied"], 0);
+});
+
+test("html tracker funnel counts Interview scheduled as Interview and Applied via referral as Applied", () => {
+  const roles = [
+    { id: "role-001", company: "Northwind Tools", title: "Engineer", applied: "Interview scheduled" },
+    { id: "role-002", company: "Fabrikam AI", title: "PM", applied: "Applied via referral" },
+  ];
+
+  const counts = funnelStageCounts(renderHtmlTracker(roles));
+
+  assert.strictEqual(counts.Interview, 1);
+  assert.strictEqual(counts.Applied, 1);
+});
+
+test("html tracker funnel first-word rule: Not applied stays not Applied, Not yet is not-applied, Phone interview is other", () => {
+  const roles = [
+    { id: "role-001", company: "Northwind Tools", title: "Engineer", applied: "Not applied" },
+    { id: "role-002", company: "Fabrikam AI", title: "PM", applied: "Not yet" },
+    { id: "role-003", company: "Contoso", title: "Lead", applied: "Phone interview" },
+  ];
+
+  const output = renderHtmlTracker(roles);
+  const counts = funnelStageCounts(output);
+
+  assert.strictEqual(counts.Applied, 0);
+  assert.strictEqual(counts.Interview, 0);
+  assert.strictEqual(counts["Not Applied"], 2);
+  assert.match(output, /"statusBucket": "other"/);
+});
+
 test("html tracker displays stale badges for old applications", () => {
   const roles = [
     {

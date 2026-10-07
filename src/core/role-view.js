@@ -78,10 +78,14 @@ function formatNotes(role) {
 }
 
 // Maps a role's free-text or enum application status onto a closed set of
-// funnel stages. Exact phrases only (after lowercasing and stripping an ISO
-// date) so "Not applied" cannot match applied. interview/offer/withdrawn/ghosted
-// stay their own buckets (not "other") so set-status's whole point —
-// deterministic, visible status — actually shows up distinctly in the tracker UI.
+// funnel stages, in this order:
+// 1. Text that is only an ISO date (whitespace allowed) is applied.
+// 2. Exact phrase after lowercasing, stripping ISO dates, and collapsing
+//    non-letters to spaces. "not applied" and "not yet" stay not-applied.
+// 3. If still unmatched, the first word only: applied, interview/interviewing,
+//    offer, rejected/denied, withdrawn, ghosted. A first word of "not" never
+//    matches a stage.
+// 4. Otherwise other.
 const STATUS_TO_STAGE = {
   "": "not-applied",
   interested: "not-applied",
@@ -99,13 +103,30 @@ const STATUS_TO_STAGE = {
   ghosted: "ghosted",
 };
 
+const FIRST_WORD_TO_STAGE = {
+  applied: "applied",
+  interview: "interview",
+  interviewing: "interview",
+  offer: "offer",
+  rejected: "rejected",
+  denied: "rejected",
+  withdrawn: "withdrawn",
+  ghosted: "ghosted",
+};
+
 function statusBucket(appliedText) {
-  const normalized = String(appliedText || "")
+  const raw = String(appliedText || "").trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    return "applied";
+  }
+
+  const normalized = raw
     .toLowerCase()
     .replace(/\d{4}-\d{2}-\d{2}/g, " ")
     .replace(/[^a-z]+/g, " ")
     .trim();
-  return STATUS_TO_STAGE[normalized] || "other";
+  const firstWord = normalized.split(" ")[0];
+  return STATUS_TO_STAGE[normalized] || FIRST_WORD_TO_STAGE[firstWord] || "other";
 }
 
 // A "not-applied" role with a rendered resume already has everything it
