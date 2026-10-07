@@ -7,7 +7,7 @@ const os = require("os");
 const path = require("path");
 const http = require("http");
 const net = require("net");
-const { run } = require("../../src/cli/commands/serve-home");
+const { run, defaultOpenFolder } = require("../../src/cli/commands/serve-home");
 const { HOME_ANSWERS_FILENAME, HOME_STEP_TO_TRACKER_STEPS } = require("../../src/core/onboarding-state");
 const { renderHtmlTracker } = require("../../src/renderers/html-tracker");
 
@@ -90,6 +90,26 @@ function post(port, requestPath, payload) {
     req.write(data);
     req.end();
   });
+}
+
+function execFileWithExit(code) {
+  return (_cmd, _args, cb) => {
+    if (code === 0) {
+      cb(null);
+      return;
+    }
+    const error = new Error(`Command failed with exit code ${code}`);
+    error.code = code;
+    cb(error);
+  };
+}
+
+function execFileWithSpawnError(code) {
+  return (_cmd, _args, cb) => {
+    const error = new Error(`spawn ${code}`);
+    error.code = code;
+    cb(error);
+  };
 }
 
 test("serve-home serves the three-tab dashboard at / with Introduction selected", async () => {
@@ -451,6 +471,77 @@ test("serve-home open-folder reports opened false when the opener fails", async 
     const body = JSON.parse(failed.body);
     assert.equal(body.opened, false);
     assert.match(body.error, /opener failed/);
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
+test("defaultOpenFolder treats win32 explorer exit 1 as opened", async () => {
+  await defaultOpenFolder("/tmp/docs", {
+    platform: "win32",
+    execFileImpl: execFileWithExit(1),
+  });
+});
+
+test("defaultOpenFolder treats win32 explorer exit 2 as failure", async () => {
+  await assert.rejects(
+    () =>
+      defaultOpenFolder("/tmp/docs", {
+        platform: "win32",
+        execFileImpl: execFileWithExit(2),
+      }),
+    (error) => error.code === 2,
+  );
+});
+
+test("defaultOpenFolder treats spawn ENOENT as failure on win32 and darwin", async () => {
+  await assert.rejects(
+    () =>
+      defaultOpenFolder("/tmp/docs", {
+        platform: "win32",
+        execFileImpl: execFileWithSpawnError("ENOENT"),
+      }),
+    (error) => error.code === "ENOENT",
+  );
+  await assert.rejects(
+    () =>
+      defaultOpenFolder("/tmp/docs", {
+        platform: "darwin",
+        execFileImpl: execFileWithSpawnError("ENOENT"),
+      }),
+    (error) => error.code === "ENOENT",
+  );
+});
+
+test("defaultOpenFolder treats darwin open exit 1 as failure", async () => {
+  await assert.rejects(
+    () =>
+      defaultOpenFolder("/tmp/docs", {
+        platform: "darwin",
+        execFileImpl: execFileWithExit(1),
+      }),
+    (error) => error.code === 1,
+  );
+});
+
+test("serve-home open-folder returns 200 when Windows explorer exits 1", async () => {
+  const tmpDir = createHomeRoot();
+  const server = await run(
+    { root: tmpDir, port: 0, noOpen: true },
+    {
+      openFolder: (folderPath) =>
+        defaultOpenFolder(folderPath, {
+          platform: "win32",
+          execFileImpl: execFileWithExit(1),
+        }),
+    },
+  );
+  const port = server.address().port;
+  try {
+    const ok = await post(port, "/api/open-folder", { folder: "my-documents" });
+    assert.equal(ok.status, 200);
+    assert.deepEqual(JSON.parse(ok.body), { opened: true });
   } finally {
     server.close();
     cleanup(tmpDir);

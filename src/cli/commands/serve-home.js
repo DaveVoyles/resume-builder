@@ -105,15 +105,28 @@ function readBody(req) {
   });
 }
 
-function defaultOpenFolder(folderPath) {
-  const opener = process.platform === "darwin" ? "open" : process.platform === "win32" ? "explorer" : "xdg-open";
+function isOpenSuccess(platform, error) {
+  if (!error) {
+    return true;
+  }
+  if (typeof error.code !== "number") {
+    return false;
+  }
+  if (error.code === 0) {
+    return true;
+  }
+  return platform === "win32" && error.code === 1;
+}
+
+function defaultOpenFolder(folderPath, { platform = process.platform, execFileImpl = execFile } = {}) {
+  const opener = platform === "darwin" ? "open" : platform === "win32" ? "explorer" : "xdg-open";
   return new Promise((resolve, reject) => {
-    execFile(opener, [folderPath], (error) => {
-      if (error) {
-        reject(error);
+    execFileImpl(opener, [folderPath], (error) => {
+      if (isOpenSuccess(platform, error)) {
+        resolve();
         return;
       }
-      resolve();
+      reject(error);
     });
   });
 }
@@ -332,4 +345,6 @@ module.exports = {
   DEFAULT_PORT,
   HOME_PAGE,
   REPO_ROOT,
+  defaultOpenFolder,
+  isOpenSuccess,
 };
