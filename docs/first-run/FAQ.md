@@ -34,6 +34,8 @@ Do not skip ahead. Do not show them a pile of commands.
 
    They put files in `my-documents`. You copy resumes into `candidate/inputs/resumes` and notes into `candidate/inputs/notes`, then ingest from those paths. A link can be pasted in chat, or you write it into `candidate/inputs/links.md`. Enough to start: one old resume, or a notes file, or a GitHub username. More is better. LinkedIn pages are behind a login, so you cannot pull a LinkedIn profile the way you can pull public GitHub repos. If they want LinkedIn included, ask them to export their data from LinkedIn settings, or paste the parts they care about into a notes file.
 
+   Home Introduction tells the person that copy happens, without showing `candidate/inputs/` paths. Those paths stay in this FAQ and in the collapsed "For your AI agent" note on home. If they click Open folder and the fallback note appears, open `my-documents` yourself from the repo root.
+
 6. **Read the files.** Say sentence 4. Wait for a yes. Then run ingest. With no source flags it reads `candidate/inputs/resumes` and `candidate/inputs/notes`:
 
    ```bash

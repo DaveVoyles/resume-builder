@@ -22,11 +22,11 @@ After the empty list opens: "That page is your role list. It stays empty until w
 
 "I need material you already have: past resumes, notes, or links to work you have published. More than one source is useful. I'll turn them into a private profile. I will not write a resume from them yet."
 
-Open `my-documents` for them. If Open folder fails, open `my-documents` yourself from the repo root.
+Open `my-documents` for them. If Open folder fails, or the home page shows the fallback note, open `my-documents` yourself from the repo root.
 
 "Put those files in `my-documents` at the top of the resume-builder folder. Word files, PDFs, or notes are all fine. If you have a link, paste it to me. Tell me when the files are in."
 
-After they confirm, copy the files into `candidate/inputs/resumes` or `candidate/inputs/notes`, then ingest. Do not ask them to drop files into `candidate/inputs/`.
+After they confirm, copy the files into `candidate/inputs/resumes` or `candidate/inputs/notes`, then ingest. Do not ask them to drop files into `candidate/inputs/`. Home Introduction does not show those paths to the person. They are in this file and in the collapsed "For your AI agent" note on home.
 
 ## 4. Reading what they gave you
 

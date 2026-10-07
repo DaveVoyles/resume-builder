@@ -23,7 +23,9 @@ Always name real folders from the repo root. Never say "the resumes folder" or o
 - The person puts files in `my-documents`.
 - Ingest still reads `candidate/inputs/resumes` and `candidate/inputs/notes`. With no source flags, `npm run workspace:ingest -- --workspace candidate` reads those folders by default. Do not invent `candidate/resumes`.
 - After they drop files, copy from `my-documents` into `candidate/inputs/resumes` or `candidate/inputs/notes`, then run ingest. Do not ask them to drop files into `candidate/inputs/`.
-- If Open folder fails, open `my-documents` yourself from the repo root.
+- Home Introduction tells the person that copy happens, in plain words. Exact `candidate/inputs/` paths stay here and in the collapsed "For your AI agent" note on home.
+- Jobs **Go to setup** opens the About you form on Introduction, scrolls to it, and focuses the first field.
+- If Open folder fails, or the home page shows the fallback note, open `my-documents` yourself from the repo root. That note appears only when opening fails or cannot be confirmed.
 
 
 ## 🚀 Default workflow

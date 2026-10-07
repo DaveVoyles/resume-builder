@@ -20,6 +20,8 @@ const {
 const REPO_ROOT = path.resolve(__dirname, "../../..");
 const HOME_PAGE = path.join(REPO_ROOT, "onboarding", "home.html");
 const BODY_LIMIT = 65536;
+const OPEN_FOLDER_TIMEOUT_MS = 5000;
+const OPEN_FOLDER_TIMEOUT_ERROR = "Could not confirm the folder opened.";
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -105,9 +107,30 @@ function readBody(req) {
   });
 }
 
-function defaultOpenFolder(folderPath) {
-  const opener = process.platform === "darwin" ? "open" : process.platform === "win32" ? "explorer" : "xdg-open";
-  execFile(opener, [folderPath], () => {});
+function isOpenSuccess(platform, error) {
+  if (!error) {
+    return true;
+  }
+  if (typeof error.code !== "number") {
+    return false;
+  }
+  if (error.code === 0) {
+    return true;
+  }
+  return platform === "win32" && error.code === 1;
+}
+
+function defaultOpenFolder(folderPath, { platform = process.platform, execFileImpl = execFile } = {}) {
+  const opener = platform === "darwin" ? "open" : platform === "win32" ? "explorer" : "xdg-open";
+  return new Promise((resolve, reject) => {
+    execFileImpl(opener, [folderPath], (error) => {
+      if (isOpenSuccess(platform, error)) {
+        resolve();
+        return;
+      }
+      reject(error);
+    });
+  });
 }
 
 function listFiles(dir) {
@@ -137,7 +160,7 @@ function onboardingPayload(workspace) {
   };
 }
 
-async function run(options, { openFolder = defaultOpenFolder, openHome = openInBrowser } = {}) {
+async function run(options, { openFolder = defaultOpenFolder, openHome = openInBrowser, openFolderTimeoutMs = OPEN_FOLDER_TIMEOUT_MS } = {}) {
   if (!fs.existsSync(HOME_PAGE)) {
     throw new Error(`Onboarding home page not found at ${HOME_PAGE}`);
   }
@@ -202,8 +225,30 @@ async function run(options, { openFolder = defaultOpenFolder, openHome = openInB
             sendJson(res, 400, { error: "Unknown folder." });
             return;
           }
-          openFolder(folder);
-          sendJson(res, 200, { opened: folder });
+          let responded = false;
+          const respond = (status, payload) => {
+            if (responded) {
+              return;
+            }
+            responded = true;
+            sendJson(res, status, payload);
+          };
+          const timer = setTimeout(() => {
+            respond(504, { opened: false, error: OPEN_FOLDER_TIMEOUT_ERROR });
+          }, openFolderTimeoutMs);
+          return Promise.resolve()
+            .then(() => openFolder(folder))
+            .then(() => {
+              clearTimeout(timer);
+              respond(200, { opened: true });
+            })
+            .catch((error) => {
+              clearTimeout(timer);
+              respond(500, {
+                opened: false,
+                error: error && error.message ? String(error.message) : "Could not open folder.",
+              });
+            });
         })
         .catch((error) => {
           if (error.code === "PAYLOAD_TOO_LARGE") {
@@ -315,4 +360,6 @@ module.exports = {
   DEFAULT_PORT,
   HOME_PAGE,
   REPO_ROOT,
+  defaultOpenFolder,
+  isOpenSuccess,
 };
