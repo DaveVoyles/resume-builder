@@ -56,15 +56,17 @@ test("the assistant script matches the briefing and does not talk down", () => {
 });
 
 test("the briefing tells a person where files go in and where results come back", () => {
-  assert.match(guide, /It will open a folder/);
-  assert.match(guide, /Put past resumes and notes in that folder/);
+  assert.match(guide, /my-documents/);
+  assert.match(guide, /Put past resumes and notes in my-documents/);
   assert.match(guide, /finished resume, the role list, and the interview brief/);
 });
 
-test("the assistant opens the inputs folder and uses the real status words", () => {
-  assert.match(speech, /candidate\/inputs\//);
-  assert.match(speech, /resumes folder/);
-  assert.match(speech, /notes folder/);
+test("the assistant opens my-documents and uses the real status words", () => {
+  assert.match(speech, /my-documents/);
+  assert.match(speech, /candidate\/inputs\/resumes/);
+  assert.match(speech, /candidate\/inputs\/notes/);
+  assert.doesNotMatch(speech, /Put resumes in the resumes folder/);
+  assert.doesNotMatch(speech, /notes in the notes folder/);
   assert.match(speech, /they said no/);
   assert.match(speech, /you withdrew/);
   assert.match(speech, /no reply/);
@@ -77,8 +79,9 @@ test("the assistant opens the inputs folder and uses the real status words", () 
 test("the FAQ and getting started agree with the briefing", () => {
   assert.match(faq, /If they ask about the samples/);
   assert.doesNotMatch(faq, /finished example first/);
-  assert.match(faq, /Open `candidate\/inputs\/`/);
-  assert.doesNotMatch(faq, /Open `candidate\/inputs\/resumes\/`/);
+  assert.match(faq, /Open `my-documents`/);
+  assert.match(faq, /candidate\/inputs\/resumes/);
+  assert.doesNotMatch(faq, /Open `candidate\/inputs\/`/);
   assert.doesNotMatch(gettingStarted, /The first goal is to make sure the fictional sample works/);
   assert.doesNotMatch(gettingStarted, /The sample workflow runs successfully/);
   assert.match(gettingStarted, /The briefing was opened before any resume was written/);

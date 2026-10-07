@@ -215,7 +215,7 @@ async function run(options, { openFolder = defaultOpenFolder, openHome = openInB
     server.listen(port, () => {
       const url = homeUrl(server.address().port);
       console.log(`RB home is running at ${url}`);
-      console.log("This page is only on your computer. The design mock used port 3000; this repo uses 4321.");
+      console.log("This page is only on your computer.");
       console.log("Press Ctrl+C to stop.");
       if (!options.noOpen) {
         openHome(url);

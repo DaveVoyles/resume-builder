@@ -4,13 +4,15 @@
 
 ## What it does
 
+The person drops source files in `my-documents`. Copy them into `candidate/inputs/resumes` or `candidate/inputs/notes` before ingest. Always name those real paths. Never say "the resumes folder."
+
 The grill guides an agent through a structured conversation with the candidate, one question at a time. Answers are written to:
 
 - `candidate/profile.json` — Work history and candidate facts
 - `candidate/preferences.json` — Target roles, location, salary, deal breakers
 - `candidate/evidence.jsonl` — Supporting evidence for claims
 
-The agent makes the semantic decisions (asking follow-up questions, rephrasing, linking evidence); the CLI validates the results.
+The agent makes the semantic decisions (asking follow-up questions, rephrasing, linking evidence); the CLI validates the output.
 
 ## Usage
 

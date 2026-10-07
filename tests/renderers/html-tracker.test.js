@@ -807,7 +807,11 @@ test("renderOnboardingChecklist covers all 10 steps in order and counts done acc
 test("renderOnboardingChecklist shows 1 of 10 for the fresh default state (setup itself already counts as done)", () => {
   const html = renderOnboardingChecklist(defaultOnboardingState());
   assert.match(html, /Onboarding: 1 of 10 steps/);
-  assert.match(html, /onboarding-check-done">✓<\/span><span class="onboarding-item-label">Workspace created/);
+  assert.match(html, /onboarding-check-done">✓<\/span>/);
+  assert.match(html, /onboarding-item-label">Workspace created/);
+  assert.match(html, /onboarding-item-howto/);
+  assert.match(html, /my-documents/);
+  assert.match(html, /candidate\/inputs\/resumes/);
 });
 
 test("renderOnboardingChecklist shows 10 of 10 once every step is complete", () => {
@@ -880,7 +884,7 @@ test("renderHtmlTracker's filter buttons still work normally when the checklist 
 test("renderOnboardingChecklist treats a sections object missing some keys entirely the same as those keys being false", () => {
   const html = renderOnboardingChecklist({ setupComplete: true, sections: { workHistory: true } });
   assert.match(html, /Onboarding: 2 of 10 steps/);
-  assert.match(html, /onboarding-check-pending"><\/span><span class="onboarding-item-label onboarding-item-label-pending">Education/);
+  assert.match(html, /onboarding-item-label onboarding-item-label-pending">Education/);
 });
 
 test("isOnboardingComplete ignores unrecognized extra keys in the state object", () => {
@@ -921,4 +925,6 @@ test("renderHtmlTracker without notice option renders no banner and is byte-iden
 
   // The notice banner must not appear anywhere in the output.
   assert.doesNotMatch(htmlWithoutNotice, /class="notice-banner"/, "no notice-banner div should appear when notice is not provided");
+  assert.doesNotMatch(htmlWithoutNotice, /<p class="subtitle">/, "generation metadata must not be a visible subtitle");
+  assert.match(htmlWithoutNotice, /<!-- Generated /, "generation metadata may stay in an HTML comment");
 });

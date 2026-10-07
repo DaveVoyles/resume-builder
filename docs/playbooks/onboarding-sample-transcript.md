@@ -21,7 +21,7 @@ Immediately re-checks state: `profile.json` now exists, `inputs/resumes/` is emp
 
 ## State 1: nothing real added yet
 
-**Agent:** "Your workspace is ready. Now I need some real material to work with — the more you give me, the better the resumes I can generate and the better I can match you to roles. There are four ways to hand me material, and you can use any combination: drop resume files into `candidate/inputs/resumes/`, add notes to `candidate/inputs/notes/intake.md`, list links in `candidate/inputs/links.md`, or share your GitHub username. Let me know when you've added something."
+**Agent:** "Your workspace is ready. Put old resumes and notes in `my-documents` at the top of the resume-builder folder. I will copy them into `candidate/inputs/resumes` or `candidate/inputs/notes` and read them. You can also paste a link or a GitHub username. Tell me when the files are in."
 
 **Candidate action (simulated):** drops a career notes file and fills in `links.md`:
 

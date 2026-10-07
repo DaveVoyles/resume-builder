@@ -28,7 +28,7 @@ Your assistant will open a one-page briefing. It describes a private profile bui
 
 The page is also here: [docs/first-run/guide.html](docs/first-run/guide.html).
 
-The three-tab home page (Introduction, FAQ, Jobs) opens with `npm run home` at http://localhost:4321. The design mock used port 3000. Put your files in `my-documents/`. RB writes drafts in `output/`. `npm run workspace:serve` still opens the candidate tracker.
+The three-tab home page (Introduction, FAQ, Jobs) opens with `npm run home` at http://localhost:4321. Put your files in `my-documents/`. RB writes drafts in `output/`. `npm run home` does not serve `tracker.html`. Rebuild the tracker with `npm run workspace:tracker:html` and open `candidate/outputs/tracker.html`.
 
 Free and open source, no API key required. See [why it's free](#-why-this-is-free).
 

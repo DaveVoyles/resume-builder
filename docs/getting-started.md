@@ -48,7 +48,7 @@ npm run setup
 
 This creates a local `candidate/` workspace with:
 
-- 📄 `inputs/resumes/` for source resumes.
+- 📄 `inputs/resumes/` for source resumes after you copy them from `my-documents`.
 - 📝 `inputs/notes/intake.md` for background notes and follow-up answers.
 - 🔗 `inputs/links.md` for portfolio, GitHub, writing, or talk links (one per line).
 - 👤 `profile.json` for structured candidate facts.
@@ -58,7 +58,7 @@ This creates a local `candidate/` workspace with:
 
 It also opens a browser tab to your tracker dashboard automatically (`outputs/tracker.html`) — empty at first, it fills in as you go. Pass `--noServe` to skip this in CI/automation contexts, or `--noOpen` to start the server without opening a tab.
 
-The agent opens `candidate/inputs/` so the resumes folder and the notes folder are both visible. Resumes go in `inputs/resumes/`. Notes go in `inputs/notes/`. Then ask your agent to ingest what you added:
+The person puts files in `my-documents`. The agent opens `my-documents`. If Open folder fails, open `my-documents` from the repo root. Then the agent copies resumes into `candidate/inputs/resumes` and notes into `candidate/inputs/notes`, and ingests from those paths:
 
 ```bash
 npm run workspace:ingest -- --workspace candidate --resume <file> --notes <file> --links candidate/inputs/links.md

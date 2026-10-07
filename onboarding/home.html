@@ -161,10 +161,10 @@
       <ol class="steps">
         <li class="done"><div><strong>Download RB</strong> <span class="who agent">Agent</span><br><span class="muted">Done. RB is now on your computer.</span></div></li>
         <li class="done"><div><strong>Start RB and open this page</strong> <span class="who agent">Agent</span><br><span class="muted">Done. You're looking at it.</span></div></li>
-        <li><div><strong>Add your files to <code>my-documents</code></strong> <span class="who you">You</span><br><span class="muted">Drag old resumes into the folder in the "Your documents" box.</span></div></li>
+        <li><div><strong>Add your files to <code>my-documents</code></strong> <span class="who you">You</span><br><span class="muted">Drag old resumes and notes into <code>my-documents</code> at the top of the resume-builder folder. If Open folder fails, open <code>my-documents</code> yourself. Your agent copies them into <code>candidate/inputs/resumes</code> and reads them.</span></div></li>
         <li><div><strong>Answer a few questions</strong> <span class="who you">You</span> <span class="who agent">Agent</span><br><span class="muted">The agent fills in what it can. You check it and click Save.</span></div></li>
         <li><div><strong>Get your first draft</strong> <span class="who agent">Agent</span><br><span class="muted">A new resume, ready for you to read and tweak.</span></div></li>
-        <li><div><strong>Add jobs you want</strong> <span class="who you">You</span><br><span class="muted">Paste a job link. It shows up in the Jobs tab.</span></div></li>
+        <li><div><strong>Add jobs you want</strong> <span class="who you">You</span><br><span class="muted">Tell your agent about a job. Paste the posting link in chat. This Jobs tab does not add jobs from the page.</span></div></li>
       </ol>
     </div>
     <div class="card">
@@ -248,7 +248,7 @@
       <li class="done"><div><strong>Answers saved</strong></div></li>
       <li class="done"><div><strong>First draft written</strong> <span class="who agent">Agent</span></div></li>
       <li><div><strong>Read your draft</strong> <span class="who you">You</span><br><span class="muted">Ask your agent for changes in plain words, like "make it one page."</span></div></li>
-      <li><div><strong>Add a job you want</strong> <span class="who you">You</span><br><span class="muted">RB will write a version for that job and track it in Jobs.</span></div></li>
+      <li><div><strong>Add a job you want</strong> <span class="who you">You</span><br><span class="muted">Tell your agent the posting link in chat. The agent tracks it. This Jobs tab does not add jobs from the page.</span></div></li>
     </ol>
     <div class="row">
       <a class="btn primary" id="openDraft" href="/output/resume-draft-1.txt">Open my draft</a>
@@ -295,7 +295,7 @@
     <div class="icon" aria-hidden="true">•</div>
     <h2>No jobs yet — that's normal.</h2>
     <p class="muted">Finish setup on the Introduction tab first. Then tell your agent about a job you like, for example:<br><em>"Add this job to RB: [paste the job link]"</em></p>
-    <p class="hint">This first version does not add jobs from the page. Your agent will track them later.</p>
+    <p class="hint">This page does not add jobs. Your agent tracks them.</p>
     <div class="row" style="justify-content:center">
       <button class="btn primary" type="button" data-goto="intro">Go to setup</button>
     </div>
@@ -303,7 +303,7 @@
 </section>
 
 </main>
-<footer>RB runs only on this computer. Default address <code>http://localhost:4321</code>. The design mock used port 3000.</footer>
+<footer>RB runs only on this computer. Default address <code>http://localhost:4321</code>.</footer>
 
 <script>
 (function(){
@@ -356,11 +356,11 @@
     }).then(function(r){return r.json().then(function(body){return {ok:r.ok,body:body};});}).then(function(result){
       note.hidden=false;
       note.textContent=result.ok
-        ? "Asked your computer to open my-documents. If nothing opened, ask your agent: open the my-documents folder."
-        : "Could not open the folder. Ask your agent to open my-documents.";
+        ? "Asked your computer to open my-documents. If nothing opened, open my-documents yourself from the resume-builder folder, or ask your agent to open it."
+        : "Could not open the folder. Open my-documents yourself from the resume-builder folder, or ask your agent to open it.";
     }).catch(function(){
       note.hidden=false;
-      note.textContent="Could not open the folder. Ask your agent to open my-documents.";
+      note.textContent="Could not open the folder. Open my-documents yourself from the resume-builder folder, or ask your agent to open it.";
     });
   });
 
