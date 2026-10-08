@@ -738,7 +738,7 @@ test("home Jobs counts match tracker funnel counts for the same roles.tracked.js
     funnel[match[1]] = Number(match[2]);
   }
   const totalMatch = html.match(/<div class="stat-value">(\d+)<\/div><div class="stat-label">📋 Total roles/);
-  const readyMatch = html.match(/<div class="stat-value">(\d+)<\/div><div class="stat-label">🎯 Ready to apply/);
+  const readyMatch = html.match(/<div class="stat-value">(\d+)<\/div><div class="stat-label">🎯 Resume ready/);
   const server = await run({ root: tmpDir, port: 0, noOpen: true });
   const port = server.address().port;
   try {
