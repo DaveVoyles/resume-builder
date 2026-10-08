@@ -1,0 +1,29 @@
+David Voyles
+Philadelphia, PA | email-removed@example.com | DaveVoyles.com
+Senior Technical PM, former software engineer · AI agents and live evals
+SUMMARY
+Senior technical PM and former senior software engineer. Runs a personal fleet of AI agents with A/B testing of local and cloud models, live evals on every request, and CI replay gating changes. At Microsoft CSE, co-designed streaming data pipelines and ML models with NBA, NASCAR, Johnson & Johnson, and financial partners, then shipped the APIs and pipelines those teams kept.
+EXPERIENCE
+Agentic Platforms — Independent R&D 2025 - Present
+Run an agentic workflow of personalized agents with A/B testing of local and cloud models, plus a self-improvement loop (167 skills, 57 commands, live evals); operated, never authored.
+Gated routing and tool-call changes with live evals on every request plus CI replay, so the running stack fails closed before a bad change lands.
+Authored a portable coding-agent playbook: versioned adapters any git repo can stamp, fail-closed receipted gates, and a machine layer that dispatches isolated agent sessions; personal infrastructure, not a customer product.
+Operate a redundant Mac mini network for that agent fleet, Docker containers, and local models: performance testing, cost comparisons, watchdogs, and self-healing scripts.
+Senior Technical Program Manager, Partner Center / Xbox — Microsoft 2020 - 2026
+Orchestrated an internal AI telemetry pipeline across 74 Azure DevOps queries for 14 PM teams, putting hygiene, trends, and alerts into the work-tracking system they already lived in.
+Designed Game Reparenting Validate / Execute Reparent APIs so 8 partner systems kept their existing tools through ownership transfers; Saga compensating transactions; 100% data fidelity, zero rollbacks.
+Automated publisher onboarding via Event Grid so entitlements showed up in Battle.net without a side process, cutting manual configuration latency by 90%.
+Senior Software Engineer — Microsoft (CSE) 2016 - 2020
+Co-designed streaming data pipelines and ML models with NBA, NASCAR, Johnson & Johnson, and financial partners; models and pipelines showed up in the customer's existing workflows, not a side console.
+Translated enterprise account workflows into platform capabilities those product teams retained after CSE left.
+Delivered as a senior IC with stakeholders in the room, then shipped the APIs and pipelines those teams kept.
+SKILLS
+AI agents and evals
+Local and cloud models, A/B testing, live evals on every request, CI replay
+Data pipelines
+Streaming data pipelines and ML models for customers; AI telemetry across 74 Azure DevOps queries
+Integration
+APIs shared by 8 partner systems, Event Grid, Saga compensating transactions
+EDUCATION
+MBA — Management of Information Systems — New York Institute of Technology (NYIT) Graduate Coursework (Hiatus)
+BS — Communication Studies, Business Minor — SUNY College at Oneonta 2009

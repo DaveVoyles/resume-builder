@@ -61,6 +61,14 @@ describe("chunkResumeText", () => {
     assert.ok(pieces.every((piece) => piece.length <= MAX_CHUNK_CHARS));
     assert.equal(pieces.join(" ").replace(/\s+/g, " "), long);
   });
+
+  test("a dot inside a word (Battle.net, Node.js) does not drop text", () => {
+    const long = `Synced entitlements between Xbox Live and Battle.net for the acquisition. ${"Shipped the Node.js service for the team and shared it widely. ".repeat(14)}`.trim();
+    const pieces = splitLong(long);
+    assert.ok(pieces.length > 1);
+    assert.equal(pieces.join(" ").replace(/\s+/g, " "), long);
+    assert.ok(pieces[0].startsWith("Synced entitlements between Xbox Live and Battle.net"));
+  });
 });
 
 function entry(id, text, extra = {}) {

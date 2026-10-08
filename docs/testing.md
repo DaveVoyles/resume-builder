@@ -1,19 +1,35 @@
 # Testing with personas
 
-Every run of the persona suite uses fictional people, so the whole path from empty folder to tailored resume is measured the same way each time. Nothing here submits an application.
+Every run of the persona suite uses the same people, so the whole path from empty folder to tailored resume is measured the same way each time. Four of the personas are fictional. The fifth, `owner`, is the one persona built from a real person, with permission: the repo owner's own scrubbed resume and three real job postings saved as offline snapshots. Nothing here submits an application.
 
 ## What is in `examples/personas/<name>/`
 
 | File or folder | What it is |
 | --- | --- |
 | `answers.json` | The answers typed into the home form (`name`, `location`, `history`, `goal`, `where`, `when`, `extra`, `dealBreakers`, `dealBreakersChoice`, `education`, `educationChoice`, `salary`, `salaryChoice`). Same shape `saveHomeAnswers` takes. |
-| `inputs/resumes/`, `inputs/notes/` | Old resumes and notes, copied into the temp workspace and ingested. |
+| `inputs/resumes/`, `inputs/notes/` | Old resumes and notes, copied into the temp workspace and ingested. Optional: see "Inputs that live elsewhere" below. |
 | `postings/*.md` | Job-description text for each target role. |
 | `resume-configs/*.json` | The committed tailored resume per posting. Every number in them must be backed by the persona's notes. |
-| `expected.json` | Scorecard thresholds and posting metadata (company, title, URL). Per posting: `expectedKeywords` (keywords posting extraction must store on the role), `forbiddenKeywords` (company names, places, and filler it must not store), `minKeywordPercent`. |
+| `expected.json` | Scorecard thresholds and posting metadata (company, title, URL). Per posting: `expectedKeywords` (keywords posting extraction must store on the role), `forbiddenKeywords` (company names, places, and filler it must not store), `minKeywordPercent`, `maxProxyScore`, and an optional `note` that says why the threshold is what it is. Optional `maxPages` (with a one-line `maxPagesReason`) raises the page limit for one posting; the default is 1. |
 | `golden/*.txt` | Expected extracted DOCX text per role. |
 
-Personas: `alex` (product manager, two roles, adapted from `examples/sample-candidate`), `jordan` (office and operations, skips salary), `morgan` (teacher moving into customer education, has a counted claim "6 workshops" backed by a note).
+Personas: `alex` (product manager, two roles, adapted from `examples/sample-candidate`), `jordan` (office and operations, skips salary), `morgan` (teacher moving into customer education, has a counted claim "6 workshops" backed by a note), `owner` (the repo owner's real resume and three real postings, described below).
+
+### Inputs that live elsewhere
+
+By default a persona's files come from its own `inputs/resumes/` and `inputs/notes/`. When the file already lives elsewhere in the repo, `expected.json` can point at it instead of keeping a second copy:
+
+```json
+"inputs": { "resumes": ["../../real-resume/owner/owner-resume.docx"], "notes": [] }
+```
+
+Paths are relative to the persona folder, must exist, and must stay inside the repo. `scripts/e2e-persona.js` (`personaInputFiles`) resolves them for `npm run e2e`, `npm test` and `tests/browser/persona-home.browser.js`. Personas without an `inputs` key behave as before.
+
+### The owner persona
+
+`owner` is the only persona built from a real person, with their permission. Its resume is `examples/real-resume/owner/owner-resume.docx` (email scrubbed), read through the real Word ingest path; there is no notes folder, so the resume is the only evidence. Its three postings in `examples/personas/owner/postings/` are real public job pages saved as offline snapshots (text plus a screenshot), so the run still works after the pages come down. They are for tailoring and testing only and nothing is ever sent.
+
+The three tailored resumes use only what the resume shows. `JOBS.md` in that folder lists, per posting, what the resume backs and what it does not, and `tests/e2e/personas.test.js` fails if a tailored config names a tool, platform or credential from that "not on the resume" list. The roles are deliberately uneven: one close fit, one stretch, and one weak fit. The thresholds in `expected.json` are the measured results with a `note` saying why, so a drop is a regression, not noise. Because the general resume already holds everything the resume supports, tailoring for the stretch roles cannot raise the keyword percent; the scorecard prints that as a WARN and the report says so.
 
 ## Run it
 
@@ -39,7 +55,7 @@ For each persona the script builds a temp workspace and runs: `init`, copy input
 | posting keywords | an `expectedKeywords` entry was not stored, or a `forbiddenKeywords` entry was |
 | style-lint warnings | more than `maxStyleWarnings` |
 | proxy score | above `maxProxyScore` (summary words + bullet words + 40 per job + 20 per education row) |
-| page count | more than one page, counted with `src/core/page-count.js` (the same check `tailor` runs). Runs only when LibreOffice (`soffice`) is installed, otherwise skipped |
+| page count | more pages than the posting's limit (1, or `maxPages` in `expected.json`), counted with `src/core/page-count.js` (the same check `tailor` runs). Runs only when LibreOffice (`soffice`) is installed, otherwise skipped |
 | tracker lists the role | company missing from `tracker.md` or `tracker.html`, or a role is marked applied |
 | golden DOCX text | extracted text differs from `golden/<role>.txt` |
 | no absolute paths in CLI output | Fails if any command prints the machine's absolute path. Commands name files relative to the workspace or working directory. |
@@ -60,5 +76,5 @@ Submitting applications is out of scope for every test. See [`docs/playbooks/app
 
 1. Run `npm run e2e` after changing anything in `src/`, `onboarding/`, `templates/`, or a persona.
 2. Read the scorecard. A `FAIL` names the stage and the check. A `WARN` is information.
-3. Add a persona when you find a kind of candidate the three do not cover: copy a folder, change the fiction, run with `UPDATE_GOLDEN=1`, and review the new golden text. Keep everything fictional (`example.invalid` or `example.com` addresses).
+3. Add a persona when you find a kind of candidate the others do not cover: copy a folder, change the fiction, run with `UPDATE_GOLDEN=1`, and review the new golden text. Keep everything fictional (`example.invalid` or `example.com` addresses). `owner` is the one exception and is not a template: do not add anyone else's real resume.
 4. Never point these runs at `candidate/`. They use a temp workspace and delete it afterward.

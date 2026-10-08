@@ -58,7 +58,8 @@ function splitHeader(headerText) {
 /** Splits text longer than the cap on sentence boundaries, then on words. Never drops text. */
 function splitLong(text, max = MAX_CHUNK_CHARS) {
   if (text.length <= max) return [text];
-  const sentences = text.match(/[^.!?]+(?:[.!?]+(?=\s|$)|$)\s*/gu) || [text];
+  // A dot inside a word ("Battle.net", "Node.js", "3.5") is not a sentence end.
+  const sentences = text.match(/(?:[^.!?]|[.!?]+(?!\s|$))+(?:[.!?]+(?=\s|$)|$)\s*/gu) || [text];
   const pieces = [];
   let current = "";
   const push = () => {

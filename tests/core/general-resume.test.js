@@ -34,6 +34,30 @@ test("falls back to ingested resume pieces and the resume's Summary line", () =>
   assert.deepEqual(job.bulletEvidenceIds, [["b"]]);
 });
 
+test("several roles at one employer line up with their own tailored job, not the first one", () => {
+  const piece = (id, org, bullet) => ({ id, type: "resume", organization: org, dateRange: "x", source: { path: "r.docx" }, metadata: { chunkKind: "bullet" }, snippet: bullet });
+  const evidence = [
+    piece("pm", "Senior Technical Program Manager, Partner Center — Contoso 2020 – 2026", "Ran the publishing program."),
+    piece("eng", "Senior Software Engineer — Contoso (CSE) 2016 – 2020", "Built the pipelines."),
+    piece("evg", "Sr. Technical Evangelist — Contoso DX 2014 – 2017", "Taught the SDK."),
+  ];
+  const config = {
+    experienceSections: [
+      {
+        jobs: [
+          { title: "Senior Technical Program Manager, Partner Center", company: "Contoso", bullets: ["x"] },
+          { title: "Senior Software Engineer", company: "Contoso (CSE)", bullets: ["y"] },
+        ],
+      },
+    ],
+  };
+  const jobs = buildGeneralResume({ profile: { summary: "" }, evidence, config }).experienceSections[0].jobs;
+  const byBullet = Object.fromEntries(jobs.map((job) => [job.bullets[0], `${job.title} @ ${job.company}`]));
+  assert.equal(byBullet["Ran the publishing program."], "Senior Technical Program Manager, Partner Center @ Contoso");
+  assert.equal(byBullet["Built the pipelines."], "Senior Software Engineer @ Contoso (CSE)");
+  assert.match(byBullet["Taught the SDK."], /Evangelist/u, "an unmatched role keeps its own header");
+});
+
 test("returns null with nothing to build from", () => {
   assert.equal(buildGeneralResume({ profile: { summary: "", skills: [], experience: [] }, evidence: [] }), null);
   assert.equal(buildGeneralResume({}), null);
