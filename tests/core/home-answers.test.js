@@ -770,3 +770,47 @@ test("blank extra and history Save stores empty strings", () => {
   }
 });
 
+
+test("home work mode keeps an agent-written value when home picked the same one", () => {
+  const workspace = tempWorkspace();
+  try {
+    const paths = workspacePaths(workspace);
+    saveHomeAnswers(workspace, { goal: "PM" });
+    const prefs = JSON.parse(fs.readFileSync(paths.preferences, "utf8"));
+    prefs.locations = { ...(prefs.locations || {}), workModes: ["remote"] };
+    writeJson(paths.preferences, prefs);
+    saveHomeAnswers(workspace, { goal: "PM", where: "Remote (from home)" });
+    saveHomeAnswers(workspace, { goal: "PM", where: "Hybrid" });
+    const after = JSON.parse(fs.readFileSync(paths.preferences, "utf8"));
+    assert.deepEqual(after.locations.workModes.slice().sort(), ["hybrid", "remote"]);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("new Education and deal-breaker ids use highest id plus one, not the count", () => {
+  const workspace = tempWorkspace();
+  try {
+    const paths = workspacePaths(workspace);
+    saveHomeAnswers(workspace, { goal: "PM" });
+    const profile = JSON.parse(fs.readFileSync(paths.profile, "utf8"));
+    profile.education = [
+      { id: "edu-001", institution: "A" },
+      { id: "edu-003", institution: "B" },
+    ];
+    writeJson(paths.profile, profile);
+    const prefs = JSON.parse(fs.readFileSync(paths.preferences, "utf8"));
+    prefs.dealBreakers = [
+      { id: "deal-001", text: "x", priority: "must" },
+      { id: "deal-004", text: "y", priority: "must" },
+    ];
+    writeJson(paths.preferences, prefs);
+    saveHomeAnswers(workspace, { goal: "PM", education: "State U", dealBreakers: "No travel" });
+    const p = JSON.parse(fs.readFileSync(paths.profile, "utf8"));
+    const q = JSON.parse(fs.readFileSync(paths.preferences, "utf8"));
+    assert.deepEqual(p.education.map((e) => e.id), ["edu-001", "edu-003", "edu-004"]);
+    assert.equal(q.dealBreakers[2].id, "deal-005");
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});

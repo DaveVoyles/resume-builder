@@ -51,27 +51,49 @@ function lastRecordedHomeWorkMode(answers) {
   return mapped ? mapped[0] : "";
 }
 
+// Next id is one more than the highest existing numeric suffix, so ids never
+// collide when an agent wrote non-contiguous entries (edu-001, edu-003).
+function nextSequentialId(prefix, entries) {
+  let max = 0;
+  const pattern = new RegExp(`^${prefix}-(\\d+)$`);
+  for (const entry of Array.isArray(entries) ? entries : []) {
+    const match = pattern.exec(entry && typeof entry.id === "string" ? entry.id : "");
+    if (match) max = Math.max(max, Number(match[1]));
+  }
+  const used = new Set((Array.isArray(entries) ? entries : []).map((entry) => entry && entry.id));
+  let next = max + 1;
+  while (used.has(`${prefix}-${String(next).padStart(3, "0")}`)) next += 1;
+  return `${prefix}-${String(next).padStart(3, "0")}`;
+}
+
 function lastRecordedHomeEducationId(answers) {
   return trimmed(answers && answers.lastHomeEducationId);
 }
 
-function applyHomeWorkMode(currentModes, previousHomeMode, nextHomeMode) {
-  // Home Save replaces only its own previous work mode. Remove lastHomeWorkMode
-  // if it is present, then append the new value if it is absent. Agent-written
-  // values stay. If flexible sits next to specific modes, keep them all:
-  // flexible means any mode is OK for matching, and the specific values remain
-  // as stated preferences.
+// Home Save replaces only the work mode it added itself. If the agent had
+// already written the same mode, home does not own it (owned: false), so a later
+// home change leaves it alone. Legacy answers without the flag count as owned.
+// If flexible sits next to specific modes, keep them all: flexible means any
+// mode is OK for matching, and the specific values remain as stated preferences.
+function lastRecordedHomeWorkModeOwned(answers) {
+  return !(answers && answers.lastHomeWorkModeOwned === false);
+}
+
+function applyHomeWorkMode(currentModes, previousHomeMode, previousOwned, nextHomeMode) {
   const next = [];
   const seen = new Set();
   for (const mode of Array.isArray(currentModes) ? currentModes : []) {
-    if (!mode || mode === previousHomeMode || seen.has(mode)) continue;
+    if (!mode || seen.has(mode)) continue;
+    if (mode === previousHomeMode && previousOwned) continue;
     seen.add(mode);
     next.push(mode);
   }
+  let owned = false;
   if (nextHomeMode && !seen.has(nextHomeMode)) {
     next.push(nextHomeMode);
+    owned = true;
   }
-  return next;
+  return { modes: next, owned };
 }
 
 
@@ -85,7 +107,7 @@ function applyDealBreakers(preferences, answers) {
     if (!already) {
       preferences.dealBreakers = existing.concat([
         {
-          id: `deal-${String(existing.length + 1).padStart(3, "0")}`,
+          id: nextSequentialId("deal", existing),
           text,
           priority: "must",
         },
@@ -161,7 +183,7 @@ function applyEducation(profile, answers, previousAnswers) {
       profile.education = existing;
       return { education: text, educationChoice: "", lastHomeEducationId: previousHomeEducationId };
     }
-    const id = `edu-${String(existing.length + 1).padStart(3, "0")}`;
+    const id = nextSequentialId("edu", existing);
     profile.education = existing.concat([
       {
         id,
@@ -437,12 +459,14 @@ function saveHomeAnswers(workspace, answers) {
     salaryChoice: compensationRecord.salaryChoice,
     savedAt,
   };
+  let homeWorkModeOwned = lastRecordedHomeWorkModeOwned(previousAnswers);
   if (nextHomeWorkMode) {
     payload.lastHomeWorkMode = nextHomeWorkMode;
   } else {
     const previousHomeWorkMode = lastRecordedHomeWorkMode(previousAnswers);
     if (previousHomeWorkMode) {
       payload.lastHomeWorkMode = previousHomeWorkMode;
+      if (!homeWorkModeOwned) payload.lastHomeWorkModeOwned = false;
     }
   }
 
@@ -464,6 +488,19 @@ function saveHomeAnswers(workspace, answers) {
   if (educationRecord.lastHomeEducationId) {
     payload.lastHomeEducationId = educationRecord.lastHomeEducationId;
   }
+  if (nextHomeWorkMode) {
+    preferences.locations = preferences.locations || emptyPreferences().locations;
+    const workModeResult = applyHomeWorkMode(
+      preferences.locations.workModes,
+      lastRecordedHomeWorkMode(previousAnswers),
+      homeWorkModeOwned,
+      nextHomeWorkMode,
+    );
+    preferences.locations.workModes = workModeResult.modes;
+    if (!workModeResult.owned) {
+      payload.lastHomeWorkModeOwned = false;
+    }
+  }
   profile.updatedAt = savedAt;
   if (!skipCreateHomeAnswers) {
     writeJsonIfMeaningfulChange(answersPath, payload);
@@ -482,14 +519,6 @@ function saveHomeAnswers(workspace, answers) {
     ];
   } else if (goal !== currentTitle) {
     replaceFirstRoleTargetTitle(preferences, goal);
-  }
-  if (nextHomeWorkMode) {
-    preferences.locations = preferences.locations || emptyPreferences().locations;
-    preferences.locations.workModes = applyHomeWorkMode(
-      preferences.locations.workModes,
-      lastRecordedHomeWorkMode(previousAnswers),
-      nextHomeWorkMode,
-    );
   }
   preferences.updatedAt = savedAt;
   writeJsonIfMeaningfulChange(paths.preferences, preferences);

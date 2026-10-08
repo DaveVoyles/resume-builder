@@ -32,6 +32,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Privacy check
+        run: npm run check:privacy
+
       - name: Build demo
         run: node src/cli/index.js build-tracker --workspace examples/demo-candidate --format html --notice "This is a demo using fictional placeholder data for a fictional candidate (Troy McClure). It is not Dave's real job search." --output _site/index.html
 

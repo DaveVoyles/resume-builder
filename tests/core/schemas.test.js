@@ -226,3 +226,15 @@ describe("validatePreferences workModes", () => {
 });
 
 
+
+test("validateProfile and validatePreferences reject repeated ids", () => {
+  const { validateProfile, validatePreferences } = require("../../src/core/schemas");
+  const profile = {
+    candidate: { links: [] },
+    skills: [], experience: [], projects: [], sources: [],
+    education: [{ id: "edu-003", institution: "A" }, { id: "edu-003", institution: "B" }],
+  };
+  assert.ok(validateProfile(profile).some((e) => /duplicate id edu-003/.test(e)));
+  const prefs = { dealBreakers: [{ id: "deal-001" }, { id: "deal-001" }] };
+  assert.ok(validatePreferences(prefs).some((e) => /duplicate id deal-001/.test(e)));
+});
