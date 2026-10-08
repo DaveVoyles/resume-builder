@@ -4,15 +4,18 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const { execFile } = require("child_process");
-const { openInBrowser, resolvePort, DEFAULT_PORT, CONTENT_TYPES } = require("./serve");
-const { identityHeaders } = require("../../core/server-config");
+const { openInBrowser, resolvePort, trackerStatus, DEFAULT_PORT, CONTENT_TYPES } = require("./serve");
+const { identityHeaders, STATUS_ENDPOINT } = require("../../core/server-config");
 const { saveHomeAnswers } = require("../../core/home-answers");
-const { workspacePaths } = require("../../core/workspace");
+const { readJson, workspacePaths } = require("../../core/workspace");
+const { countRoleStats } = require("../../core/role-view");
+const { tryRebuildTrackers } = require("./build-tracker");
 
 const {
   HOME_STEP_TO_TRACKER_STEPS,
   defaultOnboardingState,
   homeStepsFromOnboarding,
+  isHomeSetupComplete,
   loadOnboardingState,
   onboardingSteps,
 } = require("../../core/onboarding-state");
@@ -160,7 +163,35 @@ function onboardingPayload(workspace) {
   };
 }
 
-async function run(options, { openFolder = defaultOpenFolder, openHome = openInBrowser, openFolderTimeoutMs = OPEN_FOLDER_TIMEOUT_MS } = {}) {
+function rolesPayload(workspace) {
+  const paths = workspacePaths(workspace);
+  const tracked = fs.existsSync(paths.rolesTracked) ? readJson(paths.rolesTracked, []) : [];
+  const roles = Array.isArray(tracked) ? tracked : [];
+  const stats = countRoleStats(roles);
+  const hasWorkspace =
+    fs.existsSync(workspace) &&
+    (fs.existsSync(path.join(workspace, "profile.json")) ||
+      fs.existsSync(path.join(workspace, ".onboarding-state.json")));
+  const state = hasWorkspace ? loadOnboardingState(workspace) : defaultOnboardingState();
+  return {
+    roles: roles.map((role) => ({
+      id: role.id || "",
+      company: role.company || "",
+      title: role.title || role.role || "",
+    })),
+    counts: {
+      total: stats.total,
+      readyToApply: stats.readyToApply,
+      applied: stats.applied,
+      interview: stats.interview,
+      buckets: stats.buckets,
+    },
+    setupComplete: isHomeSetupComplete(state),
+  };
+}
+
+
+async function run(options, { openFolder = defaultOpenFolder, openHome = openInBrowser, openFolderTimeoutMs = OPEN_FOLDER_TIMEOUT_MS, rebuildTrackers = tryRebuildTrackers } = {}) {
   if (!fs.existsSync(HOME_PAGE)) {
     throw new Error(`Onboarding home page not found at ${HOME_PAGE}`);
   }
@@ -206,6 +237,16 @@ async function run(options, { openFolder = defaultOpenFolder, openHome = openInB
 
     if (method === "GET" && requestedPath === "/api/onboarding-state") {
       sendJson(res, 200, onboardingPayload(workspace));
+      return;
+    }
+
+    if (method === "GET" && requestedPath === "/api/roles") {
+      sendJson(res, 200, rolesPayload(workspace));
+      return;
+    }
+
+    if (method === "GET" && requestedPath === STATUS_ENDPOINT) {
+      sendJson(res, 200, trackerStatus(path.dirname(trackerFile)));
       return;
     }
 
@@ -276,6 +317,11 @@ async function run(options, { openFolder = defaultOpenFolder, openHome = openInB
           }
           try {
             const saved = saveHomeAnswers(workspace, answers);
+            try {
+              rebuildTrackers(workspace);
+            } catch (error) {
+              console.error(`Warning: tracker rebuild failed (${error && error.message ? error.message : error})`);
+            }
             const payload = onboardingPayload(workspace);
             sendJson(res, 200, {
               message: saved.message,

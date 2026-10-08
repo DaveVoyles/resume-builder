@@ -210,3 +210,19 @@ describe("validatePreferences skip markers", () => {
   });
 });
 
+describe("validatePreferences workModes", () => {
+  test("accepts hybrid along with the documented work modes", () => {
+    assert.deepEqual(
+      validatePreferences({ locations: { workModes: ["remote", "hybrid", "on-site", "flexible"] } }),
+      [],
+    );
+  });
+
+  test("rejects an unknown work mode", () => {
+    const errors = validatePreferences({ locations: { workModes: ["hybrid", "teleport"] } });
+    assert.equal(errors.length > 0, true);
+    assert.match(errors.join("\n"), /preferences\.locations\.workModes\[1\] must be one of: remote, hybrid, on-site, flexible/);
+  });
+});
+
+

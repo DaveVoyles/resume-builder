@@ -22,8 +22,7 @@ const { readJson, readJsonLines, relativeToWorkspace, resolveWorkspace, workspac
 const NOT_YET_APPLIED_STATUS = "interested";
 
 function rebuildTrackers(workspaceOption) {
-  buildTracker.run({ workspace: workspaceOption, format: "md" });
-  buildTracker.run({ workspace: workspaceOption, format: "html" });
+  buildTracker.rebuildTrackers(workspaceOption);
 }
 
 /**

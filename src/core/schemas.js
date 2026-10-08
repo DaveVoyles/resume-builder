@@ -61,6 +61,9 @@ const COMPENSATION_KEYS = new Set([
   "skipped",
 ]);
 
+const WORK_MODES = new Set(["remote", "hybrid", "on-site", "flexible"]);
+
+
 function isExclusiveTrueKey(value, key) {
   return (
     Boolean(value) &&
@@ -96,6 +99,18 @@ function validatePreferences(preferences) {
       if (keys.length !== 1 || keys[0] !== "skipped") {
         errors.push('preferences.compensation with skipped must be exactly { "skipped": true }');
       }
+    }
+  }
+  if (preferences.locations !== undefined) {
+    const locations = preferences.locations;
+    if (!requireObject(locations, "preferences.locations", errors)) return errors;
+    if (locations.workModes !== undefined) {
+      if (!requireArray(locations.workModes, "preferences.locations.workModes", errors)) return errors;
+      locations.workModes.forEach((mode, index) => {
+        if (!WORK_MODES.has(mode)) {
+          errors.push(`preferences.locations.workModes[${index}] must be one of: remote, hybrid, on-site, flexible`);
+        }
+      });
     }
   }
   return errors;
@@ -245,4 +260,5 @@ module.exports = {
   validatePreferences,
   validateRoles,
   validateFeedback,
+  WORK_MODES,
 };

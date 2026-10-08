@@ -11,6 +11,7 @@ const {
   HOME_STEPS,
   defaultOnboardingState,
   isOnboardingComplete,
+  isHomeSetupComplete,
   isFirstRoleAddedDone,
   onboardingSteps,
   homeStepsFromOnboarding,
@@ -226,6 +227,18 @@ describe("HOME_STEP_TO_TRACKER_STEPS", () => {
   });
 });
 
+describe("isHomeSetupComplete", () => {
+  test("is true only when Answer a few questions is done", () => {
+    const state = defaultOnboardingState();
+    assert.equal(isHomeSetupComplete(state), false);
+    state.sections.basicInfo = true;
+    assert.equal(isHomeSetupComplete(state), false);
+    state.sections.targetRole = true;
+    assert.equal(isHomeSetupComplete(state), true);
+  });
+});
+
+
 describe("deriveOnboardingState", () => {
   function tempWorkspace() {
     return fs.mkdtempSync(path.join(os.tmpdir(), "onboarding-derive-"));
@@ -273,6 +286,19 @@ describe("deriveOnboardingState", () => {
       fs.rmSync(workspace, { recursive: true, force: true });
     }
   });
+
+  test("hybrid workModes counts as location done", () => {
+    const workspace = tempWorkspace();
+    try {
+      const paths = workspacePaths(workspace);
+      writeJson(paths.profile, { candidate: {}, experience: [], education: [], sources: [] });
+      writeJson(paths.preferences, { roleTargets: [], locations: { workModes: ["hybrid"] }, dealBreakers: [] });
+      assert.equal(deriveOnboardingState(workspace).sections.location, true);
+    } finally {
+      fs.rmSync(workspace, { recursive: true, force: true });
+    }
+  });
+
 
   test("syncOnboardingState writes derived flags, not caller claims", () => {
     const workspace = tempWorkspace();

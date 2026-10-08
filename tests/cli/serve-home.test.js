@@ -624,3 +624,229 @@ test("Open folder fallback note is shown only when opening is not confirmed", ()
   assert.match(script, /Could not open the folder/);
   assert.doesNotMatch(script, /If nothing opened/);
 });
+
+test("GET /api/roles returns tracked Contoso Health role and server-side counts", async () => {
+  const { countRoleStats } = require("../../src/core/role-view");
+  const tmpDir = createHomeRoot();
+  writeCandidateWorkspace(tmpDir, { trackerHtml: "<html></html>" });
+  const workspace = path.join(tmpDir, "candidate");
+  const rolesPath = path.join(workspace, "roles.tracked.json");
+  const roles = [
+    { id: "role-001", company: "Contoso Health", title: "Operations Manager", application: { status: "applied" } },
+  ];
+  fs.writeFileSync(rolesPath, JSON.stringify(roles, null, 2) + "\n");
+  const beforeMtime = fs.statSync(rolesPath).mtimeMs;
+  const server = await run({ root: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    const response = await get(port, "/api/roles");
+    assert.equal(response.status, 200);
+    const body = JSON.parse(response.body);
+    assert.equal(body.roles.length, 1);
+    assert.equal(body.roles[0].company, "Contoso Health");
+    assert.equal(body.roles[0].title, "Operations Manager");
+    const expected = countRoleStats(roles);
+    assert.equal(body.counts.total, expected.total);
+    assert.equal(body.counts.applied, expected.applied);
+    assert.equal(body.counts.interview, expected.interview);
+    assert.equal(body.counts.readyToApply, expected.readyToApply);
+    assert.equal(body.setupComplete, false);
+    assert.equal(fs.statSync(rolesPath).mtimeMs, beforeMtime);
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
+test("home.html Jobs tab fetches /api/roles and has no copied bucket logic", () => {
+  const homePage = fs.readFileSync(path.join(__dirname, "../../onboarding/home.html"), "utf8");
+  assert.match(homePage, /fetch\("\/api\/roles"\)/);
+  assert.match(homePage, /data-role-count="total"/);
+  assert.match(homePage, /data-role-count="applied"/);
+  assert.match(homePage, /applyRoles/);
+  assert.match(homePage, /setupBtn\.hidden=Boolean\(data\.setupComplete\)/);
+  assert.doesNotMatch(homePage, /statusBucket/);
+  assert.doesNotMatch(homePage, /not-applied/);
+});
+
+test("GET /api/roles setupComplete is true after answering home questions and home.html honors it", async () => {
+  const tmpDir = createHomeRoot();
+  const server = await run({ root: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    const saved = await post(port, "/api/save-intake", {
+      name: "Jordan Sample",
+      goal: "Operations manager at a mid-size healthcare company",
+    });
+    assert.equal(saved.status, 200);
+    const response = await get(port, "/api/roles");
+    assert.equal(JSON.parse(response.body).setupComplete, true);
+    const homePage = fs.readFileSync(path.join(__dirname, "../../onboarding/home.html"), "utf8");
+    assert.match(homePage, /jobsGoToSetup/);
+    assert.match(homePage, /setupBtn\.hidden=Boolean\(data\.setupComplete\)/);
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
+test("home Jobs counts match tracker funnel counts for the same roles.tracked.json", async () => {
+  const buildTracker = require("../../src/cli/commands/build-tracker");
+  const tmpDir = createHomeRoot();
+  writeCandidateWorkspace(tmpDir, { trackerHtml: "<html></html>" });
+  const workspace = path.join(tmpDir, "candidate");
+  const roles = [
+    { id: "role-001", company: "Contoso Health", title: "Operations Manager", application: { status: "applied" } },
+    { id: "role-002", company: "Fabrikam", title: "Analyst", application: { status: "interview" } },
+    { id: "role-003", company: "Northwind", title: "Coordinator" },
+  ];
+  fs.writeFileSync(path.join(workspace, "roles.tracked.json"), JSON.stringify(roles, null, 2) + "\n");
+  buildTracker.run({ workspace, format: "html" });
+  const html = fs.readFileSync(path.join(workspace, "outputs", "tracker.html"), "utf8");
+  const funnel = {};
+  const pattern = /<div class="funnel-stage">([^<]*)<\/div><div class="funnel-count">(\d+)<\/div>/g;
+  let match;
+  while ((match = pattern.exec(html)) !== null) {
+    funnel[match[1]] = Number(match[2]);
+  }
+  const totalMatch = html.match(/<div class="stat-value">(\d+)<\/div><div class="stat-label">📋 Total roles/);
+  const readyMatch = html.match(/<div class="stat-value">(\d+)<\/div><div class="stat-label">🎯 Ready to apply/);
+  const server = await run({ root: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    const body = JSON.parse((await get(port, "/api/roles")).body);
+    assert.equal(body.counts.applied, funnel.Applied);
+    assert.equal(body.counts.interview, funnel.Interview);
+    assert.equal(body.counts.total, Number(totalMatch[1]));
+    assert.equal(body.counts.readyToApply, Number(readyMatch[1]));
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
+test("home Save rebuilds tracker.html to the same step count as the state file", async () => {
+  const { onboardingSteps } = require("../../src/core/onboarding-state");
+  const tmpDir = createHomeRoot();
+  const server = await run({ root: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    const response = await post(port, "/api/save-intake", {
+      name: "Jordan Sample",
+      goal: "Operations manager at a mid-size healthcare company",
+    });
+    assert.equal(response.status, 200);
+    const state = JSON.parse(fs.readFileSync(path.join(tmpDir, "candidate", ".onboarding-state.json"), "utf8"));
+    const done = onboardingSteps(state).filter((step) => step.done).length;
+    const html = fs.readFileSync(path.join(tmpDir, "candidate", "outputs", "tracker.html"), "utf8");
+    assert.match(html, new RegExp(`Onboarding: ${done} of 10 steps`));
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
+test("home Save still returns 200 when tracker rebuild throws and logs the failure", async () => {
+  const tmpDir = createHomeRoot();
+  const logs = [];
+  const origError = console.error;
+  console.error = (...args) => {
+    logs.push(args.map(String).join(" "));
+  };
+  const server = await run(
+    {
+      root: tmpDir,
+      port: 0,
+      noOpen: true,
+    },
+    {
+      rebuildTrackers: () => {
+        throw new Error("rebuild boom");
+      },
+    },
+  );
+  const port = server.address().port;
+  try {
+    const response = await post(port, "/api/save-intake", {
+      name: "Jordan Sample",
+      goal: "Operations manager at a mid-size healthcare company",
+    });
+    assert.equal(response.status, 200);
+    assert.match(logs.join("\n"), /rebuild boom/);
+  } finally {
+    console.error = origError;
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
+test("home server serves /__status with tracker.html mtime so tracker load is not 404", async () => {
+  const tmpDir = createHomeRoot();
+  const trackerHtml = "<html><body>Tracker</body></html>";
+  writeCandidateWorkspace(tmpDir, { trackerHtml });
+  const trackerPath = path.join(tmpDir, "candidate", "outputs", "tracker.html");
+  const expectedMtime = fs.statSync(trackerPath).mtimeMs;
+  const server = await run({ root: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    const response = await get(port, "/__status");
+    assert.equal(response.status, 200);
+    const body = JSON.parse(response.body);
+    assert.equal(body.path, "tracker.html");
+    assert.equal(body.mtimeMs, expectedMtime);
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
+test("updateSetupProgress updates aria-valuenow and the accessible label", () => {
+  const homePage = fs.readFileSync(path.join(__dirname, "../../onboarding/home.html"), "utf8");
+  const match = homePage.match(/function updateSetupProgress\(percent\)\{[\s\S]*?\n  \}/);
+  assert.ok(match, "updateSetupProgress must exist in home.html");
+  const attrs = {};
+  const fill = { style: {} };
+  const document = {
+    querySelector(sel) {
+      if (sel === ".progress") {
+        return {
+          querySelector() {
+            return fill;
+          },
+          setAttribute(key, value) {
+            attrs[key] = value;
+          },
+        };
+      }
+      return null;
+    },
+  };
+  const runUpdate = new Function("document", `${match[0]}\nupdateSetupProgress(70);`);
+  runUpdate(document);
+  assert.equal(attrs["aria-valuenow"], "70");
+  assert.equal(attrs["aria-label"], "Setup progress 70 percent");
+  assert.equal(attrs["aria-valuetext"], "Setup progress 70 percent");
+  assert.equal(fill.style.width, "70%");
+});
+
+test("home Save with Hybrid writes hybrid work mode into preferences", async () => {
+  const { validatePreferences } = require("../../src/core/schemas");
+  const tmpDir = createHomeRoot();
+  const server = await run({ root: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    const response = await post(port, "/api/save-intake", {
+      name: "Jordan Sample",
+      goal: "Operations manager at a mid-size healthcare company",
+      where: "Hybrid",
+    });
+    assert.equal(response.status, 200);
+    const preferences = JSON.parse(fs.readFileSync(path.join(tmpDir, "candidate", "preferences.json"), "utf8"));
+    assert.deepEqual(preferences.locations.workModes, ["hybrid"]);
+    assert.deepEqual(validatePreferences(preferences), []);
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+

@@ -43,6 +43,27 @@ test("saveHomeAnswers writes home-answers.json and shared onboarding state", () 
   }
 });
 
+test("Hybrid where answer writes preferences.locations.workModes and counts for location", () => {
+  const workspace = tempWorkspace();
+  try {
+    saveHomeAnswers(workspace, {
+      name: "Jordan Sample",
+      goal: "Operations manager at a mid-size healthcare company",
+      where: "Hybrid",
+    });
+    const paths = workspacePaths(workspace);
+    const preferences = JSON.parse(fs.readFileSync(paths.preferences, "utf8"));
+    assert.deepEqual(preferences.locations.workModes, ["hybrid"]);
+    const { validatePreferences } = require("../../src/core/schemas");
+    assert.deepEqual(validatePreferences(preferences), []);
+    const { deriveOnboardingState } = require("../../src/core/onboarding-state");
+    assert.equal(deriveOnboardingState(workspace).sections.location, true);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+
 test("saveHomeAnswers rejects a missing or blank goal", () => {
   const workspace = tempWorkspace();
   try {
@@ -131,6 +152,136 @@ test("untouched deal breakers field does not write a skip", () => {
     const paths = workspacePaths(workspace);
     const preferences = JSON.parse(fs.readFileSync(paths.preferences, "utf8"));
     assert.equal(preferences.dealBreakersSkip, undefined);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+function writePreferencesWorkModes(workspace, workModes) {
+  const paths = workspacePaths(workspace);
+  fs.writeFileSync(
+    paths.preferences,
+    `${JSON.stringify(
+      {
+        schemaVersion: "1.0",
+        roleTargets: [],
+        locations: {
+          workModes,
+          preferredRegions: [],
+          excludedRegions: [],
+          priority: "should",
+        },
+        dealBreakers: [],
+      },
+      null,
+      2,
+    )}\n`,
+  );
+}
+
+test("home Save Remote keeps agent remote and hybrid without duplicating", () => {
+  const workspace = tempWorkspace();
+  try {
+    writePreferencesWorkModes(workspace, ["remote", "hybrid"]);
+    saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+      where: "Remote (from home)",
+    });
+    const paths = workspacePaths(workspace);
+    const preferences = JSON.parse(fs.readFileSync(paths.preferences, "utf8"));
+    assert.deepEqual(preferences.locations.workModes, ["remote", "hybrid"]);
+    const answers = JSON.parse(fs.readFileSync(path.join(workspace, HOME_ANSWERS_FILENAME), "utf8"));
+    assert.equal(answers.lastHomeWorkMode, "remote");
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("home Save Remote replaces previous home on-site and keeps agent hybrid", () => {
+  const workspace = tempWorkspace();
+  try {
+    saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+      where: "Near where I live",
+    });
+    let paths = workspacePaths(workspace);
+    let preferences = JSON.parse(fs.readFileSync(paths.preferences, "utf8"));
+    assert.deepEqual(preferences.locations.workModes, ["on-site"]);
+
+    saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+      where: "Remote (from home)",
+    });
+    preferences = JSON.parse(fs.readFileSync(paths.preferences, "utf8"));
+    assert.equal(preferences.locations.workModes.includes("on-site"), false);
+    assert.deepEqual(preferences.locations.workModes, ["remote"]);
+
+    const withAgent = tempWorkspace();
+    try {
+      writePreferencesWorkModes(withAgent, ["hybrid"]);
+      saveHomeAnswers(withAgent, {
+        goal: "Operations manager at a mid-size healthcare company",
+        where: "Near where I live",
+      });
+      saveHomeAnswers(withAgent, {
+        goal: "Operations manager at a mid-size healthcare company",
+        where: "Remote (from home)",
+      });
+      const agentPreferences = JSON.parse(fs.readFileSync(workspacePaths(withAgent).preferences, "utf8"));
+      assert.equal(agentPreferences.locations.workModes.includes("on-site"), false);
+      assert.deepEqual(agentPreferences.locations.workModes, ["hybrid", "remote"]);
+    } finally {
+      fs.rmSync(withAgent, { recursive: true, force: true });
+    }
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("home Save Hybrid on empty workModes writes hybrid", () => {
+  const workspace = tempWorkspace();
+  try {
+    writePreferencesWorkModes(workspace, []);
+    saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+      where: "Hybrid",
+    });
+    const paths = workspacePaths(workspace);
+    const preferences = JSON.parse(fs.readFileSync(paths.preferences, "utf8"));
+    assert.deepEqual(preferences.locations.workModes, ["hybrid"]);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("blank where Save keeps lastHomeWorkMode so a later Remote Save can replace on-site", () => {
+  const workspace = tempWorkspace();
+  try {
+    writePreferencesWorkModes(workspace, ["hybrid"]);
+    saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+      where: "Near where I live",
+    });
+    const paths = workspacePaths(workspace);
+    const answersPath = path.join(workspace, HOME_ANSWERS_FILENAME);
+    let preferences = JSON.parse(fs.readFileSync(paths.preferences, "utf8"));
+    assert.deepEqual(preferences.locations.workModes, ["hybrid", "on-site"]);
+
+    saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+    });
+    const blankAnswers = JSON.parse(fs.readFileSync(answersPath, "utf8"));
+    assert.equal(blankAnswers.lastHomeWorkMode, "on-site");
+    preferences = JSON.parse(fs.readFileSync(paths.preferences, "utf8"));
+    assert.deepEqual(preferences.locations.workModes, ["hybrid", "on-site"]);
+
+    saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+      where: "Remote (from home)",
+    });
+    preferences = JSON.parse(fs.readFileSync(paths.preferences, "utf8"));
+    assert.equal(preferences.locations.workModes.includes("on-site"), false);
+    assert.deepEqual(preferences.locations.workModes, ["hybrid", "remote"]);
   } finally {
     fs.rmSync(workspace, { recursive: true, force: true });
   }
