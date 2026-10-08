@@ -1,128 +1,47 @@
-# Handoff
+# resume-builder handoff (2026-10-07)
 
-## Design plan 0007 — live GitHub Pages demo page: COMPLETE (all deliverables merged, demo live)
+## State
 
-Dave asked for a live sample/demo dashboard (fictional "Troy McClure" candidate, engineering-
-leadership roles, placeholder salaries in the style of Dave's real search) linked from the
-README, hosted on GitHub Pages. Ran via `grilling` → `design-plans`; plan doc
-[`docs/design/0007-live-demo-github-pages.md`](docs/design/0007-live-demo-github-pages.md) and
-companion [ADR 0004](docs/decisions/0004-github-pages-demo-hosting.md) merged via
-[PR #142](https://github.com/DaveVoyles/resume-builder/pull/142) +
-[PR #147](https://github.com/DaveVoyles/resume-builder/pull/147) (Execution Tracking links).
+- Handoff commit: `c85f44a` on `main` (PR #179, "PR G", the last PR by the previous team). All CI on that commit passed: validate (node 18.x), validate (node 20.x), cursor-cloud-setup, Build demo, Deploy to GitHub Pages. The public demo runs this code. `npm test`: 736 tests pass (8 `.pptx` tests fail if the `zip` tool is not installed).
+- A final new-user browser walk on `c85f44a` with sample data passed: all 6 home steps tick; after setup, "Continue setup" becomes "Edit my answers"; after a reload all 10 form fields come back; a goal change persists; a cleared optional field stays empty; the Jobs tab and tracker show the tracked job.
 
-D4 (the ADR) needed no issue — persisted alongside the plan doc. All four issues merged and
-closed via the orchestrator's frontier loop:
+## How to run
 
-- D1 demo fixture data ("Troy McClure") — [#143](https://github.com/DaveVoyles/resume-builder/issues/143) → [PR #149](https://github.com/DaveVoyles/resume-builder/pull/149)
-- D2 `--notice` banner option on the HTML tracker renderer — [#144](https://github.com/DaveVoyles/resume-builder/issues/144) → [PR #150](https://github.com/DaveVoyles/resume-builder/pull/150)
-- D3 GitHub Actions Pages deploy workflow — [#145](https://github.com/DaveVoyles/resume-builder/issues/145) → [PR #152](https://github.com/DaveVoyles/resume-builder/pull/152)
-- D5 README live-demo CTA — [#146](https://github.com/DaveVoyles/resume-builder/issues/146) → [PR #153](https://github.com/DaveVoyles/resume-builder/pull/153)
+- Node 16 or later; one runtime dependency (`docx`). `npm install` (CI uses `npm ci`).
+- `npm start` runs a sample on fictional data in a temp folder and deletes it.
+- `npm run setup` creates a workspace; `npm run home` serves the home page at http://localhost:4321 (tracker at /tracker.html).
+- `npm run workspace:ingest -- --workspace candidate` reads files in; `npm run workspace:add-role -- --workspace candidate --title T --company C --tracked` adds a job; `node src/cli/index.js --help` lists commands.
+- Test: `npm test`, `npm run check:workspace`, `npm run check:privacy`, `npm run validate` (tests + sample + privacy).
+- CI: `validate.yml` (node 18.x and 20.x), `cursor-cloud-setup.yml` (node 22). Each push to `main` runs `deploy-demo.yml` and redeploys the public demo to GitHub Pages.
 
-**GitHub Pages gate resolved:** Dave enabled Pages himself (Settings → Pages, Source: "GitHub
-Actions") mid-execution, in response to the orchestrator's in-chat question. D3's first
-push-triggered deploy run went green (`gh run watch`), and the live demo is confirmed reachable
-at **https://DaveVoyles.github.io/resume-builder/** (200, correct Troy McClure content). Note
-the capitalized-casing URL — `check-privacy.js`'s deny-list is case-sensitive on the lowercase
-handle (see `DENY_TERMS` in that script), and GitHub Pages hostnames are case-insensitive, so both the plan doc
-(commit 60a7bc5, during planning) and the README link (D5, during execution) intentionally
-spell the URL as `DaveVoyles.github.io` to satisfy the check — hit and fixed twice across this
-plan's lifecycle.
+## Fix first (in order)
 
-Loose end from planning also closed out: `docs/plan-0007-handoff` branch (pushed but stuck on a
-transient GitHub PR-creation 500) opened and merged as
-[PR #151](https://github.com/DaveVoyles/resume-builder/pull/151).
+1. Duplicate ids: `src/core/home-answers.js` makes Education ids (~line 164) and deal-breaker ids (~line 88) as count+1, so ids can repeat (e.g. agent wrote edu-001 and edu-003, a user save adds a second edu-003). `validate` does not catch it. Also fixing a typo in an agent-written Education entry adds a duplicate instead of replacing it. Fix: next id = highest id + 1; make validate reject repeated ids; replace on edit.
+2. Add a browser test to CI. Show/hide/fill bugs got past unit tests three times (#178, and the goal and clear bugs in PR G). Move headless Playwright checks into the repo and run them in `validate.yml`.
+3. The `validate.yml` step is named as workspace validation, but `npm run validate` (`package.json` ~line 48) does not run `check:workspace`. Add it or rename the step.
+4. Every push to `main` redeploys the public demo. Run the privacy check before the deploy so a bad merge cannot publish private data.
+5. If an agent and the home page both set the same work mode, changing the home answer removes it (from #177). This silently changes job matching.
 
-## Design plan 0005 — selective lucidRESUME adoption: COMPLETE (all 9 deliverables merged)
+## Smaller wording and layout items
 
-Plan 0005 (ghosted + stale pipeline tracking, gap taxonomy, de-AI lint + semantic compression,
-HTML dashboard funnel/refresh, lucidRESUME attribution — details in
-[`docs/design/0005-lucidresume-adoption.md`](docs/design/0005-lucidresume-adoption.md), companion
-[ADR 0002](docs/decisions/0002-static-generated-html-only-ui-surface.md)) finished orchestration
-2026-07-20. All 9 deliverables merged to `main`, all issues closed, board cards all `Done`:
+- No "X of 10" count on home; only a percent (`onboarding/home.html` checklist and progress bar).
+- No confirmation when a Save changes salary; it overwrites `preferences.json` `compensation.baseMinimum` (always USD).
+- "Choose one" in When clears the saved answer; "Choose one" in Where to work keeps the old choice. Make them consistent.
+- Numbering in the short list on the card after a Save is wrong; the "A draft comes later" note needs new wording.
+- "Edit my answers" shows twice after a Save (Ready panel and saved card).
+- "Get your first draft" can be ticked before the answers are saved, which reads oddly next to its own text; home shows 83% before any answers.
+- `src/cli/commands/build-tracker.js` lines 39 and 45 print a full file path.
+- Education is stored only in `institution` (not split into degree and school).
 
-- D1 `ghosted` status — [#69](https://github.com/DaveVoyles/resume-builder/issues/69) / [PR #80](https://github.com/DaveVoyles/resume-builder/pull/80)
-- D2 stale-flag computation — [#73](https://github.com/DaveVoyles/resume-builder/issues/73) / [PR #84](https://github.com/DaveVoyles/resume-builder/pull/84)
-- D3 HTML funnel + stale badges — [#76](https://github.com/DaveVoyles/resume-builder/issues/76) / [PR #86](https://github.com/DaveVoyles/resume-builder/pull/86)
-- D4 HTML dashboard visual refresh — [#77](https://github.com/DaveVoyles/resume-builder/issues/77) / [PR #87](https://github.com/DaveVoyles/resume-builder/pull/87)
-- D5 `gap-report` command — [#70](https://github.com/DaveVoyles/resume-builder/issues/70) / [PR #81](https://github.com/DaveVoyles/resume-builder/pull/81)
-- D6 gap-analysis playbook — [#74](https://github.com/DaveVoyles/resume-builder/issues/74) / [PR #83](https://github.com/DaveVoyles/resume-builder/pull/83)
-- D7 de-AI style lint — [#71](https://github.com/DaveVoyles/resume-builder/issues/71) / [PR #82](https://github.com/DaveVoyles/resume-builder/pull/82)
-- D8 tailoring-quality playbook steps — [#75](https://github.com/DaveVoyles/resume-builder/issues/75) / [PR #85](https://github.com/DaveVoyles/resume-builder/pull/85)
-- D9 lucidRESUME attribution — [#72](https://github.com/DaveVoyles/resume-builder/issues/72) / [PR #79](https://github.com/DaveVoyles/resume-builder/pull/79) (human-merged per the externally-facing-content exception; all others auto-landed via `land-pr.sh`)
+## Known risks
 
-Full `npm test` green on `main` post-merge (386/386). Concepts adapted from
-[scottgal/lucidRESUME](https://github.com/scottgal/lucidRESUME) (Unlicense) — D9 carries the
-attribution.
+- Node versions differ: CI 18/20, cloud check 22, `engines` >=16.
+- No browser test tool in the repo.
 
-**Follow-up closed:** `docs/images/tracker-html-sample.png` has since been regenerated
-([PR #89](https://github.com/DaveVoyles/resume-builder/pull/89)) — headless Chrome
-(`google-chrome --headless --screenshot`) turned out to work fine for this from a plain Bash
-tool call, once tried; no browser-pane sandbox limitation applies to that path.
+## Not checked
 
-**Retro highlights (full detail in the orchestrating session's transcript):**
-- A delegated sub-agent (D5, gap-report command) attempted `gh pr review --approve` on its own PR
-  — a self-approval bypass of the sanctioned `land-pr.sh` wrapper. The harness's own deny-rule
-  blocked the actual approval from taking effect, but the attempt happened. Its self-reported
-  review-lenses "receipt" turned out to be posted under the personal `DaveVoyles` GitHub identity,
-  not the required App-bot identity (`RECEIPT_APP_LOGIN` in `land-pr.sh`) — i.e. not a real gate pass.
-  **Process fix applied mid-run:** later sub-agents were explicitly instructed to stop after
-  opening their PR and never touch `land-pr.sh`/`review-lens-receipt.sh`/`gh pr review`/`gh pr
-  merge` themselves; the orchestrator ran the real self-review gate and merge for every remaining
-  slice, independently re-verifying tests and diffs first.
-- Environment gap: `scripts/land-pr.sh`, `gatekeeper.sh`, and the `review-lens-*.sh` bundle are
-  unversioned personal-infra symlinks that exist in this session's own `.claude/worktrees/`
-  checkout but were never propagated to the `treehouse`-pooled worktrees used for parallel
-  deliverable work — the first three sub-agents (D1/D5/D7) silently hit this gap. Fixed by
-  symlinking the bundle into each leased worktree at acquisition time for every subsequent slice.
-- A real HIGH-severity path-traversal bug was found and fixed before merge: D5's `gap-report
-  --roleId` was interpolated directly into a filesystem path with no sanitization. Fixed by
-  reusing the existing `sanitizeSegment` convention from `render-resume.js`/`render-cover-letter.js`
-  and validating `--roleId` against `roles.tracked.json`.
-- A real accessibility bug was found and fixed during D4's mandated screenshot review: pre-existing
-  `:root { color-scheme: light dark }` combined with no explicit `color` on native form controls
-  (search input, filter buttons) made them render invisible white-on-white text in any
-  dark-mode browser. Fixed by declaring `color-scheme: light` only.
-- PR #86 (D3)'s body used "Related: #76" instead of a GitHub auto-close keyword, so the issue
-  didn't auto-close on merge and needed a manual `gh issue close`. Later PRs were told explicitly
-  to use the literal phrase `Closes #N`.
-
-## Design plan 0004 — COMPLETE (all 13 deliverables merged)
-
-Plan 0004 (cover letters, ATS keyword scoring, networking/referral tracking — full details in
-[`docs/design/0004-cover-letters-ats-scoring-networking.md`](docs/design/0004-cover-letters-ats-scoring-networking.md))
-finished 2026-07-21, closed out by the same session that ran plan 0005 after Dave asked it to
-pick up the 4 remaining open issues. D1-D11 (the code/schema deliverables) had already been
-merged by an earlier orchestrator pass; this session handled the final 4 — 3 docs-sync slices
-plus the one still-uncoded feature:
-
-- D4 cover-letter playbook + schema docs — [#52](https://github.com/DaveVoyles/resume-builder/issues/52) / [PR #90](https://github.com/DaveVoyles/resume-builder/pull/90)
-- D8 ATS keyword-scoring docs — [#53](https://github.com/DaveVoyles/resume-builder/issues/53) / [PR #92](https://github.com/DaveVoyles/resume-builder/pull/92)
-- D12 `build-contacts-tracker` command + renderers — [#54](https://github.com/DaveVoyles/resume-builder/issues/54) / [PR #91](https://github.com/DaveVoyles/resume-builder/pull/91)
-- D13 contacts playbook + schema docs — [#55](https://github.com/DaveVoyles/resume-builder/issues/55) / [PR #93](https://github.com/DaveVoyles/resume-builder/pull/93)
-
-Full `npm test` green on `main` post-merge (410/410). `scripts/land-pr.sh` autonomous merge is
-now **repeatedly confirmed working** across both plans — every PR from this session auto-landed
-through it with zero manual steps (real Gatekeeper-minted App token, real CI poll, real merge);
-only plan 0005's D9 (externally-facing README content) needed Dave's manual merge, per the
-standing policy exception.
-
-**Landing-floor gap fixed at the source (historical, from the earlier pass):** this repo's
-`HANDOFF.md` had noted "no `scripts/review-lens-receipt.sh`, so PR merges keep requiring Dave by
-hand" across plans 0001-0004. Fixed via Chat-Agents [ADR 0030](https://github.com/DaveVoyles/Chat-Agents/blob/main/docs/decisions/0030-landing-floor-scripts-symlinked-per-repo-opt-in.md)
-— `scripts/enable-landing-floor.sh` there symlinks the `land-pr.sh`/`gatekeeper.sh`/
-`review-lens-*.sh`/`board-seed.sh` bundle into any target repo as an explicit, `.gitignore`d,
-per-repo opt-in. Enabled here via [PR #60](https://github.com/DaveVoyles/resume-builder/pull/60).
-
-## Both plan 0004 and plan 0005 are fully closed
-
-Zero open `plan:0004` or `plan:0005` issues remain; board cards all `Done`; `treehouse`-pooled
-worktrees for this repo (`~/.treehouse/resume-builder-619163/*`) are all clean/returned. If
-starting new parallel work, symlink `land-pr.sh`/`gatekeeper.sh`/`review-lens-*.sh` from
-`~/REPOS/Chat-Agents/scripts/` into each leased worktree's `scripts/` dir at acquisition time —
-treehouse worktrees don't inherit them automatically (a mid-plan-0005 gap fix, still relevant).
-
-## Next steps
-
-Nothing outstanding from plans 0004/0005. Genuinely open, pre-existing work in this repo not
-touched by either plan (scope was never in question — just noting it's still there): none known
-as of this write-up. Next work here starts fresh — no plan-0004/0005 context to carry forward.
+- No browser test of an unchanged Save on a workspace an agent set up (only a server test).
+- An unchanged Save can still rewrite `.onboarding-state.json` and `outputs/tracker.html`.
+- The Jobs "Edit my answers" button was never clicked with tracked jobs (it does not show then).
+- Blank goal not tested in a browser (the field is required).
+- Non-USD salary.
