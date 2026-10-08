@@ -243,4 +243,4 @@ function buildTailorPlan({ role, profile, evidence, now }) {
   };
 }
 
-module.exports = { buildTailorPlan };
+module.exports = { buildTailorPlan, collectJobs };

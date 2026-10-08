@@ -20,12 +20,12 @@ async function run(options) {
 
   const report = writeTailorReport(workspace, role);
   role.resume = role.resume || {};
-  role.resume.reportPath = report.path;
+  role.resume.reportPath = report.htmlPath;
   writeJson(paths.rolesTracked, roles);
   buildTracker.rebuildTrackers(options.workspace);
 
-  console.log(`Report ready: ${report.path}`);
-  return { role, reportPath: report.path, status: report.status };
+  console.log(`Report ready: ${report.htmlPath}`);
+  return { role, reportPath: report.htmlPath, markdownPath: report.path, status: report.status };
 }
 
 module.exports = { run };

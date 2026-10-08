@@ -35,6 +35,7 @@ For each persona the script builds a temp workspace and runs: `init`, copy input
 | setup reaches 10/10 | any of the ten tracker steps is still pending |
 | claim audit | a number in the resume config has no matching evidence |
 | keyword coverage | the percent stored on the role (`resume.keywordCoverage.percent`, scored against the keywords extracted from the posting) is below `minKeywordPercent`. This is the same number the tailor report prints, and the scorecard also fails if the two differ |
+| report proof of tailoring | the role's `.html` report has no before/after block or no coverage bar, `baselineCoverage` is not stored, the `.md` lacks the "Your general resume covers X of N ... This resume covers ..." line, or tailored coverage is below the general resume. It is a **WARN** (not a failure) when the lift is exactly 0: the person cannot see a benefit from tailoring |
 | posting keywords | an `expectedKeywords` entry was not stored, or a `forbiddenKeywords` entry was |
 | style-lint warnings | more than `maxStyleWarnings` |
 | proxy score | above `maxProxyScore` (summary words + bullet words + 40 per job + 20 per education row) |

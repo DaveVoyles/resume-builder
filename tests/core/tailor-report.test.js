@@ -4,6 +4,7 @@ const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const { analyzeTailorReport, buildTailorReport, reportRelativePath, STATUS } = require("../../src/core/tailor-report");
 const { validateRoles } = require("../../src/core/schemas");
+const { buildTailorReportHtml, buildTailorReportModel } = require("../../src/core/tailor-report");
 
 // Fictional data only.
 const GENERATED_AT = "2026-10-08T12:00:00.000Z";
@@ -247,9 +248,10 @@ test("what changed without a base says there is nothing to compare and lists key
   assert.match(md, /- Python: now in skills/u);
 });
 
-test("what changed compares the summary with the profile when there is no base config", () => {
+test("what changed compares the summary with the general resume when there is no base config", () => {
   const md = build({ profile: { summary: "General product leader." } });
-  assert.match(md, /Reworded the summary from the one in your profile to: "Fictional product leader focused on developer platforms"/u);
+  assert.match(md, /Compared with your general resume/u);
+  assert.match(md, /Reworded the summary to: "Fictional product leader focused on developer platforms"/u);
 });
 
 test("what changed on a blocked report says nothing was made", () => {
@@ -347,4 +349,93 @@ test("the coverage record stored by tailor is read: plain percent, and where fro
   assert.match(md, /covers 1 of 2 keywords \(88%\)/u);
   assert.doesNotMatch(md, /\(40%\)/u);
   assert.match(md, /Covered: scheduling \(summary, bullet, skills\)/u);
+});
+
+// --- General resume baseline, coverage lift, per-edit why -------------------
+
+const generalProfile = {
+  summary: "General product leader.",
+  skills: ["Roadmaps"],
+  experience: [
+    {
+      title: "Senior Platform Program Manager",
+      organization: "Contoso Labs",
+      highlights: [
+        { text: "Ran quarterly planning for three teams.", evidenceIds: ["ev-9"] },
+        { text: "Led launch coordination for an internal developer platform.", evidenceIds: ["ev-1"] },
+        { text: "Wrote the weekly status note." },
+      ],
+    },
+  ],
+};
+const generalEvidence = [
+  { id: "ev-1", type: "resume", source: { path: "inputs/resumes/old-resume.md" }, snippet: "Led launch coordination for an internal developer platform. Built internal tooling.", confidence: "source-text" },
+  { id: "ev-9", type: "resume", source: { path: "inputs/notes/planning.md" }, snippet: "Ran quarterly planning.", confidence: "source-text" },
+];
+function generalCase(extra = {}) {
+  const tailored = config({
+    summary: { text: "Fictional product leader focused on developer platforms and internal tooling." },
+    skills: [["Developer platforms", "Internal tooling"]],
+  });
+  tailored.experienceSections[0].jobs[0].bullets = ["Led launch coordination for an internal developer platform.", "Ran quarterly planning for three product teams."];
+  tailored.experienceSections[0].jobs[0].bulletEvidenceIds = [["ev-1"], ["ev-9"]];
+  const resume = { keywordCoverage: {
+    percent: 100,
+    covered: [{ keyword: "launch coordination", importance: "required", locations: ["bullet 1 of Senior Platform Program Manager at Contoso Labs"] }, { keyword: "internal tooling", importance: "required", locations: ["summary", "skills: Developer platforms"] }],
+    missing: [],
+  } };
+  return { role: role(resume), config: tailored, profile: generalProfile, evidence: generalEvidence, ...extra };
+}
+
+test("without a base, the baseline is the general resume built from the profile", () => {
+  const md = build(generalCase());
+  const section = md.split("## What changed for this job")[1].split("\n## ")[0];
+  assert.match(section, /Compared with your general resume/u);
+  assert.match(section, /Reworded the summary to: "Fictional product leader focused on developer platforms/u);
+  assert.match(section, /Reworded a bullet under Senior Platform Program Manager at Contoso Labs: "Ran quarterly planning for three teams" became "Ran quarterly planning for three product teams"/u);
+  assert.match(section, /Removed a bullet under .*: "Wrote the weekly status note"/u);
+  assert.doesNotMatch(section, /nothing to compare/u);
+});
+
+test("coverage lift compares the general resume with the tailored one and lists gained keywords", () => {
+  const md = build(generalCase());
+  assert.match(md, /Your general resume covers 1 of 2 keywords \(50%\)\. This resume covers 2 of 2 \(100%\)\./u);
+  assert.match(md, /- internal tooling: now in summary and skills/u);
+});
+
+test("each edit says why: posting keywords used and the evidence behind it", () => {
+  const md = build(generalCase());
+  assert.match(md, /Why: uses "internal tooling" from the posting\./u);
+  assert.match(md, /became "Ran quarterly planning for three product teams"\.\.* Why: backed by evidence ev-9/u);
+});
+
+test("the model carries before/after text, lift numbers and a gained keyword with no source as a question", () => {
+  const input = generalCase({ evidence: [], profile: { ...generalProfile, experience: generalProfile.experience } });
+  const model = buildTailorReportModel({ ...input, claimAudit: clean, factAudit: cleanFacts, styleLint: noStyle, generatedAt: GENERATED_AT });
+  assert.equal(model.changes.diff.summary.before, "General product leader.");
+  assert.equal(model.lift.baseline.percent, 50);
+  assert.equal(model.lift.tailored.percent, 100);
+  assert.ok(model.lift.gained.some((item) => item.keyword === "internal tooling" && !item.supported));
+  assert.ok(model.confirm.some((q) => /"internal tooling" .* can't find it in your record/u.test(q)));
+});
+
+test("the html report shows before/after, a coverage bar, and escapes everything", () => {
+  const input = generalCase();
+  input.config.summary.text = 'Fictional <script>alert("x")</script> leader focused on internal tooling.';
+  const html = buildTailorReportHtml({ ...input, claimAudit: clean, factAudit: cleanFacts, styleLint: noStyle, generatedAt: GENERATED_AT });
+  assert.match(html, /^<!doctype html>/u);
+  assert.match(html, /class="before"/u);
+  assert.match(html, /class="after"/u);
+  assert.match(html, /class="track"/u);
+  assert.match(html, /covers 1 of 2 keywords \(50%\)/u);
+  assert.doesNotMatch(html, /<script>alert/u);
+  assert.match(html, /&lt;script&gt;/u);
+  assert.doesNotMatch(html, /<script|https?:\/\//u);
+  assert.match(html, /prefers-color-scheme: dark/u);
+});
+
+test("with nothing to build a baseline from, the first-resume message stays", () => {
+  const md = build({ profile: { summary: "", skills: [], experience: [] }, evidence: [] });
+  assert.match(md, /This is the first resume for this role, so there is nothing to compare yet\./u);
+  assert.doesNotMatch(md, /general resume covers/u);
 });

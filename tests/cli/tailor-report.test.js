@@ -80,14 +80,17 @@ async function withWorkspace(config, fn) {
   }
 }
 
+const mdOf = (role) => role.resume.reportPath.replace(/\.html$/u, ".md");
+
 const run = (workspace, configPath) => tailor.run({ workspace, config: configPath, title: "Developer platform product manager", url: "https://jobs.example.invalid/fabrikam/pm" });
 
 test("tailor writes a plain-language report, records its path, and prints one line", async () => {
   await withWorkspace(fictionalConfig(), async ({ workspace, configPath, paths, log }) => {
     await run(workspace, configPath);
     const [role] = readJson(paths.rolesTracked);
-    assert.equal(role.resume.reportPath, `outputs/tailor-reports/${role.id}.md`);
-    const report = fs.readFileSync(path.join(workspace, role.resume.reportPath), "utf8");
+    assert.equal(role.resume.reportPath, `outputs/tailor-reports/${role.id}.html`);
+    assert.ok(fs.existsSync(path.join(workspace, role.resume.reportPath)), "readable report page is written");
+    const report = fs.readFileSync(path.join(workspace, mdOf(role)), "utf8");
     assert.match(report, /^# Resume report: Developer platform product manager at Fabrikam AI/u);
     assert.match(report, /\*\*Status: (Ready to review|Draft made; job match not checked yet|Needs your confirmation)\*\*/u);
     assert.match(report, /## What changed for this job/u);
@@ -104,9 +107,9 @@ test("tracker rows link the report (markdown and html)", async () => {
     const roles = readJson(paths.rolesTracked);
     const md = fs.readFileSync(paths.tracker, "utf8");
     assert.equal(md, renderTracker(roles));
-    assert.match(md, new RegExp(`\\[Report\\]\\(tailor-reports/${roles[0].id}\\.md\\)`, "u"));
+    assert.match(md, new RegExp(`\\[Report\\]\\(tailor-reports/${roles[0].id}\\.html\\)`, "u"));
     const html = fs.readFileSync(paths.htmlTracker, "utf8");
-    assert.ok(html.includes(`outputs/tailor-reports/${roles[0].id}.md`), "html tracker data should carry the report path");
+    assert.ok(html.includes(`outputs/tailor-reports/${roles[0].id}.html`), "html tracker data should carry the report path");
   });
 });
 
@@ -130,7 +133,7 @@ test("tailor-report regenerates the report from stored data without re-rendering
 
     const result = await tailorReport.run({ workspace, id: role.id });
     assert.equal(result.status, "Needs your confirmation");
-    const report = fs.readFileSync(path.join(workspace, role.resume.reportPath), "utf8");
+    const report = fs.readFileSync(path.join(workspace, mdOf(role)), "utf8");
     assert.match(report, /Runs over 1 page \(2 pages\): trim /u);
     assert.doesNotMatch(report, /Length estimate/u);
     assert.match(report, /The posting asks for "Go"/u);
@@ -150,13 +153,13 @@ test("a blocked audit still writes a Blocked report, tracks nothing, and renders
     await assert.rejects(() => run(workspace, configPath), /evidence-backed claim audit/u);
     assert.deepEqual(readJson(paths.rolesTracked, []), []);
     assert.ok(!fs.existsSync(paths.outputResumes));
-    const reports = fs.readdirSync(path.join(paths.outputs, "tailor-reports"));
+    const reports = fs.readdirSync(path.join(paths.outputs, "tailor-reports")).filter((name) => name.endsWith(".md"));
     assert.equal(reports.length, 1);
     const report = fs.readFileSync(path.join(paths.outputs, "tailor-reports", reports[0]), "utf8");
     assert.match(report, /\*\*Status: Blocked\*\*/u);
     assert.match(report, /Where does "500%" in bullet 1 under your Senior Platform Program Manager at Contoso Labs job come from\?/u);
     assert.match(report, /I'll reword the line without the number/u);
-    assert.ok(log.some((line) => /^Report ready: outputs\/tailor-reports\/.+\.md$/u.test(line)));
+    assert.ok(log.some((line) => /^Report ready: outputs\/tailor-reports\/.+\.html$/u.test(line)));
   });
 });
 
@@ -175,20 +178,44 @@ test("tailor compares a config that extends a base and lists the edits", async (
     writeJson(childPath, child);
     await run(workspace, childPath);
     const [role] = readJson(paths.rolesTracked);
-    const report = fs.readFileSync(path.join(workspace, role.resume.reportPath), "utf8");
+    const report = fs.readFileSync(path.join(workspace, mdOf(role)), "utf8");
     const section = report.split("## What changed for this job")[1].split("\n## ")[0];
     assert.match(section, /- Reworded the summary to: "Fictional product leader focused on developer platforms/u);
     assert.doesNotMatch(section, /nothing to compare/u);
   });
 });
 
-test("tailor with no base says there is nothing to compare yet", async () => {
+test("tailor without posting keywords still compares with the general resume and lists what is not done", async () => {
   await withWorkspace(fictionalConfig(), async ({ workspace, configPath, paths }) => {
     await run(workspace, configPath);
     const [role] = readJson(paths.rolesTracked);
-    const report = fs.readFileSync(path.join(workspace, role.resume.reportPath), "utf8");
-    assert.match(report, /This is the first resume for this role, so there is nothing to compare yet\./u);
+    const report = fs.readFileSync(path.join(workspace, mdOf(role)), "utf8");
+    assert.match(report, /Compared with your general resume/u);
+    assert.equal(role.resume.baselineCoverage, undefined, "no keywords, so no coverage to compare");
     assert.match(report, /## Not done yet/u);
     assert.match(report, /Give me the job posting text/u);
+  });
+});
+
+test("tailor with no base compares with the general resume and stores its coverage", async () => {
+  const withBullets = { ...profile, summary: "General product leader.", experience: [{ ...profile.experience[0], highlights: [{ text: "Led launch coordination.", evidenceIds: ["ev-001"] }, { text: "Ran quarterly planning." }] }] };
+  await withWorkspace(fictionalConfig(), async ({ workspace, configPath, paths }) => {
+    writeJson(paths.profile, withBullets);
+    const jd = path.join(workspace, "jd.md");
+    fs.writeFileSync(jd, "# Developer platform product manager\n\nRequired: developer platform, internal tooling, launch coordination.\n");
+    await tailor.run({ workspace, config: configPath, title: "Developer platform product manager", url: "https://jobs.example.invalid/fabrikam/pm", keywords: "developer platform,internal tooling,planning,launch coordination" });
+    const [role] = readJson(paths.rolesTracked);
+    const md = fs.readFileSync(path.join(workspace, mdOf(role)), "utf8");
+    assert.match(md, /Compared with your general resume/u);
+    assert.match(md, /Reworded the summary to: "Fictional product leader focused on developer platforms/u);
+    assert.match(md, /Your general resume covers \d+ of 4 keywords \(\d+%\)\. This resume covers \d+ of 4 \(\d+%\)\./u);
+    assert.ok(role.resume.baselineCoverage && Number.isFinite(role.resume.baselineCoverage.percent), "baselineCoverage stored on the role");
+    assert.ok(role.resume.baselineCoverage.percent <= role.resume.keywordCoverage.percent);
+    assert.equal(role.resume.baselineCoverage.source, "general-resume");
+    assert.deepEqual(validateRoles([role], "roles"), []);
+    const html = fs.readFileSync(path.join(workspace, role.resume.reportPath), "utf8");
+    assert.match(html, /class="before"/u);
+    assert.match(html, /class="after"/u);
+    assert.match(html, /class="track"/u);
   });
 });

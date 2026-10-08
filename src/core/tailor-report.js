@@ -20,21 +20,25 @@ const fs = require("fs");
 const path = require("path");
 const { auditResumeConfig, collectConfigClaimSites } = require("./claim-audit");
 const { auditFacts } = require("./fact-audit");
+const { buildGeneralResume, computeBaselineCoverage } = require("./general-resume");
+const { classifyMissingKeywords } = require("./keyword-coverage");
+const { matchKeyword } = require("./keyword-match");
+const { renderHtmlTailorReport } = require("../renderers/html-tailor-report");
 const { loadResumeConfig } = require("./resume-config");
 const { lintConfig } = require("./style-lint");
 const { readJson, readJsonLines } = require("./workspace");
 
 const REPORT_DIR = "outputs/tailor-reports";
 const STATUS = { ready: "Ready to review", draft: "Draft made; job match not checked yet", confirm: "Needs your confirmation", blocked: "Blocked" };
-const MAX_CHANGES = 5;
+const MAX_CHANGES = 8;
 const LOW_CONFIDENCE = new Set(["low", "medium", "uncertain", "unverified", "inferred"]);
 
 const isText = (value) => typeof value === "string" && value.trim() !== "";
 const asArray = (value) => (Array.isArray(value) ? value : []);
 
-function reportRelativePath(roleId) {
+function reportRelativePath(roleId, extension = "md") {
   const safe = String(roleId || "role").replace(/[^A-Za-z0-9._-]+/gu, "-").replace(/^\.+/u, "") || "role";
-  return `${REPORT_DIR}/${safe}.md`;
+  return `${REPORT_DIR}/${safe}.${extension}`;
 }
 
 // Keeps the person's record out of file-name jargon.
@@ -279,7 +283,10 @@ function readPageCount(input) {
 }
 
 // ---------------------------------------------------------------------------
-// What changed for this job (deterministic comparison with a base config)
+// What changed for this job (deterministic comparison with a baseline)
+//
+// The baseline is the resume's own `extends` parent / base.json when there is
+// one, else the person's general resume (src/core/general-resume.js).
 // ---------------------------------------------------------------------------
 
 function snippet(text, words = 8) {
@@ -314,35 +321,158 @@ function summaryTextOf(config) {
   return config && config.summary && isText(config.summary.text) ? oneLine(config.summary.text) : "";
 }
 
-function bulletChanges(next, base) {
-  const lines = [];
-  const baseJobs = new Map(jobsOf(base).map((job) => [jobKey(job), job]));
-  for (const job of jobsOf(next)) {
-    const before = baseJobs.get(jobKey(job));
-    const nowBullets = asArray(job.bullets).filter(isText);
-    if (!before) {
-      if (nowBullets.length) lines.push(`Added ${jobLabel(job)} with ${nowBullets.length} ${nowBullets.length === 1 ? "bullet" : "bullets"}.`);
+const wordSet = (text) => new Set(normText(text).replace(/[^a-z0-9% ]+/gu, " ").split(" ").filter((word) => word.length > 2));
+
+// Share of words two lines have in common: how we tell a reworded bullet from a new one.
+function similarity(a, b) {
+  const left = wordSet(a);
+  const right = wordSet(b);
+  if (left.size === 0 || right.size === 0) return 0;
+  let shared = 0;
+  left.forEach((word) => { if (right.has(word)) shared += 1; });
+  return shared / (left.size + right.size - shared);
+}
+
+const REWORD_THRESHOLD = 0.5;
+const MAX_WHY_KEYWORDS = 3;
+
+/**
+ * Why an edit was made, from data we hold: posting keywords the new text uses
+ * (that the old text did not), and the notes behind it. `ctx` carries
+ * { keywords: string[], evidenceById: Map }.
+ */
+function whyFor(text, previous, evidenceIds, ctx) {
+  const used = ctx.keywords.filter((keyword) => matchKeyword(text, keyword));
+  const fresh = previous ? used.filter((keyword) => !matchKeyword(previous, keyword)) : used;
+  const ids = [...new Set(asArray(evidenceIds).filter(isText))];
+  const sources = [...new Set(ids.map((id) => {
+    const entry = ctx.evidenceById.get(id);
+    const file = entry && entry.source && entry.source.path;
+    return isText(file) ? path.basename(file) : "";
+  }).filter(Boolean))];
+  return { keywords: (fresh.length ? fresh : used).slice(0, MAX_WHY_KEYWORDS), evidenceIds: ids.slice(0, 2), sources };
+}
+
+function whyText(why) {
+  if (!why) return "";
+  const parts = [];
+  if (why.keywords.length) parts.push(`uses ${quoteList(why.keywords)} from the posting`);
+  if (why.evidenceIds.length) parts.push(`backed by evidence ${why.evidenceIds.join(", ")}`);
+  return parts.join("; ");
+}
+
+function jobDiff(job, before, ctx) {
+  const label = jobLabel(job);
+  const nowBullets = asArray(job.bullets).map((text, index) => ({ text, ids: asArray(asArray(job.bulletEvidenceIds)[index]) })).filter((b) => isText(b.text));
+  const beforeBullets = asArray(before.bullets).map((text, index) => ({ text, ids: asArray(asArray(before.bulletEvidenceIds)[index]) })).filter((b) => isText(b.text));
+  const beforeSet = new Set(beforeBullets.map((b) => normText(b.text)));
+  const nowSet = new Set(nowBullets.map((b) => normText(b.text)));
+  const added = nowBullets.filter((b) => !beforeSet.has(normText(b.text)));
+  const removed = beforeBullets.filter((b) => !nowSet.has(normText(b.text)));
+
+  const items = [];
+  const unpaired = [...removed];
+  const fresh = [];
+  for (const bullet of added) {
+    let best = -1;
+    let bestScore = REWORD_THRESHOLD;
+    unpaired.forEach((candidate, index) => {
+      const score = similarity(bullet.text, candidate.text);
+      if (score >= bestScore) { best = index; bestScore = score; }
+    });
+    if (best === -1) { fresh.push(bullet); continue; }
+    const [old] = unpaired.splice(best, 1);
+    items.push({ type: "reworded", before: old.text, after: bullet.text, why: whyFor(bullet.text, old.text, bullet.ids.length ? bullet.ids : old.ids, ctx) });
+  }
+  fresh.forEach((bullet) => items.push({ type: "added", after: bullet.text, why: whyFor(bullet.text, "", bullet.ids, ctx) }));
+
+  const keptNow = nowBullets.filter((b) => beforeSet.has(normText(b.text)));
+  const keptBefore = beforeBullets.filter((b) => nowSet.has(normText(b.text)));
+  keptNow.forEach((bullet, index) => {
+    const was = keptBefore.findIndex((b) => normText(b.text) === normText(bullet.text));
+    if (was > index) {
+      const source = keptBefore[was];
+      items.push({ type: "promoted", position: index, after: bullet.text, why: whyFor(bullet.text, "", bullet.ids.length ? bullet.ids : source.ids, ctx) });
+    }
+  });
+  unpaired.forEach((bullet) => items.push({ type: "removed", before: bullet.text }));
+  return { label, items };
+}
+
+/**
+ * Structured edits of `config` against `baseConfig`. `ctx` is
+ * { keywords: string[], evidenceById: Map }.
+ */
+function buildDiff(config, baseConfig, ctx) {
+  const diff = { summary: null, jobs: [], jobsAdded: [], jobsLeftOut: [], skills: null };
+
+  const before = summaryTextOf(baseConfig);
+  const now = summaryTextOf(config);
+  if (now && !before) diff.summary = { type: "added", before: "", after: now, why: whyFor(now, "", [], ctx) };
+  else if (now && normText(now) !== normText(before)) diff.summary = { type: "reworded", before, after: now, why: whyFor(now, before, [], ctx) };
+  else if (!now && before) diff.summary = { type: "removed", before, after: "" };
+
+  const baseJobs = new Map(jobsOf(baseConfig).map((job) => [jobKey(job), job]));
+  for (const job of jobsOf(config)) {
+    const match = baseJobs.get(jobKey(job));
+    const bullets = asArray(job.bullets).filter(isText);
+    if (!match) {
+      if (bullets.length) diff.jobsAdded.push({ label: jobLabel(job), count: bullets.length });
       continue;
     }
-    const beforeBullets = asArray(before.bullets).filter(isText);
-    const beforeSet = new Set(beforeBullets.map(normText));
-    const nowSet = new Set(nowBullets.map(normText));
-    const added = nowBullets.filter((b) => !beforeSet.has(normText(b)));
-    const removed = beforeBullets.filter((b) => !nowSet.has(normText(b)));
-    const label = jobLabel(job);
-    if (added.length) lines.push(`Added ${added.length === 1 ? "a bullet" : `${added.length} bullets`} under ${label}: "${snippet(added[0])}".`);
-    if (removed.length) lines.push(`Removed ${removed.length === 1 ? "a bullet" : `${removed.length} bullets`} under ${label}: "${snippet(removed[0])}".`);
-    const keptNow = nowBullets.filter((b) => beforeSet.has(normText(b))).map(normText);
-    const keptBefore = beforeBullets.filter((b) => nowSet.has(normText(b))).map(normText);
-    const firstMoved = keptNow.findIndex((b, i) => b !== keptBefore[i]);
-    if (firstMoved !== -1) {
-      const lead = nowBullets.find((b) => normText(b) === keptNow[firstMoved]);
-      lines.push(`Reordered the bullets under ${label} so "${snippet(lead)}" comes ${firstMoved === 0 ? "first" : "earlier"}.`);
-    }
+    const jobChanges = jobDiff(job, match, ctx);
+    if (jobChanges.items.length) diff.jobs.push(jobChanges);
   }
-  const nowKeys = new Set(jobsOf(next).map(jobKey));
-  for (const job of jobsOf(base)) {
-    if (!nowKeys.has(jobKey(job))) lines.push(`Left out ${jobLabel(job)}.`);
+  const nowKeys = new Set(jobsOf(config).map(jobKey));
+  for (const job of jobsOf(baseConfig)) {
+    if (!nowKeys.has(jobKey(job))) diff.jobsLeftOut.push(jobLabel(job));
+  }
+
+  const baseSkills = skillItems(baseConfig);
+  const addedSkills = [...skillItems(config)].filter(([key]) => !baseSkills.has(key)).map(([, label]) => label);
+  const commonNow = asArray(config && config.skills).map((row) => normText(Array.isArray(row) ? row[0] : "")).filter((name) => name && baseSkills.has(name));
+  const commonBefore = asArray(baseConfig && baseConfig.skills).map((row) => normText(Array.isArray(row) ? row[0] : "")).filter((name) => name && commonNow.includes(name));
+  const reordered = commonNow.length > 1 && commonNow.join("|") !== commonBefore.join("|");
+  if (addedSkills.length || reordered) {
+    const why = { keywords: ctx.keywords.filter((keyword) => addedSkills.some((skill) => matchKeyword(skill, keyword))).slice(0, MAX_WHY_KEYWORDS), evidenceIds: [], sources: [] };
+    diff.skills = { added: addedSkills, reordered, why };
+  }
+  return diff;
+}
+
+function isEmptyDiff(diff) {
+  return !diff.summary && diff.jobs.length === 0 && diff.jobsAdded.length === 0 && diff.jobsLeftOut.length === 0 && !diff.skills;
+}
+
+// One plain line per edit (grouped per job), each with its reason when known.
+function diffLines(diff) {
+  const lines = [];
+  const withWhy = (line, why) => {
+    const reason = whyText(why);
+    return reason ? `${line} Why: ${reason}.` : line;
+  };
+  if (diff.summary) {
+    const { type, after, why } = diff.summary;
+    if (type === "added") lines.push(withWhy(`Added a summary: "${snippet(after, 14)}".`, why));
+    else if (type === "reworded") lines.push(withWhy(`Reworded the summary to: "${snippet(after, 14)}".`, why));
+    else lines.push("Removed the summary.");
+  }
+  for (const job of diff.jobs) {
+    const of = (type) => job.items.filter((item) => item.type === type);
+    for (const item of of("reworded")) lines.push(withWhy(`Reworded a bullet under ${job.label}: "${snippet(item.before)}" became "${snippet(item.after, 12)}".`, item.why));
+    const added = of("added");
+    if (added.length) lines.push(withWhy(`Added ${added.length === 1 ? "a bullet" : `${added.length} bullets`} under ${job.label}: "${snippet(added[0].after)}".`, added[0].why));
+    const removed = of("removed");
+    if (removed.length) lines.push(`Removed ${removed.length === 1 ? "a bullet" : `${removed.length} bullets`} under ${job.label}: "${snippet(removed[0].before)}".`);
+    const promoted = of("promoted");
+    if (promoted.length) lines.push(withWhy(`Reordered the bullets under ${job.label} so "${snippet(promoted[0].after)}" comes ${promoted[0].position === 0 ? "first" : "earlier"}.`, promoted[0].why));
+  }
+  diff.jobsAdded.forEach((job) => lines.push(`Added ${job.label} with ${job.count} ${job.count === 1 ? "bullet" : "bullets"}.`));
+  diff.jobsLeftOut.forEach((label) => lines.push(`Left out ${label}.`));
+  if (diff.skills) {
+    const { added, reordered, why } = diff.skills;
+    if (added.length) lines.push(withWhy(`Added to skills: ${added.slice(0, 6).join(", ")}${added.length > 6 ? ", and more" : ""}.`, why));
+    if (reordered) lines.push("Reordered the skills lines.");
   }
   return lines;
 }
@@ -356,32 +486,90 @@ function keywordPlaces(coverage) {
 }
 
 /**
- * Plain-language edits of `config` against its base, at most MAX_CHANGES lines.
- * Returns { hasBase, lines, keywordLines }.
+ * Plain-language edits of `config` against its baseline.
+ * `baseline` is { config, kind: "base" | "general" } or null.
+ * Returns { hasBase, kind, baselineLabel, diff, lines, keywordLines }.
  */
-function describeChanges(config, baseConfig, profile, coverage) {
+function describeChanges(config, baseline, coverage, ctx) {
   const keywordLines = keywordPlaces(coverage).slice(0, 8).map((p) => `${p.keyword}: now in ${p.where}`);
-  if (baseConfig && typeof baseConfig === "object") {
-    const lines = [];
-    const before = summaryTextOf(baseConfig);
-    const now = summaryTextOf(config);
-    if (now && !before) lines.push(`Added a summary: "${snippet(now, 14)}".`);
-    else if (now && normText(now) !== normText(before)) lines.push(`Reworded the summary to: "${snippet(now, 14)}".`);
-    else if (!now && before) lines.push("Removed the summary.");
-    lines.push(...bulletChanges(config, baseConfig));
-    const baseSkills = skillItems(baseConfig);
-    const added = [...skillItems(config)].filter(([key]) => !baseSkills.has(key)).map(([, label]) => label);
-    if (added.length) lines.push(`Added to skills: ${added.slice(0, 6).join(", ")}${added.length > 6 ? ", and more" : ""}.`);
-    if (lines.length === 0) lines.push("No wording changes: this resume matches the one it was based on.");
-    return { hasBase: true, lines: lines.slice(0, MAX_CHANGES), keywordLines };
+  if (!baseline) return { hasBase: false, kind: "none", baselineLabel: "", diff: null, lines: [], keywordLines };
+  const diff = buildDiff(config, baseline.config, ctx);
+  const lines = diffLines(diff);
+  if (lines.length === 0) {
+    lines.push(baseline.kind === "general"
+      ? "No wording changes: this resume matches your general resume."
+      : "No wording changes: this resume matches the one it was based on.");
   }
-  const profileSummary = profile && isText(profile.summary) ? oneLine(profile.summary) : "";
-  const now = summaryTextOf(config);
-  const lines = [];
-  if (profileSummary && now && normText(profileSummary) !== normText(now)) {
-    lines.push(`Reworded the summary from the one in your profile to: "${snippet(now, 14)}".`);
-  }
-  return { hasBase: false, lines, keywordLines };
+  return {
+    hasBase: true,
+    kind: baseline.kind,
+    baselineLabel: baseline.kind === "general" ? "Your general resume" : "The resume this one was based on",
+    diff,
+    lines: lines.slice(0, MAX_CHANGES),
+    keywordLines,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Coverage lift: baseline vs tailored, against the posting's keywords
+// ---------------------------------------------------------------------------
+
+const PLACE_WORDS = { summary: "summary", bullet: "a bullet", skills: "skills" };
+
+function evidenceSources(ids, evidenceById) {
+  return [...new Set(ids.map((id) => {
+    const entry = evidenceById.get(id);
+    const file = entry && entry.source && entry.source.path;
+    return isText(file) ? path.basename(file) : "";
+  }).filter(Boolean))];
+}
+
+function coverageNumbers(read, fallbackTotal) {
+  const total = read.covered.length + read.missing.length || fallbackTotal;
+  const percent = read.percent !== null ? read.percent : total ? Math.round((read.covered.length / total) * 100) : 0;
+  return { covered: read.covered.length, total, percent };
+}
+
+/**
+ * Null unless both a tailored coverage and a baseline coverage record exist.
+ * A keyword is only listed as gained; `supported` says whether the person's own
+ * record backs it (an unsupported gain becomes a question in the report).
+ */
+function buildLift(coverage, baselineRecord, baseline, profile, evidence, evidenceById) {
+  if (!coverage || !baselineRecord || !baseline) return null;
+  const base = readKeywordCoverage({ keywordCoverage: baselineRecord });
+  if (!base) return null;
+  const baseCovered = new Set(base.covered.map((item) => item.keyword.toLowerCase()));
+  const nowCovered = new Set(coverage.covered.map((item) => item.keyword.toLowerCase()));
+  const gainedItems = coverage.covered.filter((item) => !baseCovered.has(item.keyword.toLowerCase()));
+  const support = new Map(classifyMissingKeywords(gainedItems.map((item) => item.keyword), { profile, evidence }).map((item) => [item.keyword, item]));
+  const tailored = coverageNumbers(coverage);
+  const original = coverageNumbers(base, tailored.total);
+  return {
+    kind: baseline.kind,
+    label: baseline.kind === "general" ? "Your general resume" : "The resume this one was based on",
+    baseline: original,
+    tailored,
+    liftPoints: tailored.percent - original.percent,
+    gained: gainedItems.map((item) => {
+      const found = support.get(item.keyword);
+      const ids = found ? found.evidenceIds.slice(0, 2) : [];
+      return {
+        keyword: item.keyword,
+        where: item.places.length ? item.places.map((kind) => PLACE_WORDS[kind] || kind).join(" and ") : "the resume",
+        supported: found ? found.supported : false,
+        evidenceIds: ids,
+        sources: evidenceSources(ids, evidenceById),
+      };
+    }),
+    lost: base.covered.filter((item) => !nowCovered.has(item.keyword.toLowerCase())).map((item) => item.keyword),
+    stillMissing: coverage.missing.map((item) => ({ keyword: item.keyword, supported: item.supported })),
+  };
+}
+
+function liftSentence(lift) {
+  const who = lift.kind === "general" ? "Your general resume" : "The resume this one was based on";
+  return `${who} covers ${lift.baseline.covered} of ${lift.baseline.total} keywords (${lift.baseline.percent}%). This resume covers ${lift.tailored.covered} of ${lift.tailored.total} (${lift.tailored.percent}%).`;
 }
 
 // Where to cut when the resume runs long: the oldest job with the most bullets.
@@ -427,6 +615,33 @@ function analyzeTailorReport(input) {
       });
     }
   }
+  // Baseline: the resume's own parent when it has one, else the person's general resume.
+  const baseConfig = input.baseConfig && typeof input.baseConfig === "object" ? input.baseConfig : null;
+  const generalConfig = baseConfig ? null : input.generalConfig !== undefined ? input.generalConfig : buildGeneralResume({ profile: input.profile, evidence, config });
+  const baseline = baseConfig ? { config: baseConfig, kind: "base" } : generalConfig ? { config: generalConfig, kind: "general" } : null;
+  const evidenceById = new Map(evidence.map((entry) => [entry && entry.id, entry]));
+  const storedCoverage = input.keywordCoverage !== undefined ? input.keywordCoverage : input.role && input.role.resume && input.role.resume.keywordCoverage;
+  const keywords = coverage ? [...coverage.covered, ...coverage.missing].map((item) => item.keyword) : [];
+  const baselineCoverage = baseline && coverage
+    ? computeBaselineCoverage({
+        keywordCoverage: storedCoverage,
+        baselineConfig: baseline.config,
+        profile: input.profile,
+        evidence,
+        source: baseline.kind === "general" ? "general-resume" : "base-config",
+        checkedAt: coverage.checkedAt || undefined,
+      })
+    : null;
+  const lift = buildLift(coverage, baselineCoverage, baseline, input.profile, evidence, evidenceById);
+  if (lift && (evidence.length > 0 || input.profile)) {
+    for (const item of lift.gained.filter((g) => !g.supported)) {
+      questions.push({
+        type: "keyword-source",
+        question: `The resume now mentions "${item.keyword}" (in ${item.where}), and I can't find it in your record. Is that true for you? If yes, tell me where it comes from. If not, I'll take it out.`,
+      });
+    }
+  }
+
   const pages = readPageCount(input);
   if (pages && pages.pages > 1) {
     questions.push({
@@ -440,8 +655,8 @@ function analyzeTailorReport(input) {
   if (!pages) notDone.push("Ask me to check the page count so I can tell you whether it fits on one page.");
 
   const status = problems.length > 0 ? STATUS.blocked : questions.length > 0 ? STATUS.confirm : !coverage ? STATUS.draft : STATUS.ready;
-  const changes = describeChanges(config, input.baseConfig, input.profile, coverage);
-  return { config, claimAudit, factAudit, styleLint, problems, questions, notes, coverage, pages, notDone, changes, status };
+  const changes = describeChanges(config, baseline, coverage, { keywords, evidenceById });
+  return { config, claimAudit, factAudit, styleLint, problems, questions, notes, coverage, pages, notDone, changes, lift, baselineCoverage, status };
 }
 
 const GAP_TYPES = {
@@ -455,9 +670,83 @@ function pathLine(label, value) {
   return isText(value) ? `- ${label}: \`${String(value).replace(/\\/gu, "/")}\`` : null;
 }
 
-function buildTailorReport(input) {
+// "What the checks found": [{ text, sub: [text] }], shared by the .md and .html reports.
+function checkItems(analysis) {
+  const { config, problems, notes } = analysis;
+  const items = [];
+  const claimsChecked = asArray(analysis.claimAudit.claimsFound).length;
+  items.push({ text: `Numbers and figures: I checked ${claimsChecked} ${claimsChecked === 1 ? "figure" : "figures"} against your past resumes and notes.`, sub: [] });
+  const jobCount = asArray(config.experienceSections).reduce((sum, section) => sum + asArray(section && section.jobs).length, 0);
+  const schoolCount = asArray(config.education).length;
+  const factProblems = problems.filter((p) => ["employer", "title", "dates", "education", "degree"].includes(p.type)).length;
+  items.push({
+    text:
+      `Employers, titles and dates: I compared ${jobCount} job${jobCount === 1 ? "" : "s"} and ${schoolCount} school${schoolCount === 1 ? "" : "s"} with your profile. ` +
+      (factProblems === 0 ? "They agree." : `${factProblems} ${factProblems === 1 ? "does" : "do"} not agree (see above).`),
+    sub: [],
+  });
+  const findings = asArray(analysis.styleLint.findings);
+  if (findings.length === 0) items.push({ text: "Writing style: nothing stood out.", sub: [] });
+  else items.push({ text: `Writing style: ${findings.length} spot${findings.length === 1 ? "" : "s"} could sound more like you.`, sub: findings.map((finding) => styleFinding(finding, config)) });
+  notes.forEach((note) => items.push({ text: `Also noted: ${note}`, sub: [] }));
+  return items;
+}
+
+function introFor(status) {
+  if (status === STATUS.blocked) return "I stopped before making the resume file, so nothing new was added to your list for this role. Fix the points below and I'll run it again.";
+  if (status === STATUS.confirm) return "The resume is made and nothing has been sent. A few things need a yes or no from you first.";
+  if (status === STATUS.draft) return "The resume is made and nothing has been sent. I haven't compared it with the job posting yet, so read it through and tell me any sentence you would not say.";
+  return "The resume is made and nothing has been sent. Read it through and tell me any sentence you would not say.";
+}
+
+/**
+ * Everything the standalone .html report shows, as plain data (the renderer in
+ * src/renderers/html-tailor-report.js escapes and lays it out).
+ */
+function buildTailorReportModel(input, analysisIn) {
   const role = input.role || {};
-  const analysis = analyzeTailorReport(input);
+  const analysis = analysisIn || analyzeTailorReport(input);
+  const { config, problems, questions, coverage, pages, notDone, changes, lift, status } = analysis;
+  const resumeFile = path.basename(String((role.resume && role.resume.outputPath) || "") || "") || "";
+  const date = (input.generatedAt instanceof Date ? input.generatedAt.toISOString() : String(input.generatedAt || new Date().toISOString())).slice(0, 10);
+  const statusKind = status === STATUS.blocked ? "blocked" : status === STATUS.confirm ? "confirm" : status === STATUS.draft ? "draft" : "ready";
+  return {
+    title: oneLine(role.title || role.role || "this role"),
+    company: oneLine(role.company || config.company || "this company"),
+    status,
+    statusKind,
+    date,
+    resumeFile,
+    intro: introFor(status),
+    blocked: status === STATUS.blocked,
+    changes: {
+      hasBase: changes.hasBase,
+      kind: changes.kind,
+      baselineLabel: changes.baselineLabel,
+      diff: changes.diff,
+      lines: changes.lines,
+      keywordLines: changes.keywordLines,
+    },
+    lift,
+    liftSentence: lift ? liftSentence(lift) : "",
+    coverage: coverage
+      ? { covered: coverage.covered, missing: coverage.missing, percent: coverage.percent, total: coverage.covered.length + coverage.missing.length }
+      : null,
+    confirm: [...problems, ...questions].map((item) => item.question),
+    checks: checkItems(analysis),
+    fit: pages ? (pages.pages <= 1 ? "Fits on 1 page." : `Runs over 1 page (${pages.pages} pages): trim ${trimSuggestion(config)}.`) : "",
+    notDone,
+    gaps: asArray(input.gapReport && input.gapReport.gaps).map((gap) => ({ keyword: oneLine(gap.keyword), type: GAP_TYPES[gap.type] || oneLine(gap.type), action: oneLine(gap.recommendedAction) })),
+  };
+}
+
+function buildTailorReportHtml(input, analysisIn) {
+  return renderHtmlTailorReport(buildTailorReportModel(input, analysisIn));
+}
+
+function buildTailorReport(input, analysisIn) {
+  const role = input.role || {};
+  const analysis = analysisIn || analyzeTailorReport(input);
   const { config, problems, questions, notes, coverage, pages, notDone, changes, status } = analysis;
   const title = role.title || role.role || "this role";
   const company = role.company || config.company || "this company";
@@ -483,7 +772,21 @@ function buildTailorReport(input) {
   if (status === STATUS.blocked) {
     lines.push("No resume file was made yet, so there is nothing to compare.");
   } else {
+    if (changes.hasBase) {
+      lines.push(changes.kind === "general"
+        ? "Compared with your general resume (built from your profile and past resumes)."
+        : "Compared with the resume this one was based on.", "");
+    }
     changes.lines.forEach((line) => lines.push(`- ${line}`));
+    if (changes.hasBase && analysis.lift && analysis.lift.gained.length > 0) {
+      lines.push("", "Posting keywords this resume gained, and where:", "");
+      analysis.lift.gained.forEach((item) => {
+        const backing = item.supported
+          ? item.evidenceIds.length ? ` (backed by evidence ${item.evidenceIds.join(", ")})` : " (backed by your profile)"
+          : " (not found in your record: please confirm)";
+        lines.push(`- ${item.keyword}: now in ${item.where}${backing}`);
+      });
+    }
     if (!changes.hasBase) {
       if (changes.lines.length === 0) lines.push("This is the first resume for this role, so there is nothing to compare yet.");
       if (changes.keywordLines.length > 0) {
@@ -502,29 +805,17 @@ function buildTailorReport(input) {
 
   // 3) What the checks found
   lines.push("", "## What the checks found", "");
-  const claimsChecked = asArray(analysis.claimAudit.claimsFound).length;
-  lines.push(`- Numbers and figures: I checked ${claimsChecked} ${claimsChecked === 1 ? "figure" : "figures"} against your past resumes and notes.`);
-  const jobCount = asArray(config.experienceSections).reduce((sum, section) => sum + asArray(section && section.jobs).length, 0);
-  const schoolCount = asArray(config.education).length;
-  const factProblems = problems.filter((p) => ["employer", "title", "dates", "education", "degree"].includes(p.type)).length;
-  lines.push(
-    `- Employers, titles and dates: I compared ${jobCount} job${jobCount === 1 ? "" : "s"} and ${schoolCount} school${schoolCount === 1 ? "" : "s"} with your profile. ` +
-      (factProblems === 0 ? "They agree." : `${factProblems} ${factProblems === 1 ? "does" : "do"} not agree (see above).`),
-  );
-  const findings = asArray(analysis.styleLint.findings);
-  if (findings.length === 0) {
-    lines.push("- Writing style: nothing stood out.");
-  } else {
-    lines.push(`- Writing style: ${findings.length} spot${findings.length === 1 ? "" : "s"} could sound more like you.`);
-    findings.forEach((finding) => lines.push(`  - ${styleFinding(finding, config)}`));
-  }
-  notes.forEach((note) => lines.push(`- Also noted: ${note}`));
+  checkItems(analysis).forEach((item) => {
+    lines.push(`- ${item.text}`);
+    item.sub.forEach((text) => lines.push(`  - ${text}`));
+  });
 
   // 4) Job match
   if (coverage) {
     lines.push("", "## Job match", "");
     const total = coverage.covered.length + coverage.missing.length;
     lines.push(`- The resume covers ${coverage.covered.length} of ${total} keywords${coverage.percent === null ? "" : ` (${coverage.percent}%)`}.`);
+    if (analysis.lift) lines.push(`- ${liftSentence(analysis.lift)}`);
     if (coverage.covered.length > 0) {
       lines.push(`- Covered: ${coverage.covered.map((item) => (item.places.length ? `${item.keyword} (${item.places.join(", ")})` : item.keyword)).join(", ")}.`);
     }
@@ -563,7 +854,8 @@ function buildTailorReport(input) {
     pathLine("Job posting", role.posting && role.posting.path),
     pathLine("Cover letter", role.coverLetter && role.coverLetter.outputPath),
     pathLine("Gap review", input.gapReport && input.gapReport.path),
-    pathLine("This report", reportRelativePath(role.id)),
+    pathLine("This report (readable page)", reportRelativePath(role.id, "html")),
+    pathLine("This report (plain text)", reportRelativePath(role.id)),
     pathLine("Your role list", "outputs/tracker.html"),
   ].filter(Boolean).forEach((line) => lines.push(line));
 
@@ -637,12 +929,21 @@ function writeTailorReport(workspace, role, extra = {}) {
     generatedAt: extra.generatedAt || new Date(),
     ...extra,
   };
-  const markdown = buildTailorReport(input);
+  const analysis = analyzeTailorReport(input);
+  const markdown = buildTailorReport(input, analysis);
+  const html = buildTailorReportHtml(input, analysis);
   const relative = reportRelativePath(role.id);
-  const absolute = path.join(workspace, relative);
-  fs.mkdirSync(path.dirname(absolute), { recursive: true });
-  fs.writeFileSync(absolute, markdown, "utf8");
-  return { path: relative, status: analyzeTailorReport(input).status, markdown };
+  const htmlRelative = reportRelativePath(role.id, "html");
+  fs.mkdirSync(path.dirname(path.join(workspace, relative)), { recursive: true });
+  fs.writeFileSync(path.join(workspace, relative), markdown, "utf8");
+  fs.writeFileSync(path.join(workspace, htmlRelative), html, "utf8");
+
+  // Keep the baseline score next to the role's keywordCoverage.
+  if (role.resume && typeof role.resume === "object") {
+    if (analysis.baselineCoverage) role.resume.baselineCoverage = analysis.baselineCoverage;
+    else delete role.resume.baselineCoverage;
+  }
+  return { path: relative, htmlPath: htmlRelative, status: analysis.status, markdown, html, baselineCoverage: analysis.baselineCoverage };
 }
 
 module.exports = {
@@ -650,6 +951,8 @@ module.exports = {
   STATUS,
   analyzeTailorReport,
   buildTailorReport,
+  buildTailorReportHtml,
+  buildTailorReportModel,
   readGapReport,
   reportRelativePath,
   writeTailorReport,
