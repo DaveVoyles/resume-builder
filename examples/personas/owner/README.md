@@ -2,7 +2,7 @@
 
 The one persona built from a real person: the repo owner. The input is their real resume at `examples/real-resume/owner/` (email scrubbed, committed with their permission). The target jobs are real public postings, saved as offline snapshots so the demo still works after the pages come down.
 
-Status: **waiting for snapshots.** There is no `expected.json` yet, so `npm run e2e` skips this persona. It joins the suite once at least one snapshot is in `postings/` and the tailored resume configs are written.
+Status: **snapshots are in; tailored resumes are next.** There is no `expected.json` yet, so `npm run e2e` skips this persona. It joins the suite once the tailored resume configs are written.
 
 ## What is here
 
