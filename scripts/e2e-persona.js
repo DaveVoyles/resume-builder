@@ -271,14 +271,14 @@ async function runPersona(name, options = {}) {
     add(stage, "stage completed", "fail", error.message);
   }
 
-  // CLI output hygiene: report, never fail (other commands may still print absolute paths).
+  // CLI output hygiene: commands name files relative to the workspace, never the machine's absolute path.
   const leaks = [];
   const roots = [tmpRoot, repoRoot].filter(Boolean);
   for (const { command, output } of cliLog) {
     if (roots.some((root) => output.includes(root))) leaks.push(command);
   }
   const leakList = [...new Set(leaks)];
-  add("cli", "no absolute paths in CLI output", leakList.length === 0 ? "pass" : "warn", leakList.length ? `printed by: ${leakList.join(", ")}` : "");
+  add("cli", "no absolute paths in CLI output", leakList.length === 0 ? "pass" : "fail", leakList.length ? `printed by: ${leakList.join(", ")}` : "");
 
   const bad = commandsRun.filter((command) => FORBIDDEN_COMMANDS.has(command));
   expect("guard", "no apply/approve-apply invoked", bad.length === 0);

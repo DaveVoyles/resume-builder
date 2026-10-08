@@ -4,6 +4,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { spawnSync } = require("child_process");
+const { displayPath } = require("../../core/role-lookup");
 
 function findSoffice() {
   const finder = process.platform === "win32" ? "where" : "which";
@@ -42,7 +43,7 @@ function run(options, deps = {}) {
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
-  console.log(`Wrote ${out}`);
+  console.log(`Wrote ${displayPath(path.dirname(out), out)}`);
   return out;
 }
 

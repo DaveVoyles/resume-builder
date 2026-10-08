@@ -9,9 +9,10 @@ const { auditResumeConfig } = require("../../core/claim-audit");
 const { auditFacts } = require("../../core/fact-audit");
 const { lintConfig } = require("../../core/style-lint");
 const { readJson, readJsonLines, resolveWorkspace, workspacePaths } = require("../../core/workspace");
+const { displayPath, displayWorkspace } = require("../../core/role-lookup");
 
-function assertExists(file, errors) {
-  if (!fs.existsSync(file)) errors.push(`Missing required file: ${file}`);
+function assertExists(file, errors, workspace) {
+  if (!fs.existsSync(file)) errors.push(`Missing required file: ${displayPath(workspace, file)}`);
 }
 
 function listResumeConfigFiles(dir) {
@@ -81,7 +82,7 @@ function run(options) {
   const errors = [];
   const warnings = [];
 
-  [paths.profile, paths.evidence, paths.rolesSeed, paths.rolesTracked, paths.tracker].forEach((file) => assertExists(file, errors));
+  [paths.profile, paths.evidence, paths.rolesSeed, paths.rolesTracked, paths.tracker].forEach((file) => assertExists(file, errors, workspace));
   if (errors.length > 0) throw new Error(errors.join("\n"));
 
   const profile = readJson(paths.profile);
@@ -123,7 +124,7 @@ function run(options) {
   warnings.forEach((warning) => console.warn(`Warning: ${warning}`));
 
   if (errors.length > 0) throw new Error(`Workspace validation failed:\n${errors.join("\n")}`);
-  console.log(`Workspace valid: ${workspace}`);
+  console.log(`Workspace valid: ${displayWorkspace(workspace)}`);
 }
 
 module.exports = { run };

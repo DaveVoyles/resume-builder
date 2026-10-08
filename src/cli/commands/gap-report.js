@@ -5,6 +5,7 @@ const { validateGapClassifications } = require("../../core/gap-report");
 const { renderGapReport } = require("../../renderers/markdown-gap-report");
 const { readJson, resolveWorkspace, workspacePaths, ensureDir } = require("../../core/workspace");
 const fs = require("fs");
+const { displayPath } = require("../../core/role-lookup");
 
 // roleId becomes a literal path segment under outputs/roles/. Strip path
 // separators and leading dots so an untrusted/mistyped value can't escape
@@ -70,7 +71,7 @@ async function run(options) {
   const markdown = renderGapReport(gaps, roleTitle);
   fs.writeFileSync(outputPath, markdown, "utf8");
 
-  console.log(`Gap report written to ${outputPath}`);
+  console.log(`Gap report written to ${displayPath(workspace, outputPath)}`);
 
   return { gapCount: gaps.length, outputPath };
 }

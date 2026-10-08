@@ -40,4 +40,13 @@ function displayPath(workspace, file) {
   return path.relative(workspace, absolute).split(path.sep).join("/");
 }
 
-module.exports = { displayPath, findTrackedRole, namesRole };
+// Name a workspace without leaking its absolute location: relative to the
+// working directory when it lives inside it, otherwise just its folder name.
+function displayWorkspace(workspace) {
+  const absolute = path.resolve(workspace);
+  const fromCwd = path.relative(process.cwd(), absolute);
+  if (fromCwd && !fromCwd.startsWith("..") && !path.isAbsolute(fromCwd)) return fromCwd.split(path.sep).join("/");
+  return fromCwd === "" ? "." : path.basename(absolute);
+}
+
+module.exports = { displayPath, displayWorkspace, findTrackedRole, namesRole };
