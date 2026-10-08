@@ -80,20 +80,36 @@ const FINAL_STEP = {
 // (the running page is the proof) and they map to no tracker step.
 // firstDraft maps to firstDraftReady, a home-only flag, not a tracker checkbox.
 const HOME_STEPS = [
-  { key: "downloadRb", label: "Download RB" },
-  { key: "startRb", label: "Start RB and open this page" },
-  { key: "addFiles", label: "Add your files to my-documents" },
-  { key: "answerQuestions", label: "Answer a few questions" },
-  { key: "firstDraft", label: "Get your first draft" },
-  { key: "addJobs", label: "Add jobs you want" },
+  { key: "downloadRb", label: "Download RB", howTo: "Done. RB is now on your computer." },
+  { key: "startRb", label: "Start RB and open this page", howTo: "Done. You're looking at it." },
+  {
+    key: "addFiles",
+    label: "Add your files to my-documents",
+    howTo: "Drag old resumes and notes into my-documents at the top of the resume-builder folder.",
+  },
+  {
+    key: "answerQuestions",
+    label: "Answer a few questions",
+    howTo: "The agent fills in what it can. You check it and click Save.",
+  },
+  {
+    key: "firstDraft",
+    label: "Get your first draft",
+    howTo: "A new resume, after your files in my-documents are read in. Saving answers here is not a draft.",
+  },
+  {
+    key: "addJobs",
+    label: "Add jobs you want",
+    howTo: "Tell your agent about a job. Paste the posting link in chat. This Jobs tab does not add jobs from the page.",
+  },
 ];
 
 const HOME_STEP_TO_TRACKER_STEPS = {
   downloadRb: [],
   startRb: [],
   addFiles: ["materialIngested"],
-  // Home form captures name (basicInfo) and goal (targetRole). The other five
-  // grill sections stay tracker-only until their files actually contain data.
+  // Home form captures name (basicInfo) and goal (targetRole). Education and
+  // salary are on the same form but are not required for this home step.
   answerQuestions: ["basicInfo", "targetRole"],
   firstDraft: ["firstDraftReady"],
   addJobs: ["firstRoleAdded"],
@@ -198,11 +214,47 @@ function homeStepsFromOnboarding(onboardingState) {
   });
 }
 
-// Home "setup complete" for the Jobs tab: the Introduction "Answer a few
-// questions" step is done (basicInfo + targetRole). Education and salary are
-// tracker-only and do not block hiding "Go to setup".
+// Home "setup complete" for the Jobs tab and Continue setup: the Introduction
+// "Answer a few questions" step is done (basicInfo + targetRole). Education and
+// salary are tracker-only and do not block hiding "Go to setup" or "Continue setup".
 function isHomeSetupComplete(onboardingState) {
   return homeStepsFromOnboarding(onboardingState).some((step) => step.key === "answerQuestions" && step.done);
+}
+
+// Next step after Save (also on GET /api/onboarding-state). Home HTML only
+// renders this object; it does not pick the step itself.
+//
+// Rule:
+// 1. First HOME_STEPS item that is not done.
+// 2. Never return addJobs when a tracked role already exists (firstRoleAdded
+//    done). Skip it and keep looking. The success box must not say
+//    "Add a job you want" in that case.
+// 3. If every home step is done, look at tracker sections the home form now
+//    covers: education, then compensation. If either is not done, point at
+//    that field.
+// 4. Otherwise { key: "complete", label: "Setup complete" }.
+function nextHomeStep(onboardingState) {
+  const homeMeta = Object.fromEntries(HOME_STEPS.map((step) => [step.key, step]));
+  for (const step of homeStepsFromOnboarding(onboardingState)) {
+    if (step.done) continue;
+    if (step.key === "addJobs" && isFirstRoleAddedDone(onboardingState && onboardingState.firstRoleAdded)) {
+      continue;
+    }
+    const meta = homeMeta[step.key] || step;
+    return { key: step.key, label: meta.label, howTo: meta.howTo || "" };
+  }
+  const trackerByKey = Object.fromEntries(onboardingSteps(onboardingState).map((step) => [step.key, step]));
+  const formCovered = [
+    { key: "education", label: "Add your education or skip it" },
+    { key: "compensation", label: "Add your salary or skip it" },
+  ];
+  for (const item of formCovered) {
+    const section = trackerByKey[item.key];
+    if (section && !section.done) {
+      return { key: item.key, label: item.label, howTo: section.howTo || "" };
+    }
+  }
+  return { key: "complete", label: "Setup complete", howTo: "" };
 }
 
 
@@ -365,6 +417,7 @@ module.exports = {
   isOnboardingComplete,
   isHomeSetupComplete,
   isFirstRoleAddedDone,
+  nextHomeStep,
   onboardingSteps,
   homeStepsFromOnboarding,
   readOnboardingState,

@@ -5,8 +5,8 @@ const assert = require("node:assert/strict");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-const { HOME_ANSWERS_FILENAME, saveHomeAnswers } = require("../../src/core/home-answers");
-const { workspacePaths } = require("../../src/core/workspace");
+const { HOME_ANSWERS_FILENAME, saveHomeAnswers, parseSalaryInput, readHomeFormPrefill } = require("../../src/core/home-answers");
+const { workspacePaths, writeJson } = require("../../src/core/workspace");
 
 function tempWorkspace() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "resume-builder-answers-"));
@@ -282,6 +282,330 @@ test("blank where Save keeps lastHomeWorkMode so a later Remote Save can replace
     preferences = JSON.parse(fs.readFileSync(paths.preferences, "utf8"));
     assert.equal(preferences.locations.workModes.includes("on-site"), false);
     assert.deepEqual(preferences.locations.workModes, ["hybrid", "remote"]);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+function writeAgentProfile(workspace, education) {
+  const { createDefaultProfile } = require("../../src/core/candidate-profile");
+  const profile = createDefaultProfile();
+  if (education) profile.education = education;
+  writeJson(workspacePaths(workspace).profile, profile);
+}
+
+function writeAgentPreferences(workspace, extra) {
+  writeJson(workspacePaths(workspace).preferences, {
+    schemaVersion: "1.0",
+    roleTargets: [],
+    locations: {
+      workModes: [],
+      preferredRegions: [],
+      excludedRegions: [],
+      priority: "should",
+    },
+    dealBreakers: [],
+    ...extra,
+  });
+}
+
+function scaffoldValidate(workspace) {
+  const { renderTracker } = require("../../src/renderers/markdown-tracker");
+  const paths = workspacePaths(workspace);
+  if (!fs.existsSync(paths.evidence)) fs.writeFileSync(paths.evidence, "");
+  if (!fs.existsSync(paths.rolesSeed)) writeJson(paths.rolesSeed, []);
+  if (!fs.existsSync(paths.rolesTracked)) writeJson(paths.rolesTracked, []);
+  fs.mkdirSync(path.dirname(paths.tracker), { recursive: true });
+  const tracked = JSON.parse(fs.readFileSync(paths.rolesTracked, "utf8"));
+  fs.writeFileSync(paths.tracker, renderTracker(Array.isArray(tracked) ? tracked : []));
+}
+
+function assertSavedWorkspaceValidates(workspace) {
+  const { validateProfile, validatePreferences } = require("../../src/core/schemas");
+  const paths = workspacePaths(workspace);
+  assert.deepEqual(validateProfile(JSON.parse(fs.readFileSync(paths.profile, "utf8"))), []);
+  assert.deepEqual(validatePreferences(JSON.parse(fs.readFileSync(paths.preferences, "utf8"))), []);
+  scaffoldValidate(workspace);
+  require("../../src/cli/commands/validate").run({ workspace });
+}
+
+test("education filled ticks Education and validates", () => {
+  const workspace = tempWorkspace();
+  try {
+    const result = saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+      education: "Example University",
+    });
+    assert.equal(result.state.sections.education, true);
+    const profile = JSON.parse(fs.readFileSync(workspacePaths(workspace).profile, "utf8"));
+    assert.equal(profile.education[0].institution, "Example University");
+    assert.equal(profile.educationSkip, undefined);
+    assertSavedWorkspaceValidates(workspace);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("education skip ticks Education and validates", () => {
+  const workspace = tempWorkspace();
+  try {
+    const result = saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+      educationChoice: "skip",
+    });
+    assert.equal(result.state.sections.education, true);
+    const profile = JSON.parse(fs.readFileSync(workspacePaths(workspace).profile, "utf8"));
+    assert.deepEqual(profile.educationSkip, { skipped: true });
+    assertSavedWorkspaceValidates(workspace);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("salary filled ticks Salary and validates parsed numbers", () => {
+  const workspace = tempWorkspace();
+  try {
+    assert.equal(parseSalaryInput("120000").value, 120000);
+    assert.equal(parseSalaryInput("120,000").value, 120000);
+    assert.equal(parseSalaryInput("$120k").value, 120000);
+    const result = saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+      salary: "$120k",
+    });
+    assert.equal(result.state.sections.compensation, true);
+    const preferences = JSON.parse(fs.readFileSync(workspacePaths(workspace).preferences, "utf8"));
+    assert.equal(preferences.compensation.baseMinimum, 120000);
+    assert.equal(preferences.compensation.currency, "USD");
+    assert.equal(preferences.compensation.skipped, undefined);
+    assertSavedWorkspaceValidates(workspace);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("salary skip ticks Salary and validates", () => {
+  const workspace = tempWorkspace();
+  try {
+    const result = saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+      salaryChoice: "skip",
+    });
+    assert.equal(result.state.sections.compensation, true);
+    const preferences = JSON.parse(fs.readFileSync(workspacePaths(workspace).preferences, "utf8"));
+    assert.deepEqual(preferences.compensation, { skipped: true });
+    assertSavedWorkspaceValidates(workspace);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("unparseable salary does not write junk", () => {
+  const workspace = tempWorkspace();
+  try {
+    assert.throws(
+      () =>
+        saveHomeAnswers(workspace, {
+          goal: "Operations manager at a mid-size healthcare company",
+          salary: "about one twenty",
+        }),
+      { code: "SALARY_INVALID" },
+    );
+    assert.equal(fs.existsSync(workspacePaths(workspace).preferences), false);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("saving Education does not wipe Salary or agent values", () => {
+  const workspace = tempWorkspace();
+  try {
+    writeAgentPreferences(workspace, {
+      compensation: { currency: "USD", baseMinimum: 160000, totalTarget: 220000 },
+    });
+    saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+      education: "Example University",
+    });
+    const preferences = JSON.parse(fs.readFileSync(workspacePaths(workspace).preferences, "utf8"));
+    assert.deepEqual(preferences.compensation, { currency: "USD", baseMinimum: 160000, totalTarget: 220000 });
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("Save with Salary blank leaves compensation unchanged", () => {
+  const workspace = tempWorkspace();
+  try {
+    writeAgentPreferences(workspace, {
+      compensation: { currency: "USD", baseMinimum: 160000 },
+    });
+    saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+    });
+    const preferences = JSON.parse(fs.readFileSync(workspacePaths(workspace).preferences, "utf8"));
+    assert.deepEqual(preferences.compensation, { currency: "USD", baseMinimum: 160000 });
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("a-salary: agent compensation plus Salary Skip leaves compensation unchanged with no skipped", () => {
+  const workspace = tempWorkspace();
+  try {
+    writeAgentPreferences(workspace, {
+      compensation: { currency: "USD", baseMinimum: 160000 },
+    });
+    saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+      salaryChoice: "skip",
+    });
+    const preferences = JSON.parse(fs.readFileSync(workspacePaths(workspace).preferences, "utf8"));
+    assert.deepEqual(preferences.compensation, { currency: "USD", baseMinimum: 160000 });
+    assert.equal(Object.prototype.hasOwnProperty.call(preferences.compensation, "skipped"), false);
+    assertSavedWorkspaceValidates(workspace);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("a-education: agent education plus Education Skip keeps entries and does not set educationSkip", () => {
+  const workspace = tempWorkspace();
+  try {
+    const entries = [{ id: "edu-001", institution: "Example University", degree: "B.S. Computer Science" }];
+    writeAgentProfile(workspace, entries);
+    saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+      educationChoice: "skip",
+    });
+    const profile = JSON.parse(fs.readFileSync(workspacePaths(workspace).profile, "utf8"));
+    assert.deepEqual(profile.education, entries);
+    assert.equal(profile.educationSkip, undefined);
+    assertSavedWorkspaceValidates(workspace);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("b-salary: skipped compensation plus Salary value stores real value only", () => {
+  const workspace = tempWorkspace();
+  try {
+    writeAgentPreferences(workspace, { compensation: { skipped: true } });
+    saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+      salary: "120000",
+    });
+    const preferences = JSON.parse(fs.readFileSync(workspacePaths(workspace).preferences, "utf8"));
+    assert.deepEqual(preferences.compensation, { currency: "USD", baseMinimum: 120000 });
+    assert.equal(Object.prototype.hasOwnProperty.call(preferences.compensation, "skipped"), false);
+    assertSavedWorkspaceValidates(workspace);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("b-education: educationSkip plus Education value writes entry and removes educationSkip", () => {
+  const workspace = tempWorkspace();
+  try {
+    writeAgentProfile(workspace, []);
+    const paths = workspacePaths(workspace);
+    const profileBefore = JSON.parse(fs.readFileSync(paths.profile, "utf8"));
+    profileBefore.educationSkip = { skipped: true };
+    writeJson(paths.profile, profileBefore);
+    saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+      education: "Example University",
+    });
+    const profile = JSON.parse(fs.readFileSync(paths.profile, "utf8"));
+    assert.equal(profile.education[0].institution, "Example University");
+    assert.equal(profile.educationSkip, undefined);
+    assert.equal(Object.prototype.hasOwnProperty.call(profile, "educationSkip"), false);
+    assertSavedWorkspaceValidates(workspace);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("agent education prefill Save leaves education unchanged", () => {
+  const workspace = tempWorkspace();
+  try {
+    const entries = [{ id: "edu-001", degree: "B.S. Computer Science", institution: "Example University" }];
+    writeAgentProfile(workspace, entries);
+    const prefill = readHomeFormPrefill(workspace);
+    assert.equal(prefill.education, "B.S. Computer Science, Example University");
+    saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+      education: prefill.education,
+    });
+    const profile = JSON.parse(fs.readFileSync(workspacePaths(workspace).profile, "utf8"));
+    assert.deepEqual(profile.education, entries);
+    assert.equal(profile.education.length, 1);
+    assertSavedWorkspaceValidates(workspace);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("home Education A then B replaces only the home entry", () => {
+  const workspace = tempWorkspace();
+  try {
+    const agent = [{ id: "edu-001", institution: "Example University", degree: "B.S. Computer Science" }];
+    writeAgentProfile(workspace, agent);
+    saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+      education: "A",
+    });
+    saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+      education: "B",
+    });
+    const profile = JSON.parse(fs.readFileSync(workspacePaths(workspace).profile, "utf8"));
+    assert.equal(profile.education.length, 2);
+    assert.deepEqual(profile.education[0], agent[0]);
+    const homeEntries = profile.education.filter((row) => row.id !== "edu-001");
+    assert.equal(homeEntries.length, 1);
+    assert.equal(homeEntries[0].institution, "B");
+    assertSavedWorkspaceValidates(workspace);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("agent totalTarget prefill Save leaves compensation unchanged", () => {
+  const workspace = tempWorkspace();
+  try {
+    const compensation = { currency: "USD", totalTarget: 200000 };
+    writeAgentPreferences(workspace, { compensation });
+    const prefill = readHomeFormPrefill(workspace);
+    assert.equal(prefill.salary, "200000");
+    saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+      salary: prefill.salary,
+    });
+    const preferences = JSON.parse(fs.readFileSync(workspacePaths(workspace).preferences, "utf8"));
+    assert.deepEqual(preferences.compensation, compensation);
+    assert.equal(Object.prototype.hasOwnProperty.call(preferences.compensation, "baseMinimum"), false);
+    assertSavedWorkspaceValidates(workspace);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("blank Education Save keeps lastHomeEducationId", () => {
+  const workspace = tempWorkspace();
+  try {
+    saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+      education: "A",
+    });
+    const answersPath = path.join(workspace, HOME_ANSWERS_FILENAME);
+    const first = JSON.parse(fs.readFileSync(answersPath, "utf8"));
+    assert.equal(first.lastHomeEducationId, "edu-001");
+    saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+    });
+    const blank = JSON.parse(fs.readFileSync(answersPath, "utf8"));
+    assert.equal(blank.lastHomeEducationId, "edu-001");
+    assert.equal(blank.education, "");
   } finally {
     fs.rmSync(workspace, { recursive: true, force: true });
   }

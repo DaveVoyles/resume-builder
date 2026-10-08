@@ -6,7 +6,7 @@ const path = require("path");
 const { execFile } = require("child_process");
 const { openInBrowser, resolvePort, trackerStatus, DEFAULT_PORT, CONTENT_TYPES } = require("./serve");
 const { identityHeaders, STATUS_ENDPOINT } = require("../../core/server-config");
-const { saveHomeAnswers } = require("../../core/home-answers");
+const { saveHomeAnswers, readHomeFormPrefill } = require("../../core/home-answers");
 const { readJson, workspacePaths } = require("../../core/workspace");
 const { countRoleStats } = require("../../core/role-view");
 const { tryRebuildTrackers } = require("./build-tracker");
@@ -17,6 +17,7 @@ const {
   homeStepsFromOnboarding,
   isHomeSetupComplete,
   loadOnboardingState,
+  nextHomeStep,
   onboardingSteps,
 } = require("../../core/onboarding-state");
 
@@ -160,6 +161,11 @@ function onboardingPayload(workspace) {
     trackerSteps: onboardingSteps(state),
     homeSteps: homeStepsFromOnboarding(state),
     mapping: HOME_STEP_TO_TRACKER_STEPS,
+    setupComplete: isHomeSetupComplete(state),
+    nextStep: nextHomeStep(state),
+    form: hasWorkspace
+      ? readHomeFormPrefill(workspace)
+      : { education: "", educationChoice: "", salary: "", salaryChoice: "" },
   };
 }
 
@@ -331,9 +337,12 @@ async function run(options, { openFolder = defaultOpenFolder, openHome = openInB
               homeSteps: payload.homeSteps,
               trackerSteps: payload.trackerSteps,
               mapping: payload.mapping,
+              setupComplete: payload.setupComplete,
+              nextStep: payload.nextStep,
+              form: payload.form,
             });
           } catch (error) {
-            if (error.code === "GOAL_REQUIRED") {
+            if (error.code === "GOAL_REQUIRED" || error.code === "SALARY_INVALID") {
               sendJson(res, 400, { error: error.message });
               return;
             }

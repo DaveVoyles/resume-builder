@@ -28,7 +28,9 @@ Home still shows six steps. Those map through `HOME_STEP_TO_TRACKER_STEPS` in `s
 | Get your first draft | `firstDraftReady` (home-only). Ticks when `candidate/outputs/resumes` has at least one real resume file. Dotfiles and README placeholders do not count. Not a tracker checkbox. |
 | Add jobs you want | First role added (`firstRoleAdded`) |
 
-The other grill sections (work history, education, location, compensation, deal breakers) appear only on the tracker. They turn done when those files contain that data, or when the person recorded an explicit skip.
+The other grill sections (work history, location, deal breakers) appear on the tracker. They turn done when those files contain that data, or when the person recorded an explicit skip. Education and salary are also on the home form (each with Skip). A skip or a filled value ticks that tracker step. Home Save never writes a skip unless the person chose Skip. A blank field leaves the stored education or compensation unchanged.
+
+After Save, the success box shows `nextStep` from the server (`nextHomeStep` in `src/core/onboarding-state.js`): the first home step that is not done; never "Add a job you want" / addJobs when a tracked role already exists; if every home step is done, education then salary if those tracker sections are still open; otherwise "Setup complete". The home page only renders that server value.
 
 ### 1. Does the workspace exist?
 
