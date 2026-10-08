@@ -71,7 +71,39 @@ function addJobRequest(workspace, input, now = new Date().toISOString()) {
   return { entry, sentence: jobRequestSentence(entry), pending: existing.length + 1 };
 }
 
+// Compare links ignoring case of scheme/host, a trailing slash, and #fragments.
+function normalizeLink(link) {
+  try {
+    const url = new URL(String(link || "").trim());
+    url.hash = "";
+    const pathname = url.pathname.length > 1 ? url.pathname.replace(/\/+$/u, "") : url.pathname;
+    return `${url.protocol}//${url.host}${pathname}${url.search}`;
+  } catch (error) {
+    return String(link || "").trim();
+  }
+}
+
+// Removes pending requests for which shouldRemove(entry) is true. Returns the
+// removed entries. Never creates the file and leaves it alone when nothing matched.
+function removeJobRequests(workspace, shouldRemove) {
+  const existing = readJobRequests(workspace);
+  const removed = existing.filter((entry) => shouldRemove(entry));
+  if (removed.length === 0) return [];
+  writeJson(jobRequestsPath(workspace), existing.filter((entry) => !removed.includes(entry)));
+  return removed;
+}
+
+// Marks pending requests whose link matches `url` as done (removes them).
+function markJobRequestDone(workspace, url) {
+  if (!url) return [];
+  const wanted = normalizeLink(url);
+  return removeJobRequests(workspace, (entry) => normalizeLink(entry && entry.link) === wanted);
+}
+
 module.exports = {
+  normalizeLink,
+  removeJobRequests,
+  markJobRequestDone,
   JOB_REQUESTS_FILENAME,
   MAX_LINK_LENGTH,
   MAX_TEXT_LENGTH,

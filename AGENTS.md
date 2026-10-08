@@ -25,7 +25,7 @@ Always name real folders from the repo root. Never say "the resumes folder" or o
 - After they drop files, copy from `my-documents` into `candidate/inputs/resumes` or `candidate/inputs/notes`, then run ingest. Do not ask them to drop files into `candidate/inputs/`.
 - Home Introduction tells the person that copy happens, in plain words. Exact `candidate/inputs/` paths stay here and in the collapsed "For your AI agent" note on home.
 - Jobs **Go to setup** opens the About you form on Introduction, scrolls to it, and focuses the first field.
-- The Jobs tab has an "Add a job" box. It never adds a job itself: it saves `{link, text, createdAt}` entries to `candidate/job-requests.json` and shows the person a sentence to give you. At the start of each session and whenever they mention a job, check `candidate/job-requests.json`. Handle each entry (add the role, tailor), then remove it from the list.
+- The Jobs tab has an "Add a job" box. It never adds a job itself: it saves `{link, text, createdAt}` entries to `candidate/job-requests.json` and tells the person to say "check my job requests". At the start of each session and whenever they mention a job, run `npm run workspace:job-requests -- --workspace candidate list`. For each pending request, run `add-role` with the posting text (`--jd-text` or `--jd-file`; fetch the link only if no text was pasted) and then `tailor`. `add-role` and `tailor` mark the request done when the URL matches; `npm run workspace:job-requests -- --workspace candidate done --link <url>` (or `done --all`) closes one by hand. Never apply.
 - If Open folder fails, or the home page shows the fallback note, open `my-documents` yourself from the repo root. That note appears only when opening fails or cannot be confirmed.
 
 
