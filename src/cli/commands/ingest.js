@@ -4,7 +4,8 @@ const fs = require("fs");
 const path = require("path");
 const { fetchGithubMetadata } = require("../../adapters/github");
 const { readTextSource } = require("../../adapters/freeform-notes");
-const { createEvidenceEntry, appendUniqueEvidence, snippet } = require("../../core/evidence-ledger");
+const { createEvidenceEntry, createChunkEvidenceEntry, appendUniqueEvidence, snippet } = require("../../core/evidence-ledger");
+const { chunkResumeText } = require("../../core/resume-chunker");
 const { mergeProfileSource } = require("../../core/candidate-profile");
 const { syncOnboardingState } = require("../../core/onboarding-state");
 const { tryRebuildTrackers } = require("./build-tracker");
@@ -213,6 +214,30 @@ async function ingestLocalSources(sources, workspace, paths, profile) {
         metadata: read.metadata,
       }),
     );
+    if (path.extname(read.path).toLowerCase() === ".pdf") {
+      console.log(
+        `I can't read the text inside ${path.basename(read.path)}. ` +
+          "Please save a Word (.docx) or plain text copy of that resume in my-documents and tell me when it's there, " +
+          "so each job and bullet can be used as proof.",
+      );
+    }
+    if (source.kind === "resume" && read.text) {
+      // The whole-file entry above stays for compatibility. These add one
+      // entry per job header, bullet, or paragraph so a number deep in the
+      // resume can be cited on its own. A one-piece resume adds nothing new.
+      const chunks = chunkResumeText(read.text);
+      const seen = new Map();
+      if (!(chunks.length === 1 && snippet(chunks[0].text, 600) === snippet(read.text, 600))) {
+        for (const chunk of chunks) {
+          const key = `${chunk.kind}|${chunk.organization || ""}|${chunk.dateRange || ""}|${chunk.text}`;
+          const occurrence = seen.get(key) || 0;
+          seen.set(key, occurrence + 1);
+          entries.push(
+            createChunkEvidenceEntry({ type: source.kind, source: sourceInfo, chunk, occurrence, metadata: read.metadata }),
+          );
+        }
+      }
+    }
     nextProfile = mergeProfileSource(nextProfile, sourceInfo, read.text);
   }
   const appended = appendUniqueEvidence(paths.evidence, entries);

@@ -238,6 +238,18 @@ Use these conventions across all workspace files:
 | `metadata` | object | Adapter metadata such as SHA-256, byte count, extraction mode, or API counts. |
 | `createdAt` | string | Creation timestamp. |
 
+### Optional fields for resume pieces
+
+`ingest` writes one entry per job header, bullet, or paragraph of each resume (`metadata.chunkKind` is `job-header`, `bullet`, or `paragraph`), in addition to the original whole-file entry. A resume that is a single piece gets only the whole-file entry. PDFs stay metadata-only; `ingest` asks for a Word or plain-text copy. Each piece is capped at 600 characters (longer text is split on sentence boundaries, never cut). Ids come from the piece's own text and file path, so re-running `ingest` adds no duplicates; an edited bullet gets a new id and the old entry stays.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `section` | string | Resume section the piece sits under, such as `Experience` or `Education`. |
+| `organization` | string | Job header text without the dates, such as `Operations Lead, Acme Fictional Co`. |
+| `dateRange` | string | Dates from the job header, such as `2020 to now`. |
+
+All three must be non-empty strings when present.
+
 ### Useful enum values
 
 | Field | Values |
@@ -862,6 +874,9 @@ Store per-role render configs under `<workspace>/resume-configs/<role-slug>.json
 | --- | --- | --- |
 | `outputFileName` | string | File name written under `outputs/resumes/<Company>/`. Defaults to `<slug(candidate.name)>-<slug(company)>.docx`. |
 | `summary.fitOverride` | string\|null | Replaces the summary's trailing "Strong/Exceptional fit for..." sentence with role-specific wording, or appends it if none is found. |
+| `experienceSections[].jobs[].evidenceIds` | string[] | Evidence ids from `evidence.jsonl` that back every bullet in the job. When present, numbers in those bullets must appear in these entries (blocking), not just anywhere in the ledger. |
+| `experienceSections[].jobs[].bulletEvidenceIds` | string[][] | One list of evidence ids per bullet, same order as `bullets`. A non-empty list overrides the job-level `evidenceIds` for that bullet; use `[]` to skip a bullet. Bullets stay plain strings. |
+| `summary.evidenceIds` | string[] | Evidence ids that back numbers in `summary.text`. |
 | `education` | array | `{ degree, institution, dates, details? }` entries. Only rendered when `includeEducation` is not `false` and this array is non-empty. |
 | `publications` | array | `{ title, publisher, dates, details? }` entries. |
 | `speaking` | array | `{ heading, organizations, dates, details? }` entries. |

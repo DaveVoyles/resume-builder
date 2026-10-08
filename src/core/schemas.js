@@ -148,6 +148,11 @@ function validateEvidence(entries) {
     requireString(entry.confidence, `${label}.confidence`, errors);
     requireString(entry.createdAt, `${label}.createdAt`, errors);
     requireObject(entry.metadata, `${label}.metadata`, errors);
+    ["organization", "dateRange", "section"].forEach((field) => {
+      if (entry[field] !== undefined && (typeof entry[field] !== "string" || entry[field].trim() === "")) {
+        errors.push(`${label}.${field}: must be a non-empty string when present`);
+      }
+    });
 
     if (requireObject(entry.source, `${label}.source`, errors)) {
       requireString(entry.source.kind, `${label}.source.kind`, errors);
