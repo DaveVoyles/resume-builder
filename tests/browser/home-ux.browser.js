@@ -404,3 +404,154 @@ test("home-ux: the draft note follows the save response", async (t) => {
     await page.close();
   }
 });
+
+test("home-ux: Jobs empty state has an icon, not a stray bullet character", async (t) => {
+  if (skipReason()) return t.skip(skipReason());
+  const { url } = await startHome();
+  const page = await newPage(url);
+  try {
+    await page.click("#t-jobs");
+    assert.equal(await page.locator("#jobsEmpty .icon svg").count(), 1);
+    assert.equal((await page.textContent("#jobsEmpty .icon")).trim(), "");
+  } finally {
+    await page.close();
+  }
+});
+
+test("home-ux: no big empty gap at 1280px, and one column on a phone", async (t) => {
+  if (skipReason()) return t.skip(skipReason());
+  const { url } = await startHome();
+  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  try {
+    await page.goto(url);
+    await page.waitForLoadState("networkidle");
+    const cols = await page.evaluate(() => {
+      const bottoms = [...document.querySelectorAll(".intro-grid > .col")].map((c) => c.getBoundingClientRect().bottom);
+      return { gap: Math.abs(bottoms[0] - bottoms[1]), docsRight: document.querySelector(".docs").getBoundingClientRect().left > document.querySelector(".hero").getBoundingClientRect().right };
+    });
+    assert.ok(cols.gap < 300, `columns end ${cols.gap}px apart`);
+    assert.equal(cols.docsRight, true);
+    await page.setViewportSize({ width: 390, height: 844 });
+    const mobile = await page.evaluate(() => {
+      const r = (s) => document.querySelector(s).getBoundingClientRect();
+      return { sameLeft: r(".docs").left === r(".hero").left, docsBelowHero: r(".docs").top >= r(".hero").bottom, scroll: document.documentElement.scrollWidth <= window.innerWidth };
+    });
+    assert.deepEqual(mobile, { sameLeft: true, docsBelowHero: true, scroll: true });
+  } finally {
+    await page.close();
+  }
+});
+
+test("home-ux: the About you form and the saved card sit above the steps list", async (t) => {
+  if (skipReason()) return t.skip(skipReason());
+  const { url } = await startHome();
+  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  try {
+    await page.goto(url);
+    await page.waitForLoadState("networkidle");
+    await page.click("#continueBtn");
+    assert.equal(await page.evaluate(() => document.activeElement.id), "name");
+    const tops = () => page.evaluate(() => ({
+      form: document.getElementById("setup").getBoundingClientRect().top + window.scrollY,
+      saved: document.getElementById("saved").getBoundingClientRect().top + window.scrollY,
+      steps: document.getElementById("stepsList").getBoundingClientRect().top + window.scrollY,
+    }));
+    let y = await tops();
+    assert.ok(y.form < y.steps, "form is above the steps list");
+    assert.ok(y.form < 800, `form starts at ${y.form}px`);
+    await page.fill("#goal", "Support engineering manager");
+    await page.click("#intakeForm .btn.primary");
+    await page.locator("#saved").waitFor({ state: "visible" });
+    y = await tops();
+    assert.ok(y.saved < y.steps, "saved card is above the steps list");
+    assert.ok(y.saved < 800, `saved card starts at ${y.saved}px`);
+  } finally {
+    await page.close();
+  }
+});
+
+function seedDocx(root, name = "jordan.docx") {
+  const dir = path.join(root, "candidate", "outputs", "resumes");
+  fs.mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, name);
+  fs.writeFileSync(file, "fake docx bytes");
+  return { dir, file };
+}
+
+test("home-ux: Open my resume opens a cached PDF with a Download Word file link", async (t) => {
+  if (skipReason()) return t.skip(skipReason());
+  let conversions = 0;
+  const pdfDeps = {
+    findSoffice: () => "/fake/soffice",
+    convert: async (soffice, docx, outDir) => {
+      conversions += 1;
+      fs.writeFileSync(path.join(outDir, `${path.basename(docx, ".docx")}.pdf`), "%PDF-1.4 fake");
+      return true;
+    },
+  };
+  const { url, root } = await startHome({ pdfDeps });
+  const { file } = seedDocx(root);
+  const page = await newPage(url);
+  try {
+    await page.locator("#readyCard").waitFor({ state: "visible" });
+    assert.equal(await page.getAttribute("#openResume", "href"), "/resume/latest.pdf");
+    assert.equal(await page.locator("#downloadWord").isVisible(), true);
+    assert.equal(await page.getAttribute("#downloadWord", "href"), "/resume/latest");
+    assert.equal(await page.locator("#wordNote").isVisible(), false);
+    const first = await page.request.get(new URL("/resume/latest.pdf", url).href);
+    assert.equal(first.headers()["content-type"], "application/pdf");
+    assert.match(await first.text(), /^%PDF/);
+    await page.request.get(new URL("/resume/latest.pdf", url).href);
+    assert.equal(conversions, 1, "second request reuses the cached PDF");
+    // The PDF RB made is not mistaken for the newest resume; the Word link still serves the docx.
+    const word = await page.request.get(new URL("/resume/latest", url).href);
+    assert.equal(await word.text(), "fake docx bytes");
+    // A newer docx is converted again.
+    const later = new Date(Date.now() + 5000);
+    fs.writeFileSync(file, "newer docx");
+    fs.utimesSync(file, later, later);
+    await page.request.get(new URL("/resume/latest.pdf", url).href);
+    assert.equal(conversions, 2);
+  } finally {
+    await page.close();
+  }
+});
+
+test("home-ux: without LibreOffice the resume is the Word file with a plain note", async (t) => {
+  if (skipReason()) return t.skip(skipReason());
+  const { url, root } = await startHome({ pdfDeps: { findSoffice: () => null } });
+  seedDocx(root);
+  const page = await newPage(url);
+  try {
+    await page.locator("#readyCard").waitFor({ state: "visible" });
+    assert.equal(await page.getAttribute("#openResume", "href"), "/resume/latest");
+    assert.equal(await page.locator("#downloadWord").isVisible(), false);
+    assert.match(await page.textContent("#wordNote"), /Word file; opens in Word/);
+    const res = await page.request.get(new URL("/resume/latest.pdf", url).href);
+    assert.match(await res.text(), /Word file; opens in Word/);
+  } finally {
+    await page.close();
+  }
+});
+
+test("home-ux: pending job requests say what to tell the agent", async (t) => {
+  if (skipReason()) return t.skip(skipReason());
+  const { url, root } = await startHome();
+  const page = await newPage(url);
+  try {
+    await page.click("#t-jobs");
+    await page.fill("#jobLink", "https://jobs.example.com/ops");
+    await page.click("#jobForm button[type=submit]");
+    await page.locator("#jobResult").waitFor({ state: "visible" });
+    assert.match(await page.textContent("#jobSavedNote"), /Tell your agent: "check my job requests"/);
+    await page.waitForFunction(() => !document.getElementById("jobPending").hidden);
+    assert.match(await page.textContent("#jobPending"), /1 job request is waiting\. Tell your agent: "check my job requests"/);
+    fs.writeFileSync(path.join(root, "candidate", "job-requests.json"), "[]");
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+    await page.click("#t-jobs");
+    assert.equal(await page.locator("#jobPending").isVisible(), false);
+  } finally {
+    await page.close();
+  }
+});
