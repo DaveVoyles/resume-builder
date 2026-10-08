@@ -20,7 +20,7 @@ Status: **complete and part of the suite.** `npm run e2e`, `npm test` and `npm r
 
 | Role | General resume | Tailored | Fit |
 | --- | --- | --- | --- |
-| JPMorgan Chase, Lead Technical Program Manager | 7% | 80% | Closest fit. Nine of the twelve extra keywords are on the resume under different words; the owner confirmed them. RAID, agile and ServiceNow stay off. |
+| JPMorgan Chase, Lead Technical Program Manager | 7% | 80% | Closest fit. Of the 11 extra keywords, nine are on the resume under different words and the owner confirmed them; two (program management, cross-functional) are backed by existing resume lines. RAID, agile and ServiceNow stay off. |
 | Bentley Systems, Senior Principal Engineer, Developer Platform | 12% | 20% | Stretch. The lift is two words the posting asks for by name (leadership, analytics), not new experience. Every real requirement is still missing. |
 | Deloitte, Lead Forward Deployed Engineer, Frontier GenAI | 20% | 28% | Weakest fit. Generic words (AI, cloud, Azure, API, agents) plus leadership and risk management. Every real requirement is still missing. |
 

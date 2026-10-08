@@ -152,7 +152,7 @@ function main() {
     return;
   }
 
-  console.log(`Workspace valid: ${workspace}`);
+  console.log(`Workspace valid: ${path.relative(process.cwd(), workspace).split(path.sep).join("/") || "."}`);
 }
 
 main();

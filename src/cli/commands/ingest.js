@@ -232,6 +232,9 @@ async function ingestLocalSources(sources, workspace, paths, profile, deps = {})
           "so each job and bullet can be used as proof.",
       );
     }
+    if (!read.text && path.extname(read.path).toLowerCase() !== ".pdf") {
+      console.log(`No text could be read from ${path.basename(read.path)}, so it adds no facts (only a record that the file exists).`);
+    }
     if (source.kind === "resume" && read.text) {
       // The whole-file entry above stays for compatibility. These add one
       // entry per job header, bullet, or paragraph so a number deep in the

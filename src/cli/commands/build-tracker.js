@@ -3,12 +3,13 @@
 const fs = require("fs");
 const { renderTracker } = require("../../renderers/markdown-tracker");
 const { renderHtmlTracker } = require("../../renderers/html-tracker");
-const { readJson, relativeToWorkspace, resolveWorkspace, workspacePaths, writeTextIfMissing } = require("../../core/workspace");
+const { readJson, relativeToWorkspace, requireWorkspace, resolveWorkspace, workspacePaths, writeTextIfMissing } = require("../../core/workspace");
 const { DEFAULT_THRESHOLDS } = require("../../core/staleness");
 const { syncOnboardingState } = require("../../core/onboarding-state");
 
 function run(options) {
   const workspace = resolveWorkspace(options.workspace);
+  requireWorkspace(workspace);
   const paths = workspacePaths(workspace);
   const roles = readJson(paths.rolesTracked, []);
   const format = options.format === "html" ? "html" : "md";

@@ -193,7 +193,7 @@ function possibleHtml(model) {
   if (model.blocked || !items.length) return "";
   const list = items.map((item) =>
     `<li><strong>${esc(item.keyword)}</strong><ul class="plain">${asArray(item.matches).map((match) =>
-      `<li>&ldquo;${esc(match.quote)}&rdquo; <span class="note">(evidence <code>${esc(match.evidenceId)}</code>${match.source ? `, from ${esc(match.source)}` : ""})</span></li>`).join("")}</ul></li>`).join("");
+      `<li>&ldquo;${esc(match.quote)}&rdquo; <span class="note">(${match.source ? `from ${esc(match.source)}` : `evidence <code>${esc(match.evidenceId)}</code>`})</span></li>`).join("")}</ul></li>`).join("");
   return `<section class="card"><h2>${esc(model.possibleHeading)}</h2><p>${esc(model.possibleIntro)}</p><ul class="plain">${list}</ul></section>`;
 }
 

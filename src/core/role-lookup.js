@@ -18,7 +18,9 @@ function findTrackedRole(roles, options, commandName) {
     const title = String(options.title).toLowerCase();
     const matches = roles.filter((role) => String(role.company || "").toLowerCase() === company
       && (String(role.title || "").toLowerCase() === title || String(role.role || "").toLowerCase() === title));
-    if (matches.length === 0) throw new Error(`Role not found: ${options.company} — ${options.title}.`);
+    if (matches.length === 0) {
+      throw new Error(`Role not found: ${options.company} — ${options.title}. Check the spelling, or use --id <role-id>. A role added from a link alone is only a seed role; save its posting text (add-role --jd-file <file>) so it can be tracked.`);
+    }
     if (matches.length > 1) {
       throw new Error(`Ambiguous match: ${matches.length} tracked roles for ${options.company} — ${options.title} (ids: ${matches.map((m) => m.id).join(", ")}). Re-run with --id <role-id> to disambiguate.`);
     }
