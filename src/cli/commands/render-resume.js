@@ -6,6 +6,7 @@ const { Packer } = require("docx");
 const { renderResumeConfig } = require("../../renderers/docx-resume");
 const { readJson, resolveWorkspace, workspacePaths, ensureDir } = require("../../core/workspace");
 const { slug } = require("../../core/ids");
+const { loadResumeConfig } = require("../../core/resume-config");
 
 // Company and output file name both become literal path segments under
 // outputs/resumes/ (issue #6: "outputs/resumes/<Company>/<file>.docx").
@@ -45,7 +46,7 @@ async function run(options) {
   const workspace = resolveWorkspace(options.workspace);
   const paths = workspacePaths(workspace);
   const configPath = path.resolve(process.cwd(), options.config);
-  const config = readJson(configPath);
+  const config = loadResumeConfig(configPath);
 
   const document = renderResumeConfig(config);
   const buffer = await Packer.toBuffer(document);

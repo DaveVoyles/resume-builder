@@ -149,6 +149,8 @@ function renderHtmlTracker(roles, options = {}) {
       jobUrl: role.jobUrl || "",
       applyUrl: role.applyUrl || "",
       resume: role.resume || "",
+      keywordScore: role.keywordScore,
+      keywordMissing: role.keywordMissing,
       coverLetterStatus: role.coverLetterStatus || "",
       notes: notesHtml(sortedSourceRoles[index]),
       isStale: staleness.isStale,
@@ -375,6 +377,7 @@ function renderHtmlTracker(roles, options = {}) {
   .loc-hybrid { background: #e0e7ff; color: #3730a3; }
   .loc-onsite { background: #fce7f3; color: #9d174d; }
   .loc-other { background: #f1f5f9; color: #475569; }
+  .kw-score { font-size: 0.75rem; color: #475569; }
   .stale-badge {
     display: inline-block;
     padding: 0.25rem 0.75rem;
@@ -608,7 +611,10 @@ function renderHtmlTracker(roles, options = {}) {
       const href = role.resume.replace(/^outputs\\//, "");
       const parts = role.resume.split("/");
       const filename = parts[parts.length - 1] || role.resume;
-      return '<a href="' + esc(href) + '" target="_blank" rel="noopener">' + esc(filename) + "</a>";
+      const link = '<a href="' + esc(href) + '" target="_blank" rel="noopener">' + esc(filename) + "</a>";
+      if (role.keywordScore === null || role.keywordScore === undefined) return link;
+      const missing = role.keywordMissing ? role.keywordMissing + " missing" : "none missing";
+      return link + '<br><span class="kw-score">Keywords ' + esc(String(role.keywordScore)) + "% (" + esc(missing) + ")</span>";
     }
 
     function linkCell(role) {

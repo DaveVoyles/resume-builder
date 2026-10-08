@@ -2,6 +2,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const { loadResumeConfig } = require("../../core/resume-config");
 const { readStoredPostingText } = require("../../core/role-posting");
 const { readJson, readJsonLines, resolveWorkspace, workspacePaths, ensureDir, writeJson } = require("../../core/workspace");
 
@@ -103,7 +104,7 @@ function findRoleConfigPath(workspace, role) {
     .map((file) => {
       const fullPath = path.join(configDir, file);
       try {
-        return { file, fullPath, config: readJson(fullPath) };
+        return { file, fullPath, config: loadResumeConfig(fullPath) };
       } catch (error) {
         return null;
       }
@@ -159,7 +160,7 @@ async function run(options) {
 
   // Find and load the resume config
   const roleConfigPath = findRoleConfigPath(workspace, role);
-  const resumeConfig = readJson(roleConfigPath);
+  const resumeConfig = loadResumeConfig(roleConfigPath);
 
   // Create the bundle
   const bundle = {

@@ -51,6 +51,7 @@ The CLI does not currently:
 | Render an interactive HTML tracker (searchable/filterable, stat cards, pipeline funnel, stale badges) | `npm run workspace:tracker -- --workspace <dir> --format html` |
 | Render a schema-validated resume config to DOCX | `npm run workspace:render -- --workspace <dir> --config <resume-config.json>` |
 | Validate, render, and track a role for a job posting in one pass | `npm run workspace:tailor -- --workspace <dir> --config <resume-config.json> --url <url> --title <title>` |
+| Rank experience and skills against a saved posting before drafting a resume config (writes `outputs/tailor-plans/<role-id>.json`) | `npm run workspace:tailor-plan -- --workspace <dir> --company "<name>" --title "<name>"` |
 | Score how well a resume config covers a job posting's keywords | `npm run workspace:score-keywords -- --config <resume-config.json> --keywords <keywords.json>` |
 | Classify missing keywords into gap types and render a markdown gap report | `npm run workspace:gap-report -- --input <gaps.json> --workspace <dir> [--roleId <id>]` |
 | Record an application status change (including `ghosted`) and rebuild the tracker | `npm run workspace:set-status -- --workspace <dir> --company "<name>" --title "<name>" --status <status>` |

@@ -32,6 +32,7 @@
     "workspace:gap-report": "node src/cli/index.js gap-report",
     "workspace:bundle": "node src/cli/index.js study-guide-bundle",
     "workspace:tailor": "node src/cli/index.js tailor",
+    "workspace:tailor-plan": "node src/cli/index.js tailor-plan",
     "workspace:set-status": "node src/cli/index.js set-status",
     "workspace:validate": "node src/cli/index.js validate",
     "workspace:serve": "node src/cli/index.js serve",

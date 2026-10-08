@@ -499,7 +499,7 @@ The validator flags feedback before output when:
 | `posting` | object | Display fields (`location`, `compensation`) plus the saved job posting: `path` (workspace-relative, `postings/<role-id>.md`), `fetchedAt` (ISO time), `source` (`url`, `pasted`, or `file`), and `keywords` (`{ required: [], preferred: [] }`, at most about 25 in total). Written by `add-role` / `tailor` with `--jd-file <file>` or `--jd-text`, so tailoring, gap analysis, and study guides read the stored text instead of re-fetching the URL. `validate` rejects a `path` that is absolute or contains `..`, a bad `source` or `fetchedAt`, and non-string keywords. See [Saved job postings](#saved-job-postings). |
 | `application` | object | `status` (enum above, set by `set-status`), `appliedAt` (date the candidate applied — preserved across later status transitions unless explicitly overridden), referral contact label, and notes. |
 | `fit` | object | Fit level, rationale, matched evidence, and gaps. |
-| `resume` | object | `outputPath` (rendered DOCX path), `configPath` (the resume-config JSON this role was tailored from, set by `tailor` — see below), `status`, and tailored emphasis. |
+| `resume` | object | `outputPath` (rendered DOCX path), `configPath` (the resume-config JSON this role was tailored from, set by `tailor` — see below), `status`, tailored emphasis, and `keywordCoverage` (latest keyword check, below). |
 | `coverLetter` | object | `configPath` (the cover-letter-config JSON, relative to the workspace), `outputPath` (rendered DOCX path), and `status` — set by `tailor --cover-letter` or standalone `render-cover-letter` (see [Cover letter render config](#cover-letter-render-config-render-cover-letter)). Absent when no cover letter has been generated for this role. |
 | `evidenceMap` | array | Role requirements mapped to evidence IDs. |
 | `nextAction` | object | Next action type, owner, and due date. |
@@ -884,6 +884,7 @@ Store per-role render configs under `<workspace>/resume-configs/<role-slug>.json
 | `includeEducation` | boolean | Default `true`. |
 | `includePublicationsSpeaking` | boolean | Default `true`. |
 | `publicationsSpeakingLayout` | string | `combined` (default), `speaking-then-publications`, `combined-speaking-only`, or `publications-only` — mirrors the ported engine's layout options for the "Publications & Speaking" heading when both arrays are present. |
+| `extends` | string | Relative path (from this file's folder, normally another file in `resume-configs/`) to a base config. Shallow merge: the child's top-level sections replace the base's whole and the rest come from the base; `outputFileName` is not inherited. Missing base, cycles, absolute paths, and chains over 5 are errors. The base must itself be a complete valid config. `render-resume`, `tailor`, `validate`, and `study-guide-bundle` resolve it through `loadResumeConfig` in `src/core/resume-config.js`. |
 
 ### Example (fictional)
 
@@ -1021,6 +1022,27 @@ npm run workspace:add-role -- --workspace candidate --tracked --url "<posting-ur
 ```
 
 `add-role`, `add-lead`, and `tailor` accept `--jd-file` / `--jd-text`. The text is written to `<workspace>/postings/<role-id>.md` (leads use `postings/lead_...md`) and `posting` is set on the role. Keywords come from `src/core/posting-keywords.js`, a deterministic extractor (no network, no LLM): it splits required from preferred using headings and phrases such as "requirements", "must have", "nice to have", "preferred", and "bonus", then collects known skills, capitalised terms, and phrases after "experience with", deduped and capped at 25. An existing stored posting is never overwritten by a later `add-role` or `tailor` run for the same role. `--keywords` takes a comma list (or a JSON array file) and replaces the stored keywords, as `required`. When `tailor` runs without `--keywords`, its keyword-coverage step scores the stored keywords. The `postings/` folder is private workspace data and is ignored by the workspace `.gitignore`.
+
+### Keyword coverage on a role
+
+`tailor` and `score-keywords` (with `--id` or `--company` and `--title`) save the latest keyword check on the role as `resume.keywordCoverage`:
+
+```json
+{
+  "score": 78,
+  "percent": 71,
+  "covered": [{ "keyword": "developer platform", "importance": "required", "locations": ["summary", "bullet 1 of Senior Platform Program Manager at Contoso Labs"] }],
+  "missing": [{ "keyword": "Kubernetes", "importance": "required", "supported": false, "evidenceIds": [] }],
+  "checkedAt": "2026-06-08T12:00:00.000Z",
+  "source": "stored posting keywords"
+}
+```
+
+`score` weights required keywords 2 and preferred 1; `percent` counts each keyword once. In `missing`, `supported: true` means the keyword appears in the profile or evidence (`evidenceIds` lists the entries), so it could be added where true; `supported: false` means there is no evidence and it must not be suggested. Matching is by word boundary with the alias map in `src/core/data/keyword-aliases.json`.
+
+### Tailor plan (`tailor-plan`)
+
+`tailor-plan --workspace <dir> (--id <role-id> | --company <name> --title <name>)` ranks the candidate's experience against the role's saved posting keywords and writes `outputs/tailor-plans/<role-id>.json`. It is deterministic (no LLM, no network). Top-level keys: `role`, `posting.keywords`, `limits` (bullet and proxy-score limits from `src/core/resume-config.js`), `jobs[]` (`rank`, `title`, `organization`, `dates`, `score`, `include`, `maxBullets`, `matchedKeywords`, `bullets[]` with `text`, `score`, `matchedKeywords`, `evidenceIds`, `recommended`), `skills` (`order[]`, `suggestAdd[]`), `keywords` (`supported[]` with `evidenceIds`, `doNotClaim[]` with a plain-language `note`), `otherEvidence[]` (matching notes outside any job), and `notes[]`. Jobs come from `profile.json` `experience[].highlights` and, for resumes that were ingested, from the per-job pieces in `evidence.jsonl`.
 
 ## Study guide bundle (`study-guide-bundle`)
 

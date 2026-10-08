@@ -47,6 +47,25 @@ Compare what the posting asks for against `profile.json` and `evidence.jsonl`:
 
 **If the candidate's evidence ledger is thin** (fewer than a handful of source-backed entries), say so before drafting — `validate`/`tailor` will only warn, not block, on a thin ledger, but a resume built on thin evidence is a weaker resume. Suggest ingesting more source material first if time allows.
 
+### Step 1.3: Run `tailor-plan`
+
+Once the posting is saved with the role (`add-role --tracked --jd-file <posting.md>`), rank the candidate's evidence against its stored keywords. This is deterministic (no LLM, no network):
+
+```bash
+npm run workspace:tailor-plan -- --workspace candidate --company "<Company>" --title "<Role Title>"
+```
+
+It writes `outputs/tailor-plans/<role-id>.json` and prints a short summary. The plan lists:
+
+- `jobs`: experience entries ranked by weighted keyword overlap (required 2, preferred 1, same matcher as the coverage score), each with `include`, `maxBullets` (6 for the first job, 4 for later ones, from `src/core/resume-config.js`), and its bullets ranked with `recommended` and `evidenceIds`.
+- `skills`: profile skills ordered by overlap, plus `suggestAdd` (keywords the evidence supports but the profile skills do not list).
+- `keywords.supported`: keywords with supporting `evidenceIds`, ready for `evidenceIds` / `bulletEvidenceIds` in the config.
+- `keywords.doNotClaim`: keywords with no evidence at all. Do not add them to the resume; ask the candidate first.
+
+The plan only orders and cites what the candidate already has. You still write the wording, and `tailor` still audits every claim. The workflow is: save posting, `tailor-plan`, write the config (optionally with `"extends"`, below), `tailor`.
+
+**Base config with `extends`.** A resume config may start with `"extends": "base.json"` (a relative path from that file's folder, usually another file in `resume-configs/`). The child's top-level sections replace the base's whole; sections it leaves out come from the base (`outputFileName` is not inherited, so two roles never render to one file). Cycles, a missing base, an absolute path, or a chain longer than 5 are errors. `render-resume`, `tailor`, `validate`, and `study-guide-bundle` all resolve it. The base must be a complete, valid config on its own.
+
 ---
 
 ## Section 2: Select relevant experience and draft the resume config
@@ -147,6 +166,17 @@ Keyword coverage: 75% (3/4)
 Present: Python, AWS, Product management
 Missing: Kubernetes
 ```
+
+With the role's stored posting keywords (no `--keywords`) the report also shows a weighted score (required keywords count 2, preferred 1) next to the plain percent, and each missing keyword gets a note:
+
+```
+Keyword coverage: 71% (5/7), weighted 78% (stored posting keywords)
+Missing: Kubernetes, roadmap
+  - Kubernetes: no evidence of this in the ledger — ask the candidate before adding
+  - roadmap: appears in your evidence — could be added where it is true for this role
+```
+
+Matching uses word boundaries and an alias map (`src/core/data/keyword-aliases.json`: K8s/Kubernetes, JS/JavaScript, Postgres/PostgreSQL, CI/CD, ML/machine learning, PM/product management, and others, both ways), so "Java" does not match "JavaScript" and "C++" and "Node.js" match as written. It does not stem words ("schedule" does not match "scheduling"), so check a miss by eye before calling it a gap. The result is saved on the role as `resume.keywordCoverage` and shows in the tracker's Resume column. `score-keywords --workspace <dir> --company ... --title ... --config ...` refreshes it without re-rendering.
 
 **The CLI never fetches a job posting** — it has no scraper. With `--jd-file` / `--jd-text` it stores
 the text you give it and extracts keywords with a simple deterministic rule set, which can miss

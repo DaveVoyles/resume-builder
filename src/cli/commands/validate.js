@@ -4,7 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const { renderTracker } = require("../../renderers/markdown-tracker");
 const { validateEvidence, validateOnboardingState, validateProfile, validatePreferences, validateRoles, validateFeedback } = require("../../core/schemas");
-const { validateResumeConfig } = require("../../core/resume-config");
+const { loadResumeConfig, validateResumeConfig } = require("../../core/resume-config");
 const { auditResumeConfig } = require("../../core/claim-audit");
 const { auditFacts } = require("../../core/fact-audit");
 const { lintConfig } = require("../../core/style-lint");
@@ -41,7 +41,7 @@ function auditResumeConfigs(paths, evidence, errors, warnings, profile) {
 
     let config;
     try {
-      config = readJson(file);
+      config = loadResumeConfig(file);
     } catch (error) {
       errors.push(...prefixed(label, [error.message]));
       return;
