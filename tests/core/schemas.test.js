@@ -2,7 +2,7 @@
 
 const { test, describe } = require("node:test");
 const assert = require("node:assert/strict");
-const { validateEvidence, validateOnboardingState } = require("../../src/core/schemas");
+const { validateEvidence, validateOnboardingState, validateProfile, validatePreferences } = require("../../src/core/schemas");
 const { defaultOnboardingState } = require("../../src/core/onboarding-state");
 
 // ---------------------------------------------------------------------------
@@ -88,6 +88,20 @@ describe("validateOnboardingState", () => {
     assert.deepEqual(validateOnboardingState(state), []);
   });
 
+  test("passes firstRoleAdded object form and firstDraftReady boolean", () => {
+    const state = defaultOnboardingState();
+    state.firstRoleAdded = { done: true, at: "2026-10-07T12:00:00.000Z" };
+    state.firstDraftReady = true;
+    assert.deepEqual(validateOnboardingState(state), []);
+  });
+
+  test("flags firstRoleAdded object done without at", () => {
+    const state = defaultOnboardingState();
+    state.firstRoleAdded = { done: true };
+    const errors = validateOnboardingState(state);
+    assert.ok(errors.some((e) => /firstRoleAdded\.at/.test(e)));
+  });
+
   test("flags a missing top-level boolean field", () => {
     const state = defaultOnboardingState();
     delete state.materialIngested;
@@ -120,4 +134,113 @@ describe("validateOnboardingState", () => {
     const errors = validateOnboardingState(state);
     assert.ok(errors.some((e) => /schemaVersion: must be "1\.0"/.test(e)));
   });
+});
+
+describe("validateProfile educationSkip", () => {
+  test("accepts educationSkip skipped true with an education array", () => {
+    const profile = {
+      candidate: { links: [] },
+      skills: [],
+      experience: [],
+      projects: [],
+      education: [],
+      sources: [],
+      educationSkip: { skipped: true },
+    };
+    assert.deepEqual(validateProfile(profile), []);
+  });
+});
+
+describe("validatePreferences skip markers", () => {
+  test("accepts dealBreakersSkip skipped true", () => {
+    assert.deepEqual(validatePreferences({ dealBreakersSkip: { skipped: true } }), []);
+  });
+
+  test("accepts dealBreakersSkip none true", () => {
+    assert.deepEqual(validatePreferences({ dealBreakersSkip: { none: true } }), []);
+  });
+
+  test("rejects dealBreakersSkip typo key", () => {
+    const errors = validatePreferences({ dealBreakersSkip: { skiped: true } });
+    assert.equal(errors.length > 0, true);
+    assert.match(errors.join("\n"), /dealBreakersSkip/);
+  });
+
+  test("rejects dealBreakersSkip skipped yes string", () => {
+    const errors = validatePreferences({ dealBreakersSkip: { skipped: "yes" } });
+    assert.equal(errors.length > 0, true);
+  });
+
+  test("rejects dealBreakersSkip extra keys", () => {
+    const errors = validatePreferences({ dealBreakersSkip: { skipped: true, none: true } });
+    assert.equal(errors.length > 0, true);
+  });
+
+  test("accepts compensation skipped true alone", () => {
+    assert.deepEqual(validatePreferences({ compensation: { skipped: true } }), []);
+  });
+
+  test("accepts compensation numbers without skipped", () => {
+    assert.deepEqual(
+      validatePreferences({
+        compensation: { currency: "USD", baseMinimum: 160000, totalMinimum: 190000, totalTarget: 220000, publiclyShare: false },
+      }),
+      [],
+    );
+  });
+
+  test("rejects compensation skiped typo key", () => {
+    const errors = validatePreferences({ compensation: { skiped: true } });
+    assert.equal(errors.length > 0, true);
+    assert.match(errors.join("\n"), /skiped/);
+    assert.match(
+      errors.join("\n"),
+      /allowed: currency, baseMinimum, totalMinimum, totalTarget, publiclyShare, skipped/,
+    );
+  });
+
+  test("rejects compensation skipped yes string", () => {
+    const errors = validatePreferences({ compensation: { skipped: "yes" } });
+    assert.equal(errors.length > 0, true);
+  });
+
+  test("rejects compensation skipped mixed with numbers", () => {
+    const errors = validatePreferences({ compensation: { skipped: true, baseMinimum: 160000 } });
+    assert.equal(errors.length > 0, true);
+  });
+});
+
+describe("validatePreferences workModes", () => {
+  test("accepts hybrid along with the documented work modes", () => {
+    assert.deepEqual(
+      validatePreferences({ locations: { workModes: ["remote", "hybrid", "on-site", "flexible"] } }),
+      [],
+    );
+  });
+
+  test("rejects an unknown work mode", () => {
+    const errors = validatePreferences({ locations: { workModes: ["hybrid", "teleport"] } });
+    assert.equal(errors.length > 0, true);
+    assert.match(errors.join("\n"), /preferences\.locations\.workModes\[1\] must be one of: remote, hybrid, on-site, flexible/);
+  });
+});
+
+
+
+test("validateProfile and validatePreferences reject repeated ids", () => {
+  const { validateProfile, validatePreferences } = require("../../src/core/schemas");
+  const profile = {
+    candidate: { links: [] },
+    skills: [], experience: [], projects: [], sources: [],
+    education: [{ id: "edu-003", institution: "A" }, { id: "edu-003", institution: "B" }],
+  };
+  assert.ok(validateProfile(profile).some((e) => /duplicate id edu-003/.test(e)));
+  const prefs = { dealBreakers: [{ id: "deal-001" }, { id: "deal-001" }] };
+  assert.ok(validatePreferences(prefs).some((e) => /duplicate id deal-001/.test(e)));
+});
+
+test("validateProfile requires experience[].titleAliases to be an array of non-empty strings when present", () => {
+  const base = { candidate: { id: "c", links: [] }, skills: [], projects: [], education: [], sources: [] };
+  assert.deepEqual(validateProfile({ ...base, experience: [{ id: "e1", organization: "X", title: "Y", titleAliases: ["Senior Y"] }] }), []);
+  assert.match(validateProfile({ ...base, experience: [{ id: "e1", titleAliases: "Senior Y" }] }).join("\n"), /titleAliases must be an array/);
 });

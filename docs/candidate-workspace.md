@@ -13,6 +13,8 @@ Use a candidate workspace to keep one person's source material, evidence, target
 
 ## Workspace layout
 
+The person puts source files in `my-documents` at the repo root. The agent copies them into `candidate/inputs/resumes` or `candidate/inputs/notes` before ingest. Do not invent `candidate/resumes`.
+
 The workspace layout uses this shape:
 
 ```text

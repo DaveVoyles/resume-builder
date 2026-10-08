@@ -13,6 +13,8 @@ npm test
 | [`cli/`](cli/) | Composition tests for CLI commands — `ingest`, `init`, `render-resume`, `tailor`, `validate` — exercised as real command calls against a temp-dir workspace, not mocked. |
 | [`core/`](core/) | Unit tests for `src/core/`: the evidence-backed claim audit (`claim-audit.test.js`) and resume-config schema validation (`resume-config.test.js`). |
 | [`renderers/`](renderers/) | Tests for `src/renderers/`, currently the DOCX resume renderer — asserts the generated `.docx` actually contains the expected text, via `helpers/read-docx-text.js`. |
+| [`e2e/`](e2e/) | Persona scorecard and golden DOCX text checks (`personas.test.js`), driven by `scripts/e2e-persona.js`. See [`docs/testing.md`](../docs/testing.md). |
+| [`browser/`](browser/) | Headless Playwright checks for the home page, including a persona-driven flow. Run with `npm run test:browser`. |
 | [`helpers/`](helpers/) | Shared test-only utilities. `read-docx-text.js` is a minimal ZIP + WordprocessingML extractor used only to read back generated DOCX files in assertions — not a runtime dependency. |
 
 **Note:** two commands added after this layout was established keep their tests colocated

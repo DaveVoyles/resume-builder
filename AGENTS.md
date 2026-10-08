@@ -4,13 +4,35 @@ Cursor Cloud: see [`docs/cursor-cloud.md`](docs/cursor-cloud.md).
 
 This CLI is **agent-operated**: you are the primary operator, and the CLI is your deterministic toolbelt for parsing, validating, rendering, and tracking resumes. See [ADR 0001](docs/decisions/0001-agent-operated-cli.md) for the design rationale.
 
-Use this repo to help a candidate run an evidence-backed resume workflow. Assume the candidate wants the **agent-first path** unless they explicitly ask for CLI-only instructions.
+Use this repo to help a person run an evidence-backed resume workflow. The person is a working professional. You run the tool. They decide what is true and when anything is sent.
+
+## Guide the person
+
+At the start of a new setup, before any other step:
+
+1. Read [`docs/first-run/README.md`](docs/first-run/README.md). That file is only the index. The long path is [`docs/first-run/FAQ.md`](docs/first-run/FAQ.md).
+2. Open [`docs/first-run/guide.html`](docs/first-run/guide.html) in their browser and walk the page with them.
+3. Follow [`docs/first-run/FAQ.md`](docs/first-run/FAQ.md) from an empty folder through a resume, a job list, and a study guide. Say only the sentences in [`docs/first-run/what-to-say.md`](docs/first-run/what-to-say.md).
+
+Do not ask them to run commands. Do not ask them to edit files. Do not open a practice application form during first-run.
+
+## Files and paths
+
+Always name real folders from the repo root. Never say "the resumes folder" or other vague folder names.
+
+- The person puts files in `my-documents`.
+- Ingest still reads `candidate/inputs/resumes` and `candidate/inputs/notes`. With no source flags, `npm run workspace:ingest -- --workspace candidate` reads those folders by default. Do not invent `candidate/resumes`.
+- After they drop files, copy from `my-documents` into `candidate/inputs/resumes` or `candidate/inputs/notes`, then run ingest. Do not ask them to drop files into `candidate/inputs/`.
+- Home Introduction tells the person that copy happens, in plain words. Exact `candidate/inputs/` paths stay here and in the collapsed "For your AI agent" note on home.
+- Jobs **Go to setup** opens the About you form on Introduction, scrolls to it, and focuses the first field.
+- If Open folder fails, or the home page shows the fallback note, open `my-documents` yourself from the repo root. That note appears only when opening fails or cannot be confirmed.
+
 
 ## 🚀 Default workflow
 
-1. 📦 Run `npm install` if dependencies are missing.
-2. 🧪 Run `npm start` so the candidate can see the fictional sample workflow.
-3. 🧭 Follow [`docs/playbooks/onboarding.md`](docs/playbooks/onboarding.md) for first-run sequencing — it checks the workspace's actual state (does it exist? has real material been dropped in? has it been ingested? has intake happened?) and greets the candidate at the right step instead of always starting from scratch.
+1. 📦 Run `npm install` if dependencies are missing. You run it.
+2. Open `docs/first-run/guide.html` in the browser before setup.
+3. 🧭 Follow [`docs/playbooks/onboarding.md`](docs/playbooks/onboarding.md) for which step they are on. Follow [`docs/first-run/FAQ.md`](docs/first-run/FAQ.md) for what to say and what to run.
 
 Throughout the lifecycle, not just at first launch:
 
@@ -27,6 +49,10 @@ Throughout the lifecycle, not just at first launch:
 - Phrase low-confidence claims cautiously and mark them for candidate review.
 - Do not promote a similar role to tracked status until the candidate approves it.
 
+## 🔀 Merging
+
+This is a solo project and the stakes are low. When CI is green, agents may merge their own pull requests to `main` without asking first. If CI is red, fix it first. Privacy and no-submission rules below still apply.
+
 ## 🔒 Privacy rules
 
 - Treat `candidate/` as private workspace data.
@@ -36,10 +62,10 @@ Throughout the lifecycle, not just at first launch:
 
 ## 💬 Communication style
 
-- Use plain language.
-- Keep first steps short.
-- Explain what command to run and what result to expect.
-- Ask one focused question at a time when user input is needed.
+- Speak as you would to a colleague. Do not talk down. The sentences you may say are in [`docs/first-run/what-to-say.md`](docs/first-run/what-to-say.md).
+- One question, then wait.
+- Tell them the result (a page opened, a Word file ready, a list updated). Name the real path (`my-documents`, http://localhost:4321/tracker.html). The tracker file also lives at `candidate/outputs/tracker.html`. Do not tell them the command you ran unless they ask.
+- Ask one focused question at a time when you need an answer.
 
 ## 📊 Status update recipe
 
@@ -76,13 +102,12 @@ The command updates `roles.tracked.json` and rebuilds `outputs/tracker.md` and `
 
 **How to use:**
 
-1. Open the grill playbook: [`docs/playbooks/grill.md`](docs/playbooks/grill.md)
-2. Paste it into your terminal agent (Claude, ChatGPT, Copilot CLI, etc.)
-3. Follow the agent's guidance to answer questions one at a time
-4. The agent writes answers to `candidate/profile.json`, `candidate/preferences.json`, and `candidate/evidence.jsonl`
-5. Validate the result: `npm run workspace:validate -- --workspace candidate`
+1. You are the agent. Follow [`docs/playbooks/grill.md`](docs/playbooks/grill.md). Do not ask the person to paste it somewhere else.
+2. Ask one question at a time. Use the sentences in [`docs/first-run/what-to-say.md`](docs/first-run/what-to-say.md).
+3. Write answers to `candidate/profile.json`, `candidate/preferences.json`, and `candidate/evidence.jsonl`. The person does not edit those files.
+4. Validate: `npm run workspace:validate -- --workspace candidate`
 
-The grill playbook is the source of truth. See the `.claude/skills/grill` skill for usage details.
+The grill playbook is the source of truth for the questions. See the `.claude/skills/grill` skill for usage details.
 
 ## 🎓 Study guide recipe
 

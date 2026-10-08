@@ -53,6 +53,8 @@ Use these conventions across all workspace files:
 | `summary` | string | Candidate-approved summary paragraph. |
 | `workAuthorization` | object | Countries and sponsorship requirements. |
 | `education` | array | Education entries. |
+| `educationSkip` | object | `{ "skipped": true }` when the person skipped education. Leave `education` as an array. Do not write this unless they said skip. |
+| `experience[].titleAliases` | string[] | Other titles the candidate actually held or was formally known by in that job (for example `["Senior Program Manager"]`). The fact audit accepts a resume job title that matches the profile title or any alias; a title that adds Senior, Lead, Head of, Director and similar words to the profile title is blocked unless the profile lists it here. |
 | `certifications` | array | Certification entries. |
 | `projects` | array | Portfolio or public-work entries. |
 | `languages` | array | Spoken or written languages. |
@@ -126,7 +128,7 @@ Use these conventions across all workspace files:
 | `schemaVersion` | string | Must be `"1.0"`. |
 | `roleTargets` | array | Desired titles, seniority, and employment types. |
 | `locations` | object | Location and work-mode preferences. |
-| `dealBreakers` | array | Conditions that should exclude a role. |
+| `dealBreakers` | array | Conditions that should exclude a role. An empty array from setup is not a skip. |
 
 ### Useful enum values
 
@@ -155,6 +157,7 @@ Use these conventions across all workspace files:
 | `companyStages` | array | Startup, growth, enterprise, nonprofit, or public-sector preferences. |
 | `technologies` | array | Technologies to highlight or avoid. |
 | `compensation` | object | Candidate-provided range and currency — see [`compensation` fields](#compensation-fields) below. |
+| `dealBreakersSkip` | object | `{ "skipped": true }` when the person skipped this question, or `{ "none": true }` when they said they have none. Do not write either unless they said so. |
 | `availability` | object | Start date, notice period, and interview windows. |
 | `resumeStyle` | object | Tone, length, and emphasis preferences. |
 | `stalenessThresholds` | object | Overrides the tracker's per-status-bucket stale-flag day thresholds (see [Staleness computation](#staleness-computation) under `roles.tracked.json`). Any subset of `not-applied`, `applied`, `interview`, `offer`, `other`; omitted keys keep the built-in default. |
@@ -169,6 +172,7 @@ Use these conventions across all workspace files:
 | `totalMinimum` | number | Minimum acceptable **total compensation** (base + bonus + equity). Use this instead of `baseMinimum` when the candidate frames their floor in total-comp terms rather than base-only terms — don't misuse `baseMinimum` as a stand-in for a total-comp floor. |
 | `totalTarget` | number | Target total compensation, or omit if not discussed. |
 | `publiclyShare` | boolean | Whether the candidate allows this range to be shared publicly. |
+| `skipped` | boolean | `true` when the person skipped pay. Write `{ "skipped": true }` and omit the number fields. Do not write this unless they said skip. An absent `compensation` object is not a skip. |
 
 ### Example
 
@@ -235,6 +239,18 @@ Use these conventions across all workspace files:
 | `metadata` | object | Adapter metadata such as SHA-256, byte count, extraction mode, or API counts. |
 | `createdAt` | string | Creation timestamp. |
 
+### Optional fields for resume pieces
+
+`ingest` writes one entry per job header, bullet, or paragraph of each resume (`metadata.chunkKind` is `job-header`, `bullet`, or `paragraph`), in addition to the original whole-file entry. A resume that is a single piece gets only the whole-file entry. PDFs are read with `pdftotext -layout` when it is installed (`metadata.extractionMode` is `pdf-pdftotext`) and chunked like any text resume; if it is missing, fails, or finds no text (`pdf-not-supported`, `pdf-metadata-only: ...`, `pdf-empty`), the PDF is `metadata-only` and cannot back a claim, and `ingest` asks for a Word or plain-text copy in `my-documents`. Each piece is capped at 600 characters (longer text is split on sentence boundaries, never cut). Ids come from the piece's own text and file path, so re-running `ingest` adds no duplicates; an edited bullet gets a new id and the old entry stays.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `section` | string | Resume section the piece sits under, such as `Experience` or `Education`. |
+| `organization` | string | Job header text without the dates, such as `Operations Lead, Acme Fictional Co`. |
+| `dateRange` | string | Dates from the job header, such as `2020 to now`. |
+
+All three must be non-empty strings when present.
+
 ### Useful enum values
 
 | Field | Values |
@@ -279,7 +295,7 @@ The validator flags evidence before output when:
 
 ## `.onboarding-state.json`
 
-`.onboarding-state.json` tracks onboarding progress as an explicit marker file (design plan 0006 D1) rather than inferring it from `profile.json`/`preferences.json`'s own shape — `compensation` is an optional `preferences.json` field, and an empty `dealBreakers` array is a valid *complete* answer ("no deal breakers"), not "not asked yet," so data shape alone can't tell those apart. `npm run setup` creates it with every step pending except `setupComplete`; [`grill.md`](playbooks/grill.md) flips each `sections.<name>` key as its section is confirmed; `ingest` flips `materialIngested`; `tailor` flips `firstRoleAdded` once the first role is tracked. `build-tracker`/`init` pass it to the HTML tracker renderer (design plan 0006 D5), which shows it as a visual checklist in place of the roles table while onboarding is incomplete, collapsing to a small completion pill once it's done. It's optional — a workspace created before this feature existed validates fine without it.
+`.onboarding-state.json` is the one progress record home and the tracker both read. `src/core/onboarding-state.js` derives each flag from workspace files, then writes this file. `materialIngested` is true when `profile.json` has sources or `evidence.jsonl` has entries. Each `sections` key is true only when that grill section's data exists in `profile.json`, `preferences.json`, or `home-answers.json`, or when the person recorded an explicit skip. `firstRoleAdded` becomes `{ "done": true, "at": "<ISO timestamp>" }` the first time a role lands in `roles.tracked.json`. That record is sticky: emptying the tracked list later does not unset it, and later writes keep the original `at`. Old files with `firstRoleAdded: true` still count as done; the next write upgrades them to the object form and sets `at` then. `firstDraftReady` is true when `candidate/outputs/resumes` has at least one real resume file (dotfiles and README placeholders do not count). It is home-only. It is not a tracker step. The tracker stays at 10 steps and shows them as "Setup: N of 10 done" with the next pending step. Home shows its six steps as "N of 6 steps done". `npm run setup` creates the file with every step pending except `setupComplete`. `ingest`, `add-role --tracked`, home Save, and `build-tracker` refresh it. Home maps its six steps through `HOME_STEP_TO_TRACKER_STEPS` (see [`playbooks/onboarding.md`](playbooks/onboarding.md)). Download RB and Start RB are not tracker steps. They are done when the home page is served.
 
 ### Required fields
 
@@ -289,7 +305,13 @@ The validator flags evidence before output when:
 | `setupComplete` | boolean | Always `true` from the moment `npm run setup` creates the file. |
 | `materialIngested` | boolean | Set once `ingest` runs with at least one real source. |
 | `sections` | object | One boolean per `grill.md` section — see below. |
-| `firstRoleAdded` | boolean | Set once the first role lands in `roles.tracked.json`. |
+| `firstRoleAdded` | boolean or object | `false` until a role is tracked. Then `{ "done": true, "at": "<ISO timestamp>" }`. Legacy `true` still means done. |
+
+### Optional fields
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `firstDraftReady` | boolean | Home-only. True when `outputs/resumes` has a real resume file. Missing on old files means false. |
 
 ### `sections` fields
 
@@ -297,11 +319,11 @@ The validator flags evidence before output when:
 | --- | --- | --- |
 | `basicInfo` | boolean | grill.md Section 1: Basic information. |
 | `workHistory` | boolean | grill.md Section 2: Work history. |
-| `education` | boolean | grill.md Section 3: Education. |
+| `education` | boolean | grill.md Section 3: Education, or `educationSkip.skipped`. |
 | `targetRole` | boolean | grill.md Section 4: Target role. |
 | `location` | boolean | grill.md Section 5: Location and work mode. |
-| `compensation` | boolean | grill.md Section 6: Salary and compensation. |
-| `dealBreakers` | boolean | grill.md Section 7: Constraints and deal breakers. |
+| `compensation` | boolean | grill.md Section 6: Salary and compensation, or `compensation.skipped`. |
+| `dealBreakers` | boolean | grill.md Section 7: Constraints and deal breakers, or `dealBreakersSkip`. |
 
 ### Example
 
@@ -319,7 +341,8 @@ The validator flags evidence before output when:
     "compensation": false,
     "dealBreakers": false
   },
-  "firstRoleAdded": false
+  "firstRoleAdded": false,
+  "firstDraftReady": false
 }
 ```
 
@@ -328,7 +351,9 @@ The validator flags evidence before output when:
 The validator flags the onboarding state, when present, before output when:
 
 - The entry is not an object.
-- `setupComplete`, `materialIngested`, or `firstRoleAdded` is missing or not a boolean.
+- `setupComplete` or `materialIngested` is missing or not a boolean.
+- `firstRoleAdded` is missing, not a boolean, and not `{ "done": boolean, "at": string }`.
+- `firstDraftReady` is present and not a boolean.
 - `sections` is missing, not an object, or any of its 7 keys is missing or not a boolean.
 
 ## `feedback.jsonl`
@@ -471,10 +496,10 @@ The validator flags feedback before output when:
 | Field | Type | Description |
 | --- | --- | --- |
 | `sourceSeedId` | string | Seed role ID that promoted this tracked role. |
-| `posting` | object | Captured title, location, compensation, and posting date. |
+| `posting` | object | Display fields (`location`, `compensation`) plus the saved job posting: `path` (workspace-relative, `postings/<role-id>.md`), `fetchedAt` (ISO time), `source` (`url`, `pasted`, or `file`), and `keywords` (`{ required: [], preferred: [] }`, at most about 25 in total). Written by `add-role` / `tailor` with `--jd-file <file>` or `--jd-text`, so tailoring, gap analysis, and study guides read the stored text instead of re-fetching the URL. `validate` rejects a `path` that is absolute or contains `..`, a bad `source` or `fetchedAt`, and non-string keywords. See [Saved job postings](#saved-job-postings). |
 | `application` | object | `status` (enum above, set by `set-status`), `appliedAt` (date the candidate applied — preserved across later status transitions unless explicitly overridden), referral contact label, and notes. |
 | `fit` | object | Fit level, rationale, matched evidence, and gaps. |
-| `resume` | object | `outputPath` (rendered DOCX path), `configPath` (the resume-config JSON this role was tailored from, set by `tailor` — see below), `status`, and tailored emphasis. |
+| `resume` | object | `outputPath` (rendered DOCX path), `configPath` (the resume-config JSON this role was tailored from, set by `tailor` — see below), `status`, `pageCount` (`{ pages, checkedAt }` from the LibreOffice page-count check; absent when it was not run), `keywordCoverage` (latest keyword check, below), and tailored emphasis. |
 | `coverLetter` | object | `configPath` (the cover-letter-config JSON, relative to the workspace), `outputPath` (rendered DOCX path), and `status` — set by `tailor --cover-letter` or standalone `render-cover-letter` (see [Cover letter render config](#cover-letter-render-config-render-cover-letter)). Absent when no cover letter has been generated for this role. |
 | `evidenceMap` | array | Role requirements mapped to evidence IDs. |
 | `nextAction` | object | Next action type, owner, and due date. |
@@ -848,14 +873,20 @@ Store per-role render configs under `<workspace>/resume-configs/<role-slug>.json
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `outputFileName` | string | File name written under `outputs/resumes/<Company>/`. Defaults to `<slug(candidate.name)>-<slug(company)>.docx`. |
+| `outputFileName` | string | File name written under `outputs/resumes/<Company>/`. Defaults to `<slug(candidate.name)>-<slug(company)>-<slug(role)>.docx`, where the role comes from `tailor`/`render-resume --title`, then `roleTitle`, then the config file's own name. Older renders used `<slug(candidate.name)>-<slug(company)>.docx`; role links (`resume.outputPath`) keep resolving. |
+| `roleTitle` | string | Role title used in the default output file name when `--title` is not passed. |
+| `pageLimit` | integer 1-3 | Pages allowed (default 1). The page-count check after rendering warns (never fails) when the DOCX runs longer. Needs LibreOffice (`soffice`); without it the check is skipped and says so. |
 | `summary.fitOverride` | string\|null | Replaces the summary's trailing "Strong/Exceptional fit for..." sentence with role-specific wording, or appends it if none is found. |
+| `experienceSections[].jobs[].evidenceIds` | string[] | Evidence ids from `evidence.jsonl` that back every bullet in the job. When present, numbers in those bullets must appear in these entries (blocking), not just anywhere in the ledger. |
+| `experienceSections[].jobs[].bulletEvidenceIds` | string[][] | One list of evidence ids per bullet, same order as `bullets`. A non-empty list overrides the job-level `evidenceIds` for that bullet; use `[]` to skip a bullet. Bullets stay plain strings. |
+| `summary.evidenceIds` | string[] | Evidence ids that back numbers in `summary.text`. |
 | `education` | array | `{ degree, institution, dates, details? }` entries. Only rendered when `includeEducation` is not `false` and this array is non-empty. |
 | `publications` | array | `{ title, publisher, dates, details? }` entries. |
 | `speaking` | array | `{ heading, organizations, dates, details? }` entries. |
 | `includeEducation` | boolean | Default `true`. |
 | `includePublicationsSpeaking` | boolean | Default `true`. |
 | `publicationsSpeakingLayout` | string | `combined` (default), `speaking-then-publications`, `combined-speaking-only`, or `publications-only` — mirrors the ported engine's layout options for the "Publications & Speaking" heading when both arrays are present. |
+| `extends` | string | Relative path (from this file's folder, normally another file in `resume-configs/`) to a base config. Shallow merge: the child's top-level sections replace the base's whole and the rest come from the base; `outputFileName` is not inherited. Missing base, cycles, absolute paths, and chains over 5 are errors. The base must itself be a complete valid config. `render-resume`, `tailor`, `validate`, and `study-guide-bundle` resolve it through `loadResumeConfig` in `src/core/resume-config.js`. |
 
 ### Example (fictional)
 
@@ -979,8 +1010,58 @@ npm run workspace:tailor -- --workspace <workspace> \
 3. Runs the [de-AI style lint](style-lint.md) against the resume text — advisory only, never blocks.
 4. Renders the DOCX via `render-resume`'s own command.
 5. If `--cover-letter` was passed: validates and audits the cover-letter config the same way (blocking on an unsupported claim), lints its text, renders its DOCX, and sets `role.coverLetter.configPath`/`outputPath`/`status` (`review-needed`) on the tracked role.
-6. Registers (or finds the existing) tracked role via `add-role`'s own command, then sets `resume.configPath` and `resume.outputPath` on it (relative to the workspace root) so the role carries an explicit link back to the exact config and DOCX it was tailored from — this is also what `study-guide-bundle` (D8) now prefers over its content-matching fallback, when the link is present.
+6. Registers (or finds the existing) tracked role via `add-role`'s own command, then sets `resume.configPath` and `resume.outputPath` on it (relative to the workspace root) so the role carries an explicit link back to the exact config and DOCX it was tailored from — `study-guide-bundle` (D8) uses this link strictly: a role with no usable `resume.configPath` fails with a message to run `tailor`, and it never guesses a config by company name. After rendering, the page-count check runs and `resume.pageCount` is saved.
 7. Sets `application.status` to `interested` — the D7 enum's not-yet-applied value (buckets to `not-applied` in the tracker) — via `set-status`, unless the role already has a real `application.status` (a re-run never reverts genuine progress), and rebuilds the tracker.
+8. Writes the plain-language report to `outputs/tailor-reports/<role-id>.md` and sets `role.resume.reportPath` (see [Tailor report](#tailor-report-tailor-report)) before the tracker rebuild, so the tracker row links it. If the claim or fact audit blocks, a report with status "Blocked" is still written (nothing is rendered or tracked).
+
+### Tailor report (`tailor-report`)
+
+`outputs/tailor-reports/<role-id>.md` is written for the person, not for the agent: plain words, workspace-relative paths, no command names. Sections: headline (role, company, resume file name, date, status), "Needs your confirmation" (each warning phrased as a question), "What the checks found", "Job match", "Fit", "Open gaps", and "Where the files are". Status is derived deterministically: **Blocked** when a claim or fact audit error exists, **Needs your confirmation** when any question is open (an unbound claim, a tool not found in the profile or evidence, evidence marked low confidence or needing confirmation, a missing keyword with no evidence, or more than one page), otherwise **Ready to review**.
+
+Regenerate it from stored data, without rendering anything, with `npm run workspace:tailor-report -- --workspace <workspace> (--id <role-id> | --company <name> --title <name>)`.
+
+Stored on the role (`roles.tracked.json`), all optional:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `resume.reportPath` | string | Workspace-relative path of the report. `validate` rejects an absolute path or one containing `..`. The HTML tracker links it next to the resume; the markdown tracker adds a `Report` link in the Resume cell. |
+| `resume.keywordCoverage` | object | `{ score, weightedScore?, covered: [{ keyword, where }], missing: [{ keyword, supported }], checkedAt }`. Written by the keyword-coverage step; the report reads it defensively. Absent means "not checked yet". `score` of 1 or less is read as a fraction. |
+| `resume.pageCount` | object | `{ pages, checkedAt }`. Written by the page-count step. Absent means "not checked yet". |
+
+The gap section reads `outputs/roles/<role-id>/gap-report.md` when `gap-report --roleId` has written one.
+
+### Saved job postings
+
+Save the posting with the role so nothing has to re-scrape the URL:
+
+```bash
+npm run workspace:add-role -- --workspace candidate --tracked --url "<posting-url>" --title "<Title>" --company "<Company>" --jd-file <posting.md>
+# or paste the text: --jd-text "<text>"  (bare --jd-text or "-" reads stdin)
+# optional override of the extracted keywords: --keywords "python,kubernetes"
+```
+
+`add-role`, `add-lead`, and `tailor` accept `--jd-file` / `--jd-text`. The text is written to `<workspace>/postings/<role-id>.md` (leads use `postings/lead_...md`) and `posting` is set on the role. Keywords come from `src/core/posting-keywords.js`, a deterministic extractor (no network, no LLM): it splits required from preferred using headings and phrases such as "requirements", "must have", "nice to have", "preferred", and "bonus", then collects known skills, capitalised terms, and phrases after "experience with", deduped and capped at 25. An existing stored posting is never overwritten by a later `add-role` or `tailor` run for the same role. `--keywords` takes a comma list (or a JSON array file) and replaces the stored keywords, as `required`. When `tailor` runs without `--keywords`, its keyword-coverage step scores the stored keywords. The `postings/` folder is private workspace data and is ignored by the workspace `.gitignore`.
+
+### Keyword coverage on a role
+
+`tailor` and `score-keywords` (with `--id` or `--company` and `--title`) save the latest keyword check on the role as `resume.keywordCoverage`:
+
+```json
+{
+  "score": 78,
+  "percent": 71,
+  "covered": [{ "keyword": "developer platform", "importance": "required", "locations": ["summary", "bullet 1 of Senior Platform Program Manager at Contoso Labs"] }],
+  "missing": [{ "keyword": "Kubernetes", "importance": "required", "supported": false, "evidenceIds": [] }],
+  "checkedAt": "2026-06-08T12:00:00.000Z",
+  "source": "stored posting keywords"
+}
+```
+
+`score` weights required keywords 2 and preferred 1; `percent` counts each keyword once. In `missing`, `supported: true` means the keyword appears in the profile or evidence (`evidenceIds` lists the entries), so it could be added where true; `supported: false` means there is no evidence and it must not be suggested. Matching is by word boundary with the alias map in `src/core/data/keyword-aliases.json`.
+
+### Tailor plan (`tailor-plan`)
+
+`tailor-plan --workspace <dir> (--id <role-id> | --company <name> --title <name>)` ranks the candidate's experience against the role's saved posting keywords and writes `outputs/tailor-plans/<role-id>.json`. It is deterministic (no LLM, no network). Top-level keys: `role`, `posting.keywords`, `limits` (bullet and proxy-score limits from `src/core/resume-config.js`), `jobs[]` (`rank`, `title`, `organization`, `dates`, `score`, `include`, `maxBullets`, `matchedKeywords`, `bullets[]` with `text`, `score`, `matchedKeywords`, `evidenceIds`, `recommended`), `skills` (`order[]`, `suggestAdd[]`), `keywords` (`supported[]` with `evidenceIds`, `doNotClaim[]` with a plain-language `note`), `otherEvidence[]` (matching notes outside any job), and `notes[]`. Jobs come from `profile.json` `experience[].highlights` and, for resumes that were ingested, from the per-job pieces in `evidence.jsonl`.
 
 ## Study guide bundle (`study-guide-bundle`)
 
@@ -999,7 +1080,7 @@ It writes `outputs/study-guide-bundles/<role-id>.json` (`src/cli/commands/study-
 | `profile` | object | The candidate's `profile.json`, verbatim. |
 | `evidence` | array | Every entry from `evidence.jsonl`, verbatim. |
 | `resumeConfig` | object | The resume render config tailored for this role — resolved via the role's `resume.configPath` link when `tailor` set one, falling back to a company-name content match against `resume-configs/` otherwise. |
-| `jobPosting` | object | `{ url, applyUrl }`, read from the role's `urls.job` / `urls.apply` (either may be `null`). |
+| `jobPosting` | object | `{ url, applyUrl, text, path, source, fetchedAt, keywords }`. `url` / `applyUrl` come from the role's `urls.job` / `urls.apply` (either may be `null`). `text`, `path`, `source`, `fetchedAt`, and `keywords` come from the role's saved posting (see [Saved job postings](#saved-job-postings)) and are all `null` when none was saved; in that case fall back to the URL. |
 | `generatedAt` | string | ISO 8601 timestamp of when the bundle was written. |
 
 The command fails loud rather than guessing: no matching tracked role, no resume config for that role's company, or more than one config matching the same company name are all hard errors naming the ambiguity, not a silent best-effort bundle.

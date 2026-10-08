@@ -37,24 +37,35 @@ test("build-tracker renders the normal dashboard when .onboarding-state.json is 
 
 test("build-tracker shows the checklist when .onboarding-state.json is present and incomplete", () => {
   withTempWorkspace(({ workspace, paths }) => {
-    const state = defaultOnboardingState();
-    state.materialIngested = true;
-    writeJson(paths.onboardingState, state);
+    writeJson(paths.profile, {
+      candidate: {},
+      sources: [{ id: "src-001", kind: "resume", path: "inputs/resumes/sample.md" }],
+    });
+    writeJson(paths.onboardingState, defaultOnboardingState());
 
     command.run({ workspace, format: "html" });
     const html = fs.readFileSync(paths.htmlTracker, "utf8");
     assert.match(html, /class="onboarding-section" style="display:block"/);
-    assert.match(html, /Onboarding: 2 of 10 steps/);
+    assert.match(html, /Setup: 2 of 10 done/);
   });
 });
 
-test("build-tracker shows the completion pill once .onboarding-state.json reports every step done", () => {
+test("build-tracker shows the completion pill once workspace files cover every step", () => {
   withTempWorkspace(({ workspace, paths }) => {
-    const state = defaultOnboardingState();
-    state.materialIngested = true;
-    state.firstRoleAdded = true;
-    Object.keys(state.sections).forEach((key) => { state.sections[key] = true; });
-    writeJson(paths.onboardingState, state);
+    writeJson(paths.profile, {
+      candidate: { preferredName: "Jordan Sample" },
+      experience: [{ organization: "Example Corp", title: "Analyst" }],
+      education: [{ institution: "Example University", degree: "BA" }],
+      sources: [{ id: "src-001", kind: "resume", path: "inputs/resumes/sample.md" }],
+    });
+    writeJson(paths.preferences, {
+      roleTargets: [{ titles: ["Operations manager"] }],
+      locations: { workModes: ["remote"], preferredRegions: [], excludedRegions: [] },
+      compensation: { baseMinimum: 80000 },
+      dealBreakers: [{ id: "deal-001", text: "No unpaid overtime" }],
+    });
+    writeJson(paths.rolesTracked, [{ id: "role-001", company: "Example Corp", title: "Analyst" }]);
+    writeJson(paths.onboardingState, defaultOnboardingState());
 
     command.run({ workspace, format: "html" });
     const html = fs.readFileSync(paths.htmlTracker, "utf8");
@@ -93,5 +104,39 @@ test("build-tracker without --notice flag renders no banner, preserving backward
 
     // The notice banner must not appear
     assert.doesNotMatch(html, /class="notice-banner"/, "no notice banner should appear when --notice flag is not provided");
+  });
+});
+
+test("build-tracker logs a workspace-relative path, never an absolute one", () => {
+  withTempWorkspace(({ workspace }) => {
+    const lines = [];
+    const original = console.log;
+    console.log = (line) => lines.push(String(line));
+    try {
+      command.run({ workspace, format: "md" });
+      command.run({ workspace, format: "html" });
+    } finally {
+      console.log = original;
+    }
+    assert.equal(lines.length, 2);
+    for (const line of lines) {
+      assert.ok(!line.includes(workspace), line);
+      assert.ok(!path.isAbsolute(line.split(": ").pop()), line);
+    }
+    assert.match(lines[0], /: outputs[\\/]tracker\.md$/);
+  });
+});
+
+test("rebuildTrackers is quiet", () => {
+  withTempWorkspace(({ workspace }) => {
+    const lines = [];
+    const original = console.log;
+    console.log = (line) => lines.push(String(line));
+    try {
+      command.rebuildTrackers(workspace);
+    } finally {
+      console.log = original;
+    }
+    assert.deepEqual(lines, []);
   });
 });

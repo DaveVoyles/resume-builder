@@ -29,7 +29,7 @@ Before you start:
 
 ### Step 1.1: Gather the posting
 
-Read the job posting at the given URL (or the pasted text). Extract:
+Read the job posting at the given URL (or the pasted text). **Save the posting with the role** (`--jd-file <file>` or `--jd-text` on `tailor`, see Step 3.1) so later steps do not have to read the URL again. Extract:
 
 - **Company** and **role title**.
 - **Required and preferred skills**, technologies, and experience.
@@ -46,6 +46,25 @@ Compare what the posting asks for against `profile.json` and `evidence.jsonl`:
 - Are there gaps — things the posting wants that the candidate's evidence doesn't clearly support? Note them; do not paper over them with an unsupported claim.
 
 **If the candidate's evidence ledger is thin** (fewer than a handful of source-backed entries), say so before drafting — `validate`/`tailor` will only warn, not block, on a thin ledger, but a resume built on thin evidence is a weaker resume. Suggest ingesting more source material first if time allows.
+
+### Step 1.3: Run `tailor-plan`
+
+Once the posting is saved with the role (`add-role --tracked --jd-file <posting.md>`), rank the candidate's evidence against its stored keywords. This is deterministic (no LLM, no network):
+
+```bash
+npm run workspace:tailor-plan -- --workspace candidate --company "<Company>" --title "<Role Title>"
+```
+
+It writes `outputs/tailor-plans/<role-id>.json` and prints a short summary. The plan lists:
+
+- `jobs`: experience entries ranked by weighted keyword overlap (required 2, preferred 1, same matcher as the coverage score), each with `include`, `maxBullets` (6 for the first job, 4 for later ones, from `src/core/resume-config.js`), and its bullets ranked with `recommended` and `evidenceIds`.
+- `skills`: profile skills ordered by overlap, plus `suggestAdd` (keywords the evidence supports but the profile skills do not list).
+- `keywords.supported`: keywords with supporting `evidenceIds`, ready for `evidenceIds` / `bulletEvidenceIds` in the config.
+- `keywords.doNotClaim`: keywords with no evidence at all. Do not add them to the resume; ask the candidate first.
+
+The plan only orders and cites what the candidate already has. You still write the wording, and `tailor` still audits every claim. The workflow is: save posting, `tailor-plan`, write the config (optionally with `"extends"`, below), `tailor`.
+
+**Base config with `extends`.** A resume config may start with `"extends": "base.json"` (a relative path from that file's folder, usually another file in `resume-configs/`). The child's top-level sections replace the base's whole; sections it leaves out come from the base (`outputFileName` is not inherited, so two roles never render to one file). Cycles, a missing base, an absolute path, or a chain longer than 5 are errors. `render-resume`, `tailor`, `validate`, and `study-guide-bundle` all resolve it. The base must be a complete, valid config on its own.
 
 ---
 
@@ -84,6 +103,8 @@ Draft `candidate/resume-configs/<company-slug>-<role-slug>.json` per the [resume
 
 **Every claim needs a source.** Do not invent metrics, dates, or scope. See [Accuracy and claims](../accuracy-and-claims.md) for the full rules. A useful check while drafting: for every number in a bullet (a percentage, a dollar amount, a count, a team size, years of experience), can you point to the exact `evidence.jsonl` entry that states it? If not, either find the evidence or rephrase without the number — `tailor`'s claim audit will block on it either way (see Section 3).
 
+**Tie numbers to the entry that proves them.** For each job with a metric, add `evidenceIds` (ids from `evidence.jsonl`, for example the bullet entry `ingest` made from the candidate's resume) on the job, or `bulletEvidenceIds` for one bullet. The audit then checks the number against only those entries and blocks if they do not state it. Without ids the audit still matches against the whole ledger but prints a "Not tied to specific evidence" warning; clear it by adding the id. See [workspace schemas](../workspace-schemas.md#resume-render-config-render-resume).
+
 **Emphasize what maps to the posting.** Reorder and select bullets, skills, and `summary.fitOverride` to lead with what Section 1.2 identified as the strongest matches — without fabricating anything new. This is where the tailoring happens: the same evidence, positioned for this specific role.
 
 ### Step 2.2: Sanity-check the draft
@@ -108,29 +129,31 @@ npm run workspace:tailor -- --workspace candidate \
   --title "<Role Title>"
 ```
 
-`--company` is optional — it defaults to the resume config's own `company` field. Pass `--applyUrl`, `--location`, `--compensation`, `--fit`, or `--notes` the same way you would with `add-role` if you want them captured on the tracked role right away. Add `--keywords <keywords.json>` for a keyword-coverage advisory (see Step 3.1a below) or `--cover-letter <config.json>` to draft a cover letter alongside the resume (see [`cover-letter.md`](cover-letter.md)).
+`--company` is optional — it defaults to the resume config's own `company` field. Pass `--applyUrl`, `--location`, `--compensation`, `--fit`, or `--notes` the same way you would with `add-role` if you want them captured on the tracked role right away. Save the posting with the role by adding `--jd-file <posting.md>` (or `--jd-text "<text>"`): the text goes to `postings/<role-id>.md` and its keywords (required and preferred) are stored on the role. When you do not pass `--keywords`, the coverage advisory uses those stored keywords. Add `--keywords <keywords.json>` (or a comma list) to override them with your own list for a keyword-coverage advisory (see Step 3.1a below) or `--cover-letter <config.json>` to draft a cover letter alongside the resume (see [`cover-letter.md`](cover-letter.md)).
 
 **This command, in one pass:**
 
 1. Validates the config against the resume-config schema (rejects it, with an itemized error, if malformed).
-2. Audits every claim in the config against `evidence.jsonl` — the same evidence-backed claim audit `validate` runs — and blocks with a per-claim error if anything is unsupported.
+2. Audits every claim in the config against `evidence.jsonl` — the same evidence-backed claim audit `validate` runs — and blocks with a per-claim error if anything is unsupported. It also runs the fact-consistency audit against `profile.json` and the evidence: employer, title, dates, education, and scope verbs ("led", "owned", "founded", and so on) block; tools not found in the candidate's record only warn (see Step 3.2).
 3. If `--keywords` was passed: prints a keyword-coverage advisory (never blocks — see Step 3.1a).
 4. Runs the [de-AI style lint](../style-lint.md) against the resume text — advisory only, never blocks.
-5. Renders the DOCX to `outputs/resumes/<Company>/<file>.docx`.
+5. Renders the DOCX to `outputs/resumes/<Company>/<candidate>-<company>-<role-title>.docx` (the role title keeps two roles at one company from overwriting each other), then converts it to PDF in a temp folder with LibreOffice and counts pages. One page prints "Resume is 1 page." More than the config's `pageLimit` (default 1) prints a warning that names the longest section: trim it, or ask the candidate whether that length is OK. It never blocks. Without LibreOffice it prints "Page count not checked (LibreOffice not installed)." Pass `--no-page-check` to skip. The result is saved on the role as `resume.pageCount`.
 6. If `--cover-letter` was passed: validates, audits, lints, and renders the cover letter the same way, and links it on the tracked role.
 7. Registers the role in `roles.tracked.json`, linked to the exact resume config and DOCX it just produced.
-8. Sets the role's application status to **`interested`** — not-yet-applied — and rebuilds the tracker (md + html).
+8. Writes a plain-language report for the role to `outputs/tailor-reports/<role-id>.md`, records it on the role (`resume.reportPath`), and prints `Report ready: ...`. The tracker row links it. If the audit blocks in step 2, the report is still written with status "Blocked" and explains each problem.
+9. Sets the role's application status to **`interested`** — not-yet-applied — and rebuilds the tracker (md + html).
 
 **Example output:**
 
 ```
-Rendered resume for Fabrikam AI: candidate/outputs/resumes/Fabrikam AI/alex-rivera-fabrikam-ai.docx
+Rendered resume for Fabrikam AI: candidate/outputs/resumes/Fabrikam AI/alex-rivera-fabrikam-ai-developer-platform-product-manager.docx
+Resume is 1 page.
 Added tracked role: Fabrikam AI — Developer platform product manager
 Run build-tracker to refresh outputs/tracker.md.
 Built tracker for 1 tracked role(s): candidate/outputs/tracker.md
 Built html tracker for 1 tracked role(s): candidate/outputs/tracker.html
 Updated Fabrikam AI — Developer platform product manager to status: interested (2026-07-20)
-Tailored resume for Fabrikam AI — Developer platform product manager: candidate/outputs/resumes/Fabrikam AI/alex-rivera-fabrikam-ai.docx
+Tailored resume for Fabrikam AI — Developer platform product manager: candidate/outputs/resumes/Fabrikam AI/alex-rivera-fabrikam-ai-developer-platform-product-manager.docx
 ```
 
 ### Step 3.1a: Keyword-coverage advisory (`--keywords`)
@@ -146,8 +169,20 @@ Present: Python, AWS, Product management
 Missing: Kubernetes
 ```
 
-**The CLI never fetches or parses the job posting itself** — it has no scraper and no keyword
-extractor. Reading the posting and pulling out the required/preferred skills is agent work,
+With the role's stored posting keywords (no `--keywords`) the report also shows a weighted score (required keywords count 2, preferred 1) next to the plain percent, and each missing keyword gets a note:
+
+```
+Keyword coverage: 71% (5/7), weighted 78% (stored posting keywords)
+Missing: Kubernetes, roadmap
+  - Kubernetes: no evidence of this in the ledger — ask the candidate before adding
+  - roadmap: appears in your evidence — could be added where it is true for this role
+```
+
+Matching uses word boundaries and an alias map (`src/core/data/keyword-aliases.json`: K8s/Kubernetes, JS/JavaScript, Postgres/PostgreSQL, CI/CD, ML/machine learning, PM/product management, and others, both ways), so "Java" does not match "JavaScript" and "C++" and "Node.js" match as written. It does not stem words ("schedule" does not match "scheduling"), so check a miss by eye before calling it a gap. The result is saved on the role as `resume.keywordCoverage` and shows in the tracker's Resume column. `score-keywords --workspace <dir> --company ... --title ... --config ...` refreshes it without re-rendering.
+
+**The CLI never fetches a job posting** — it has no scraper. With `--jd-file` / `--jd-text` it stores
+the text you give it and extracts keywords with a simple deterministic rule set, which can miss
+things or catch noise. Reading the posting and judging the required/preferred skills is still agent work,
 exactly like Section 1's posting-to-evidence mapping above; `--keywords` (and the standalone
 `score-keywords` command it shares logic with) only *scores* a list you already extracted. If you
 want to act on the `Missing` list — decide what kind of gap each one represents and get a
@@ -164,6 +199,12 @@ Resume config failed the evidence-backed claim audit:
 ```
 
 Fix the config — either add the missing evidence (if the candidate can confirm it) or rephrase the bullet without the unverified figure — and re-run `tailor`.
+
+The same step also blocks on facts that are not numbers (see [Accuracy and claims](../accuracy-and-claims.md#fact-consistency-audit-employers-titles-dates-scope-tools)):
+
+- **Employer, title, or dates that disagree with `profile.json`.** Use the profile's wording. If the candidate really held another title, add it to that profile entry's `titleAliases`.
+- **A scope verb with no support** ("led", "owned", "managed a team", "founded", "director", "head of", "architected", "built from scratch", "sole"). Ask the candidate whether they did it. If yes, record it in `evidence.jsonl` (and tie the bullet to it with `bulletEvidenceIds`). If not, soften to "contributed to" or "supported".
+- **A tool or technology the profile and evidence never mention** is only a warning. Confirm with the candidate before sending, or drop it.
 
 ### Step 3.2a: Address style-lint findings (de-AI rewrite step)
 
@@ -203,6 +244,17 @@ npm run workspace:tailor -- --workspace candidate \
 ```
 
 The rerun produces a fresh DOCX with the rewritten text. If lint warnings remain, repeat the cycle until none appear (or until you're satisfied the resume reads naturally).
+
+### Step 3.2b: Open the report with the person
+
+Open `candidate/outputs/tailor-reports/<role-id>.md` with them. Its status is **Ready to review**, **Needs your confirmation**, or **Blocked**. Each item under "Needs your confirmation" is a question. Ask them one at a time, in the report's words. Do not paste the report or its file names at them.
+
+- **Answer is yes (they did it, the number is right):** record it in `evidence.jsonl` as a source-backed entry in their words, tie the line to it with `evidenceIds` or `bulletEvidenceIds`, then re-run `tailor`.
+- **Answer is no, or they are unsure:** reword or remove the line, then re-run `tailor`.
+- **Missing keywords:** "you have the experience" ones can be added, with evidence. "No proof" ones are never added without a yes and a recorded source.
+- After the config changes without a re-render (for example, after a page count or keyword step), regenerate the report with `npm run workspace:tailor-report -- --workspace candidate --id <role-id>`.
+
+Say it as the sentences in [`what-to-say.md`](../first-run/what-to-say.md) allow: no command names, real paths from the repo root.
 
 ### Step 3.3: Re-running tailor for the same role
 
@@ -248,7 +300,7 @@ Using the fictional `examples/sample-candidate/` workspace, tailoring the existi
      --url "https://jobs.example.invalid/fabrikam/developer-platform-product-manager" \
      --title "Developer platform product manager"
    ```
-3. `tailor` validates the config, confirms both bullets are backed by `ev-001`/`ev-002`, renders `outputs/resumes/Fabrikam AI/alex-rivera-fabrikam-ai.docx`, and adds a "Fabrikam AI — Developer platform product manager" row to the tracker with status "interested."
+3. `tailor` validates the config, confirms both bullets are backed by `ev-001`/`ev-002`, renders `outputs/resumes/Fabrikam AI/alex-rivera-fabrikam-ai-developer-platform-product-manager.docx`, and adds a "Fabrikam AI — Developer platform product manager" row to the tracker with status "interested."
 
 (Do not commit generated DOCX files or a real tracked-role entry for the sample candidate — the sample workspace's committed data stays limited to the fixtures already checked in.)
 

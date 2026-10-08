@@ -3,9 +3,10 @@
 const fs = require("fs");
 const path = require("path");
 const { renderTracker } = require("../../renderers/markdown-tracker");
-const { validateEvidence, validateOnboardingState, validateProfile, validateRoles, validateFeedback } = require("../../core/schemas");
-const { validateResumeConfig } = require("../../core/resume-config");
+const { validateEvidence, validateOnboardingState, validateProfile, validatePreferences, validateRoles, validateFeedback } = require("../../core/schemas");
+const { loadResumeConfig, validateResumeConfig } = require("../../core/resume-config");
 const { auditResumeConfig } = require("../../core/claim-audit");
+const { auditFacts } = require("../../core/fact-audit");
 const { lintConfig } = require("../../core/style-lint");
 const { readJson, readJsonLines, resolveWorkspace, workspacePaths } = require("../../core/workspace");
 
@@ -34,13 +35,13 @@ function prefixed(label, messages) {
   return messages.map((message) => `${label}: ${message}`);
 }
 
-function auditResumeConfigs(paths, evidence, errors, warnings) {
+function auditResumeConfigs(paths, evidence, errors, warnings, profile) {
   listResumeConfigFiles(paths.resumeConfigs).forEach((file) => {
     const label = path.relative(paths.root, file);
 
     let config;
     try {
-      config = readJson(file);
+      config = loadResumeConfig(file);
     } catch (error) {
       errors.push(...prefixed(label, [error.message]));
       return;
@@ -55,6 +56,10 @@ function auditResumeConfigs(paths, evidence, errors, warnings) {
     const audit = auditResumeConfig(config, evidence);
     errors.push(...prefixed(label, audit.errors));
     warnings.push(...prefixed(label, audit.warnings));
+
+    const facts = auditFacts(config, profile, evidence);
+    errors.push(...prefixed(label, facts.errors));
+    warnings.push(...prefixed(label, facts.warnings));
 
     // De-AI style lint advisory (D7, src/core/style-lint.js) — detects
     // AI-generated writing patterns and adds them as warnings (never blocking).
@@ -86,6 +91,9 @@ function run(options) {
   const feedback = fs.existsSync(paths.feedback) ? readJsonLines(paths.feedback) : [];
 
   errors.push(...validateProfile(profile));
+  if (fs.existsSync(paths.preferences)) {
+    errors.push(...validatePreferences(readJson(paths.preferences)));
+  }
   errors.push(...validateRoles(seedRoles, "roles.seed.json"));
   errors.push(...validateRoles(trackedRoles, "roles.tracked.json"));
   errors.push(...validateEvidence(evidence));
@@ -110,7 +118,7 @@ function run(options) {
     errors.push("outputs/tracker.md is out of date with roles.tracked.json; run build-tracker");
   }
 
-  auditResumeConfigs(paths, evidence, errors, warnings);
+  auditResumeConfigs(paths, evidence, errors, warnings, profile);
 
   warnings.forEach((warning) => console.warn(`Warning: ${warning}`));
 

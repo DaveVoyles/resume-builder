@@ -6,4 +6,17 @@
 // is exactly the kind of duplication a rename would only half-catch.
 const STATUS_ENDPOINT = "/__status";
 
-module.exports = { STATUS_ENDPOINT };
+const IDENTITY_HEADER = "X-Resume-Builder";
+const IDENTITY_VALUE = "1";
+
+function identityHeaders(headers = {}) {
+  return { [IDENTITY_HEADER]: IDENTITY_VALUE, ...headers };
+}
+
+function hasIdentityHeader(headers) {
+  if (!headers) return false;
+  const raw = headers[IDENTITY_HEADER.toLowerCase()] ?? headers[IDENTITY_HEADER];
+  return raw === IDENTITY_VALUE;
+}
+
+module.exports = { STATUS_ENDPOINT, IDENTITY_HEADER, IDENTITY_VALUE, identityHeaders, hasIdentityHeader };

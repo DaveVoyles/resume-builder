@@ -7,10 +7,14 @@ const addRole = require("./add-role");
 const setStatus = require("./set-status");
 const buildTracker = require("./build-tracker");
 const { createRole } = require("../../adapters/job-posting");
-const { validateResumeConfig } = require("../../core/resume-config");
+const { loadResumeConfig, validateResumeConfig } = require("../../core/resume-config");
 const { auditResumeConfig } = require("../../core/claim-audit");
-const { scoreKeywordCoverage } = require("../../core/keyword-coverage");
+const { auditFacts } = require("../../core/fact-audit");
+const { buildCoverageRecord, classifyMissingKeywords, scoreKeywordCoverage } = require("../../core/keyword-coverage");
+const { displayPath } = require("../../core/role-lookup");
 const { lintConfig } = require("../../core/style-lint");
+const { allKeywords, hasPosting, parseKeywordsOption } = require("../../core/role-posting");
+const { writeTailorReport } = require("../../core/tailor-report");
 const { updateOnboardingState } = require("../../core/onboarding-state");
 const { readJson, readJsonLines, relativeToWorkspace, resolveWorkspace, workspacePaths, writeJson } = require("../../core/workspace");
 
@@ -22,8 +26,7 @@ const { readJson, readJsonLines, relativeToWorkspace, resolveWorkspace, workspac
 const NOT_YET_APPLIED_STATUS = "interested";
 
 function rebuildTrackers(workspaceOption) {
-  buildTracker.run({ workspace: workspaceOption, format: "md" });
-  buildTracker.run({ workspace: workspaceOption, format: "html" });
+  buildTracker.rebuildTrackers(workspaceOption);
 }
 
 /**
@@ -52,6 +55,34 @@ function findRegisteredRole(trackedRolesBefore, trackedRolesAfter, roleOptions) 
   return trackedRolesAfter.find((candidate) => candidate.id === expected.id);
 }
 
+function printKeywordCoverage(run, suffix) {
+  const { result, support } = run;
+  const total = result.present.length + result.missing.length;
+  console.log(`Keyword coverage: ${result.percent}% (${result.present.length}/${total}), weighted ${result.weightedScore}%${suffix}`);
+  console.log(`Present: ${result.present.length > 0 ? result.present.join(", ") : "(none)"}`);
+  console.log(`Missing: ${result.missing.length > 0 ? result.missing.join(", ") : "(none)"}`);
+  support.forEach((item) => console.log(`  - ${item.keyword}: ${item.note}`));
+}
+
+/** Scores keywords against the config and classifies what is missing against the profile and evidence. */
+function analyzeCoverage(keywords, config, paths, source) {
+  const result = scoreKeywordCoverage(keywords, config);
+  const support = classifyMissingKeywords(result.missing, { profile: readJson(paths.profile, null), evidence: readJsonLines(paths.evidence) });
+  return { result, support, source };
+}
+
+// A blocked run renders nothing and tracks nothing, but the person still gets
+// a plain-language report saying what to confirm. Never masks the real error.
+function writeBlockedReport(workspace, options, config, audits) {
+  try {
+    const role = createRole({ ...options, tracked: true, company: options.company || config.company });
+    const { path: reportPath } = writeTailorReport(workspace, role, { config, ...audits });
+    console.log(`Report ready: ${reportPath}`);
+  } catch {
+    // Report is a courtesy; the audit error below is what matters.
+  }
+}
+
 /**
  * Tailor workflow (design plan 0001, D4): validates a drafted resume config
  * (D2 schema + D3 claim audit), renders it to DOCX (D2), and registers the
@@ -63,7 +94,7 @@ function findRegisteredRole(trackedRolesBefore, trackedRolesAfter, roleOptions) 
  * dedup, and the enum status write + tracker rebuild are each delegated to
  * their own module/command.
  */
-async function run(options) {
+async function run(options, deps = {}) {
   if (!options.config) {
     throw new Error("tailor requires --config <path-to-drafted-resume-config.json>");
   }
@@ -71,7 +102,7 @@ async function run(options) {
   const workspace = resolveWorkspace(options.workspace);
   const paths = workspacePaths(workspace);
   const configPath = path.resolve(process.cwd(), options.config);
-  const config = readJson(configPath);
+  const config = loadResumeConfig(configPath);
 
   // Step 1: schema validation (D2, src/core/resume-config.js) — fail fast
   // with an itemized error before touching the evidence ledger or the
@@ -90,7 +121,15 @@ async function run(options) {
   // tracked, not discovered later by a separate `validate` pass.
   const evidence = readJsonLines(paths.evidence);
   const audit = auditResumeConfig(config, evidence);
+  const claimAudit = { ...audit, errors: [...audit.errors], warnings: [...audit.warnings] };
+  // Fact-consistency audit (src/core/fact-audit.js): employers, titles, dates,
+  // education, scope verbs (blocking) and named tools (advisory).
+  const profile = readJson(paths.profile, null);
+  const facts = auditFacts(config, profile, evidence);
+  audit.errors.push(...facts.errors);
+  audit.warnings.push(...facts.warnings);
   if (audit.errors.length > 0) {
+    writeBlockedReport(workspace, options, config, { profile, evidence, claimAudit, factAudit: facts });
     throw new Error(`Resume config failed the evidence-backed claim audit:\n${audit.errors.map((error) => `  - ${error}`).join("\n")}`);
   }
   audit.warnings.forEach((warning) => console.warn(`Warning: ${warning}`));
@@ -98,19 +137,13 @@ async function run(options) {
   // Step 2b: keyword coverage advisory (D7, src/core/keyword-coverage.js) —
   // runs only if --keywords is provided, prints a coverage report, but never
   // blocks or affects the exit code. This is purely advisory feedback.
+  let coverageRun = null;
   if (options.keywords) {
     try {
-      const keywordsPath = path.resolve(process.cwd(), options.keywords);
-      const keywords = readJson(keywordsPath);
-      if (!Array.isArray(keywords)) {
-        throw new Error(`Keywords file must contain a JSON array (got: ${typeof keywords})`);
-      }
-      const result = scoreKeywordCoverage(keywords, config);
-      const presentList = result.present.length > 0 ? result.present.join(", ") : "(none)";
-      const missingList = result.missing.length > 0 ? result.missing.join(", ") : "(none)";
-      console.log(`Keyword coverage: ${result.percent}% (${result.present.length}/${result.present.length + result.missing.length})`);
-      console.log(`Present: ${presentList}`);
-      console.log(`Missing: ${missingList}`);
+      const keywords = parseKeywordsOption(options.keywords);
+      if (!keywords) throw new Error("--keywords needs a JSON array file or a comma-separated list");
+      coverageRun = analyzeCoverage(keywords, config, paths, "keywords option");
+      printKeywordCoverage(coverageRun, "");
     } catch (error) {
       // Advisory-only: print the error but never throw or block
       console.warn(`Warning: keyword coverage analysis failed: ${error.message}`);
@@ -143,7 +176,10 @@ async function run(options) {
   // Step 3: render the DOCX (D2, render-resume) — delegate to the render
   // command itself so path sanitization, directory layout, and file writing
   // all stay in one place instead of a second, drifting copy here.
-  const outputPath = await renderResume.run({ workspace: options.workspace, config: options.config, includeApplied: options.includeApplied });
+  const { outputPath, pageCount } = await renderResume.runDetailed(
+    { workspace: options.workspace, config: options.config, includeApplied: options.includeApplied, title: options.title, noPageCheck: options.noPageCheck, pageCheck: options.pageCheck },
+    deps,
+  );
 
   // Step 4: register the tracked role (D6, add-role) — delegate to
   // add-role's own command (dedup by id or job URL, tracked-list
@@ -151,6 +187,12 @@ async function run(options) {
   // to the resume config's own company so the caller doesn't have to repeat
   // it.
   const roleOptions = { ...options, tracked: true, company: options.company || config.company };
+  // A bad --keywords file only disables the advisory above; it must not block role registration.
+  try {
+    parseKeywordsOption(options.keywords);
+  } catch {
+    delete roleOptions.keywords;
+  }
   const trackedRolesBefore = readJson(paths.rolesTracked, []);
   const isFirstTrackedRole = trackedRolesBefore.length === 0;
   addRole.run(roleOptions);
@@ -161,6 +203,15 @@ async function run(options) {
     throw new Error("tailor could not find the tracked role it just registered.");
   }
   const roleId = role.id;
+
+  // Posting saved with the role (add-role --jd-file): when --keywords was not
+  // passed, score the stored keywords instead of asking for a list again.
+  if (!options.keywords && hasPosting(role)) {
+    if (allKeywords(role.posting.keywords).length > 0) {
+      coverageRun = analyzeCoverage(role.posting.keywords, config, paths, "stored posting keywords");
+      printKeywordCoverage(coverageRun, " (stored posting keywords)");
+    }
+  }
 
   // Onboarding's last step (design plan 0006 D1): the first tracked role ever
   // added completes the onboarding checklist. Piggybacks on this command's
@@ -178,6 +229,10 @@ async function run(options) {
   role.resume.configPath = relativeToWorkspace(workspace, configPath);
   role.resume.outputPath = relativeToWorkspace(workspace, outputPath);
   role.resume.status = "review-needed";
+  if (coverageRun) {
+    role.resume.keywordCoverage = buildCoverageRecord(coverageRun.result, coverageRun.support, { source: coverageRun.source });
+  }
+  if (pageCount) role.resume.pageCount = pageCount;
 
   // Persist the resume linkage now, before attempting the cover letter step
   // below. The cover letter's independent claim audit can throw and abort
@@ -218,6 +273,13 @@ async function run(options) {
     writeJson(paths.rolesTracked, trackedRoles);
   }
 
+  // Step 5c: plain-language report for the person (src/core/tailor-report.js).
+  // Written before the tracker rebuild below so the tracker row can link it.
+  const report = writeTailorReport(workspace, role, { config, profile, evidence, claimAudit, factAudit: facts, styleLint: styleLintResult });
+  role.resume.reportPath = report.path;
+  writeJson(paths.rolesTracked, trackedRoles);
+  console.log(`Report ready: ${report.path}`);
+
   // Step 6: land the role un-applied (plan 0001 Decision 8 / D4 acceptance
   // criteria — a human reviews the resume before anything is sent). Reuse
   // `set-status` (D7) for the enum write + tracker rebuild instead of
@@ -232,7 +294,7 @@ async function run(options) {
     rebuildTrackers(options.workspace);
   }
 
-  console.log(`Tailored resume for ${role.company} — ${role.title}: ${outputPath}`);
+  console.log(`Tailored resume for ${role.company} — ${role.title}: ${displayPath(workspace, outputPath)}`);
   return { role, outputPath };
 }
 

@@ -5,6 +5,7 @@ const assert = require("node:assert/strict");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
+const http = require("http");
 const command = require("../../src/cli/commands/init");
 const { workspacePaths } = require("../../src/core/workspace");
 const { defaultOnboardingState } = require("../../src/core/onboarding-state");
@@ -178,7 +179,7 @@ test("init's initial tracker.html shows the onboarding checklist, all-pending ex
     const paths = workspacePaths(workspace);
     const html = fs.readFileSync(paths.htmlTracker, "utf8");
     assert.match(html, /class="onboarding-section" style="display:block"/);
-    assert.match(html, /Onboarding: 1 of 10 steps/);
+    assert.match(html, /Setup: 1 of 10 done/);
   });
 });
 
@@ -199,7 +200,7 @@ test("init --force resets both tracker.html and onboarding-state together, consi
     // that same reset, not a stale mix of old progress and a fresh render.
     assert.deepEqual(JSON.parse(fs.readFileSync(paths.onboardingState, "utf8")), defaultOnboardingState());
     const html = fs.readFileSync(paths.htmlTracker, "utf8");
-    assert.match(html, /Onboarding: 1 of 10 steps/);
+    assert.match(html, /Setup: 1 of 10 done/);
   });
 });
 
@@ -221,7 +222,7 @@ test("init without --force re-renders a missing tracker.html against real, untou
     // ...and the freshly-written tracker.html must reflect that real state,
     // not reset to all-pending.
     const html = fs.readFileSync(paths.htmlTracker, "utf8");
-    assert.match(html, /Onboarding: 3 of 10 steps/);
+    assert.match(html, /Setup: 3 of 10 done/);
   });
 });
 
@@ -278,21 +279,191 @@ function eaddrinuseError(port) {
   return error;
 }
 
-test("init treats an already-running server on the configured port as success, and still opens the browser", async () => {
+function listenDummy(handler) {
+  return new Promise((resolve) => {
+    const server = http.createServer(handler);
+    server.listen(0, "127.0.0.1", () => resolve(server));
+  });
+}
+
+async function captureStdio(fn) {
+  const logs = [];
+  const origLog = console.log;
+  const origWarn = console.warn;
+  console.log = (...args) => {
+    logs.push(args.map(String).join(" "));
+  };
+  console.warn = (...args) => {
+    logs.push(`WARN ${args.map(String).join(" ")}`);
+  };
+  try {
+    await fn();
+  } finally {
+    console.log = origLog;
+    console.warn = origWarn;
+  }
+  return logs;
+}
+
+test("init reuses an RB server on the port without starting another, and opens the tracker tab", async () => {
   await withTempWorkspaceAsync(async (workspace) => {
+    const dummy = await listenDummy((_req, res) => {
+      res.writeHead(200, { "X-Resume-Builder": "1", "Content-Type": "application/json" });
+      res.end(JSON.stringify({ state: {}, trackerSteps: [], homeSteps: [] }));
+    });
+    const port = dummy.address().port;
+    let launched = false;
     let openedUrl = null;
+    try {
+      const logs = await captureStdio(() =>
+        command.run(
+          { workspace, port: String(port) },
+          {
+            serveRunner: async () => {
+              launched = true;
+            },
+            openInBrowser: (url) => {
+              openedUrl = url;
+            },
+          },
+        ),
+      );
+      assert.equal(launched, false);
+      assert.equal(openedUrl, `http://localhost:${port}/tracker.html`);
+      assert.equal(logs.some((line) => /reusing it/i.test(line)), false);
+      assert.equal(logs.some((line) => /another program is using port/i.test(line)), false);
+    } finally {
+      await new Promise((resolve) => dummy.close(resolve));
+    }
+  });
+});
+
+test("init reusing an RB server respects --noOpen", async () => {
+  await withTempWorkspaceAsync(async (workspace) => {
+    const dummy = await listenDummy((_req, res) => {
+      res.writeHead(200, { "X-Resume-Builder": "1" });
+      res.end("{}");
+    });
+    const port = dummy.address().port;
+    let opened = false;
+    let launched = false;
+    try {
+      await command.run(
+        { workspace, port: String(port), noOpen: true },
+        {
+          serveRunner: async () => {
+            launched = true;
+          },
+          openInBrowser: () => {
+            opened = true;
+          },
+        },
+      );
+      assert.equal(launched, false);
+      assert.equal(opened, false);
+    } finally {
+      await new Promise((resolve) => dummy.close(resolve));
+    }
+  });
+});
+
+test("init warns and does not open a tab when another program holds the port", async () => {
+  await withTempWorkspaceAsync(async (workspace) => {
+    const dummy = await listenDummy((_req, res) => {
+      res.writeHead(200, { "Content-Type": "text/plain" });
+      res.end("nginx");
+    });
+    const port = dummy.address().port;
+    let launched = false;
+    let opened = false;
+    try {
+      const logs = await captureStdio(() =>
+        command.run(
+          { workspace, port: String(port) },
+          {
+            serveRunner: async () => {
+              launched = true;
+            },
+            openInBrowser: () => {
+              opened = true;
+            },
+          },
+        ),
+      );
+      assert.equal(launched, false);
+      assert.equal(opened, false);
+      const warning = logs.find((line) => /another program is using port/i.test(line));
+      assert.ok(warning, "expected a warning that another program holds the port");
+      assert.match(warning, new RegExp(String(port)));
+      assert.match(warning, /--port/);
+    } finally {
+      await new Promise((resolve) => dummy.close(resolve));
+    }
+  });
+});
+
+test("init starts the server when nothing is listening", async () => {
+  await withTempWorkspaceAsync(async (workspace) => {
+    let callArgs = null;
     await command.run(
-      { workspace, port: "5555" },
+      { workspace, port: "5555", noOpen: true },
       {
-        serveRunner: async () => {
-          throw eaddrinuseError(5555);
+        serveRunner: async (args) => {
+          callArgs = args;
         },
-        openInBrowser: (url) => {
-          openedUrl = url;
-        },
+        openInBrowser: () => {},
+        probePort: async () => "free",
       },
     );
-    assert.strictEqual(openedUrl, "http://localhost:5555/tracker.html", "should still open the browser against the already-running instance");
+    assert.deepEqual(callArgs, { workspace, port: "5555", noOpen: true });
+  });
+});
+
+test("init EADDRINUSE race re-probes and reuses an RB server", async () => {
+  await withTempWorkspaceAsync(async (workspace) => {
+    let probes = 0;
+    let openedUrl = null;
+    const logs = await captureStdio(() =>
+      command.run(
+        { workspace, port: "5555" },
+        {
+          serveRunner: async () => {
+            throw eaddrinuseError(5555);
+          },
+          openInBrowser: (url) => {
+            openedUrl = url;
+          },
+          probePort: async () => {
+            probes += 1;
+            return probes === 1 ? "free" : "rb";
+          },
+        },
+      ),
+    );
+    assert.equal(probes, 2);
+    assert.equal(openedUrl, "http://localhost:5555/tracker.html");
+    assert.equal(logs.some((line) => /reusing it/i.test(line)), false);
+    assert.equal(logs.some((line) => /another program is using port/i.test(line)), false);
+  });
+});
+
+test("init already-running path does not print reusing it, and starts at most once", async () => {
+  await withTempWorkspaceAsync(async (workspace) => {
+    let launches = 0;
+    const logs = await captureStdio(() =>
+      command.run(
+        { workspace, port: "5555", noOpen: true },
+        {
+          serveRunner: async () => {
+            launches += 1;
+          },
+          openInBrowser: () => {},
+          probePort: async () => "rb",
+        },
+      ),
+    );
+    assert.equal(launches, 0);
+    assert.equal(logs.some((line) => /reusing it/i.test(line)), false);
   });
 });
 
@@ -301,33 +472,54 @@ test("init reusing an already-running server respects --noOpen (no browser tab e
     let opened = false;
     await command.run(
       { workspace, port: "5555", noOpen: true },
-      { serveRunner: async () => { throw eaddrinuseError(5555); }, openInBrowser: () => { opened = true; } },
+      {
+        serveRunner: async () => {
+          throw eaddrinuseError(5555);
+        },
+        openInBrowser: () => {
+          opened = true;
+        },
+        probePort: async () => "rb",
+      },
     );
-    assert.strictEqual(opened, false, "--noOpen should suppress the browser open even on the reuse path");
+    assert.equal(opened, false, "--noOpen should suppress the browser open even on the reuse path");
   });
 });
 
 test("init propagates a launch failure that isn't a port conflict (no .code, or a different code)", async () => {
   await withTempWorkspaceAsync(async (workspace) => {
     await assert.rejects(
-      command.run({ workspace }, { serveRunner: async () => { throw new Error("boom"); }, openInBrowser: () => {} }),
+      command.run(
+        { workspace },
+        {
+          serveRunner: async () => {
+            throw new Error("boom");
+          },
+          openInBrowser: () => {},
+          probePort: async () => "free",
+        },
+      ),
       /boom/,
     );
 
     const wrongCode = new Error("permission denied");
     wrongCode.code = "EACCES";
     await assert.rejects(
-      command.run({ workspace }, { serveRunner: async () => { throw wrongCode; }, openInBrowser: () => {} }),
+      command.run(
+        { workspace },
+        {
+          serveRunner: async () => {
+            throw wrongCode;
+          },
+          openInBrowser: () => {},
+          probePort: async () => "free",
+        },
+      ),
       /permission denied/,
     );
   });
 });
 
-// Integration coverage (no mocks): exercises the real serve.js EADDRINUSE
-// path end-to-end, closing the gap where every test above only verified
-// init.js's reaction to a hand-authored mock error, not the actual error
-// serve.js throws (its message text and .code could drift from the mock
-// and every test above would stay green).
 test("init reuses a real, already-listening serve.js instance on the same port (integration)", async () => {
   await withTempWorkspaceAsync(async (workspace) => {
     await command.run({ workspace, noServe: true });
@@ -338,14 +530,24 @@ test("init reuses a real, already-listening serve.js instance on the same port (
 
     try {
       let openedUrl = null;
+      let launched = false;
       await command.run(
         { workspace, port: String(realPort) },
-        { serveRunner: realServe.run, openInBrowser: (url) => { openedUrl = url; } },
+        {
+          serveRunner: async () => {
+            launched = true;
+            return realServe.run({ workspace, port: String(realPort), noOpen: true });
+          },
+          openInBrowser: (url) => {
+            openedUrl = url;
+          },
+        },
       );
-      assert.strictEqual(
+      assert.equal(launched, false, "probe should reuse the running RB server without listen()");
+      assert.equal(
         openedUrl,
         `http://localhost:${realPort}/tracker.html`,
-        "should detect the real EADDRINUSE, not throw, and open the browser against the already-running instance",
+        "should detect the running RB server and open the tracker tab",
       );
     } finally {
       await new Promise((resolve) => runningServer.close(resolve));

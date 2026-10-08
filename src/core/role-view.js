@@ -46,8 +46,9 @@ function formatFit(role) {
 function formatApplied(role) {
   // An explicit application.status (set by the `set-status` command) is the
   // deterministic source of truth once present — combine it with the date so
-  // statusBucket()'s keyword match (below) still classifies it correctly,
-  // instead of letting a bare appliedAt date shadow the status entirely.
+  // statusBucket()'s explicit status-to-stage map (below) still classifies
+  // "Applied 2026-06-08" as applied, instead of letting a bare appliedAt date
+  // shadow the status entirely.
   const status = role.application?.status;
   if (status) {
     const date = firstNonEmpty(role.application?.appliedAt, role.application?.appliedDate);
@@ -76,23 +77,56 @@ function formatNotes(role) {
   return notes.concat(actions, questions).join("<br>");
 }
 
-// Buckets a role's free-text "applied" status into a small, stable set of
-// statuses so renderers can filter/color consistently regardless of the
-// exact wording a candidate or agent used (e.g. "Applied 2026-06-08",
-// "Rejected", "not yet"). interview/offer/withdrawn/ghosted are their own buckets
-// (not "other") so set-status's whole point — deterministic, visible status
-// — actually shows up distinctly in the tracker UI, not lumped in with any
-// unrecognized/garbage status text.
+// Maps a role's free-text or enum application status onto a closed set of
+// funnel stages, in this order:
+// 1. Text that is only an ISO date (whitespace allowed) is applied.
+// 2. Exact phrase after lowercasing, stripping ISO dates, and collapsing
+//    non-letters to spaces. "not applied" and "not yet" stay not-applied.
+// 3. If still unmatched, the first word only: applied, interview/interviewing,
+//    offer, rejected/denied, withdrawn, ghosted. A first word of "not" never
+//    matches a stage.
+// 4. Otherwise other.
+const STATUS_TO_STAGE = {
+  "": "not-applied",
+  interested: "not-applied",
+  "not applied": "not-applied",
+  "not yet": "not-applied",
+  ready: "not-applied",
+  "ready to apply": "not-applied",
+  applied: "applied",
+  interview: "interview",
+  interviewing: "interview",
+  offer: "offer",
+  rejected: "rejected",
+  denied: "rejected",
+  withdrawn: "withdrawn",
+  ghosted: "ghosted",
+};
+
+const FIRST_WORD_TO_STAGE = {
+  applied: "applied",
+  interview: "interview",
+  interviewing: "interview",
+  offer: "offer",
+  rejected: "rejected",
+  denied: "rejected",
+  withdrawn: "withdrawn",
+  ghosted: "ghosted",
+};
+
 function statusBucket(appliedText) {
-  const status = String(appliedText || "").toLowerCase();
-  if (status.includes("rejected") || status.includes("denied")) return "rejected";
-  if (status.includes("withdrawn")) return "withdrawn";
-  if (status.includes("ghosted")) return "ghosted";
-  if (status.includes("offer")) return "offer";
-  if (status.includes("interview")) return "interview";
-  if (status.includes("applied")) return "applied";
-  if (status === "" || status === "not yet" || status.includes("ready") || status.includes("interested")) return "not-applied";
-  return "other";
+  const raw = String(appliedText || "").trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    return "applied";
+  }
+
+  const normalized = raw
+    .toLowerCase()
+    .replace(/\d{4}-\d{2}-\d{2}/g, " ")
+    .replace(/[^a-z]+/g, " ")
+    .trim();
+  const firstWord = normalized.split(" ")[0];
+  return STATUS_TO_STAGE[normalized] || FIRST_WORD_TO_STAGE[firstWord] || "other";
 }
 
 // A "not-applied" role with a rendered resume already has everything it
@@ -124,14 +158,59 @@ function normalizeRole(role) {
     jobUrl: role.urls?.job,
     applyUrl: role.urls?.apply,
     resume,
+    keywordScore: Number.isFinite(role.resume?.keywordCoverage?.score) ? role.resume.keywordCoverage.score : null,
+    keywordMissing: Array.isArray(role.resume?.keywordCoverage?.missing) ? role.resume.keywordCoverage.missing.length : null,
+    reportPath: firstNonEmpty(role.resume?.reportPath),
     coverLetterStatus: role.coverLetter?.status || null,
     notes: formatNotes(role),
     sortKey: `${role.company || ""} ${role.title || role.role || ""} ${role.id || ""}`,
   };
 }
 
+const EMPTY_STATUS_BUCKETS = {
+  applied: 0,
+  rejected: 0,
+  "not-applied": 0,
+  ghosted: 0,
+  other: 0,
+  interview: 0,
+  offer: 0,
+  withdrawn: 0,
+};
+
+// Single counting path for the HTML tracker funnel/stat cards and the home
+// Jobs tab. Always goes through normalizeRole → statusBucket so neither
+// caller can invent its own buckets.
+function countRoleStats(roles) {
+  const list = Array.isArray(roles) ? roles : [];
+  const normalized = list.map(normalizeRole);
+  const buckets = normalized.reduce(
+    (acc, role) => {
+      acc[role.statusBucket] = (acc[role.statusBucket] || 0) + 1;
+      return acc;
+    },
+    { ...EMPTY_STATUS_BUCKETS },
+  );
+  const total = normalized.length;
+  const readyToApply = normalized.filter((role) => role.readyToApply).length;
+  const notStarted = buckets["not-applied"] - readyToApply;
+  const appliedOrBeyond = total - buckets["not-applied"] - buckets.other;
+  return {
+    total,
+    buckets,
+    readyToApply,
+    notStarted,
+    appliedOrBeyond,
+    appliedFunnelPercent: total > 0 ? Math.round((appliedOrBeyond / total) * 100) : 0,
+    applied: buckets.applied,
+    interview: buckets.interview,
+  };
+}
+
+
 module.exports = {
   compensationRange,
+  countRoleStats,
   formatApplied,
   formatCompensation,
   formatCurrency,

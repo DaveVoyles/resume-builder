@@ -27,5 +27,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run sample quickstart, workspace validation, and privacy check
+      - name: Run tests, sample quickstart, sample workspace check, and privacy check
         run: npm run validate
+
+      # Playwright requires Node 20+, so browser checks run on the 20.x job only.
+      - name: Install Chromium for browser checks
+        if: startsWith(matrix.node-version, '20.')
+        run: npx playwright install --with-deps chromium
+
+      - name: Run headless browser checks
+        if: startsWith(matrix.node-version, '20.')
+        run: npm run test:browser
+
+      - name: Run persona end-to-end scorecard
+        if: startsWith(matrix.node-version, '20.')
+        run: npm run e2e

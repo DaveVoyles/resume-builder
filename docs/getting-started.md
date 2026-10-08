@@ -3,7 +3,7 @@
 Try this with a terminal agent:
 
 ```text
-Download https://github.com/DaveVoyles/resume-builder and help me get started. Run the sample workflow first, then follow docs/playbooks/onboarding.md to create my private workspace, walk me through dropping my resume, notes, and job links into candidate/inputs/, and start my grill intake interview when I'm ready. Ask clarifying questions before making resume claims.
+Clone https://github.com/DaveVoyles/resume-builder and help me get started. Open docs/first-run/guide.html in my browser first and walk me through it. Then follow docs/first-run/FAQ.md. Ask me questions before you write any claim about me. Do not ask me to run commands.
 ```
 
 Resume Builder is designed for an **agent-first workflow**. The easiest path is to let a terminal agent guide setup, ask clarifying questions, and keep resume claims tied to source evidence. The agent is the primary operator; the CLI is a deterministic toolbelt for validation and rendering. See [ADR 0001: Agent-operated CLI](../decisions/0001-agent-operated-cli.md) for the design rationale.
@@ -14,7 +14,7 @@ New here? [`docs/playbooks/onboarding.md`](playbooks/onboarding.md) is the proac
 
 ## 🤖 Recommended path: use an agent
 
-Use this path if you want the simplest experience. Ask a terminal agent to download the repo, run the sample, create your workspace, and interview you before drafting anything.
+Use this path if you want the simplest experience. Ask a terminal agent to download the repo, open the briefing, create your workspace, and interview you before drafting anything.
 
 An agent can help you by following packaged **playbooks** from [`docs/playbooks/`](playbooks/) — vendor-neutral markdown instructions for intake interviews, workspace validation, and resume tailoring. The agent does the semantic work (asking clarifying questions, drafting strategy); the CLI validates the output.
 
@@ -26,16 +26,17 @@ An agent can help you:
 - ⚠️ Avoid unsupported resume claims.
 - ✍️ Turn workspace evidence into resume strategy notes and application answers.
 
-## 🧪 First success: run the sample
+## 🧪 The briefing comes first
 
-The first goal is to make sure the fictional sample works. Your agent can run this for you:
+Open [`docs/first-run/guide.html`](first-run/guide.html) before anything else, and follow [`docs/first-run/FAQ.md`](first-run/FAQ.md). Do not lead with `npm start`.
+
+`npm start` is a practice with a fictional person. It uses a temporary folder and then deletes that folder. Run it only if the person asks to see an example.
 
 ```bash
+# only if they ask to see an example
 npm install
 npm start
 ```
-
-`npm start` runs the sample workflow. You should see generated sample outputs under `examples/sample-candidate/outputs/`.
 
 ## 🗂️ Create your private workspace
 
@@ -47,7 +48,7 @@ npm run setup
 
 This creates a local `candidate/` workspace with:
 
-- 📄 `inputs/resumes/` for source resumes.
+- 📄 `inputs/resumes/` for source resumes after you copy them from `my-documents`.
 - 📝 `inputs/notes/intake.md` for background notes and follow-up answers.
 - 🔗 `inputs/links.md` for portfolio, GitHub, writing, or talk links (one per line).
 - 👤 `profile.json` for structured candidate facts.
@@ -55,12 +56,12 @@ This creates a local `candidate/` workspace with:
 - 📌 `roles.seed.json` and `roles.tracked.json` for job search tracking.
 - 📊 `outputs/` for generated local outputs.
 
-It also opens a browser tab to your tracker dashboard automatically (`outputs/tracker.html`) — empty at first, it fills in as you go. Pass `--noServe` to skip this in CI/automation contexts, or `--noOpen` to start the server without opening a tab.
+It also opens a browser tab to your tracker dashboard automatically (http://localhost:4321/tracker.html) — empty at first, it fills in as you go. Pass `--noServe` to skip this in CI/automation contexts, or `--noOpen` to start the server without opening a tab. The file also lives at `candidate/outputs/tracker.html`.
 
-Drop your material into `inputs/`, then ask your agent to ingest it:
+The person puts files in `my-documents`. The agent opens `my-documents`. If Open folder fails, or the home page shows the fallback note, open `my-documents` from the repo root. Then the agent copies resumes into `candidate/inputs/resumes` and notes into `candidate/inputs/notes`, and ingests from those folders:
 
 ```bash
-npm run workspace:ingest -- --workspace candidate --resume <file> --notes <file> --links candidate/inputs/links.md
+npm run workspace:ingest -- --workspace candidate
 ```
 
 ## 🎙️ Do the intake interview
@@ -84,7 +85,7 @@ Gather:
 
 After setup, you should be able to say:
 
-- 🧪 The sample workflow runs successfully.
+- 🧪 The briefing was opened before any resume was written.
 - 🔒 Real candidate files are in `candidate/`, not committed to Git.
 - 📝 The workspace has an intake note with unanswered questions.
 - 📊 The tracker and similar-role files are generated from structured workspace data.

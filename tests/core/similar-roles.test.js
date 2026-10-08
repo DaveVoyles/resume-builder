@@ -2,7 +2,7 @@
 
 const { test, describe } = require("node:test");
 const assert = require("node:assert/strict");
-const { buildDiscovery } = require("../../src/core/similar-roles");
+const { buildDiscovery, scoreCandidate } = require("../../src/core/similar-roles");
 
 describe("buildDiscovery compensation context", () => {
   test("exposes both a base-salary floor and a total-comp floor when both are set", () => {
@@ -55,5 +55,46 @@ describe("buildDiscovery compensation context", () => {
 
     assert.equal(context.compensationMinimum, undefined);
     assert.equal(context.compensationTotalMinimum, undefined);
+  });
+});
+
+function scoreWorkMode(preferredModes, jobWorkMode) {
+  return scoreCandidate(
+    {
+      company: "Acme",
+      title: "Operations manager",
+      workMode: jobWorkMode,
+    },
+    {
+      keywords: [],
+      phrases: [],
+      seniority: [],
+      employmentTypes: [],
+      workModes: preferredModes,
+      avoided: [],
+    },
+  );
+}
+
+function hasWorkModeMismatch(result) {
+  return result.fit.risks.some((risk) => risk.startsWith("Work mode differs from preferences"));
+}
+
+describe("scoreCandidate work modes", () => {
+  test("flexible matches remote, hybrid, and on-site with no work-mode penalty", () => {
+    for (const jobWorkMode of ["remote", "hybrid", "on-site"]) {
+      const flexible = scoreWorkMode(["flexible"], jobWorkMode);
+      const empty = scoreWorkMode([], jobWorkMode);
+      assert.equal(hasWorkModeMismatch(flexible), false);
+      assert.equal(hasWorkModeMismatch(empty), false);
+      assert.ok(flexible.fit.score >= empty.fit.score);
+    }
+  });
+
+  test("exact non-matching work mode still gets the penalty and reason", () => {
+    const mismatched = scoreWorkMode(["remote"], "on-site");
+    const empty = scoreWorkMode([], "on-site");
+    assert.ok(mismatched.fit.risks.includes("Work mode differs from preferences: on-site."));
+    assert.ok(mismatched.fit.score < empty.fit.score);
   });
 });

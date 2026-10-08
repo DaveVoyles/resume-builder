@@ -32,21 +32,29 @@
     "workspace:gap-report": "node src/cli/index.js gap-report",
     "workspace:bundle": "node src/cli/index.js study-guide-bundle",
     "workspace:tailor": "node src/cli/index.js tailor",
+    "workspace:tailor-plan": "node src/cli/index.js tailor-plan",
+    "workspace:tailor-report": "node src/cli/index.js tailor-report",
     "workspace:set-status": "node src/cli/index.js set-status",
     "workspace:validate": "node src/cli/index.js validate",
     "workspace:serve": "node src/cli/index.js serve",
+    "home": "node src/cli/index.js serve-home",
     "workspace:add-lead": "node src/cli/index.js add-lead",
     "workspace:export-pdf": "node src/cli/index.js export-pdf",
     "workspace:approve-apply": "node src/cli/index.js approve-apply",
     "workspace:apply": "node src/cli/index.js apply",
     "sample:quickstart": "node scripts/sample-quickstart.js",
-    "test": "node --test",
+    "test": "node --require ./tests/helpers/skip-page-check.js --test",
     "check:privacy": "node scripts/check-privacy.js",
     "check:workspace": "node scripts/check-workspace.js --workspace examples/sample-candidate",
     "check": "npm run check:workspace && npm run check:privacy",
-    "validate": "npm run test && npm run sample:quickstart && npm run check:privacy"
+    "validate": "npm run test && npm run sample:quickstart && npm run check:workspace && npm run check:privacy",
+    "test:browser": "node --test tests/browser/home.browser.js tests/browser/home-ux.browser.js tests/browser/persona-home.browser.js",
+    "e2e": "node scripts/e2e-persona.js"
   },
   "dependencies": {
     "docx": "^9.7.1"
+  },
+  "devDependencies": {
+    "playwright": "^1.64.0"
   }
 }

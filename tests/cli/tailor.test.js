@@ -1,5 +1,6 @@
 "use strict";
 
+process.env.RESUME_BUILDER_PAGE_CHECK = process.env.RESUME_BUILDER_PAGE_CHECK || "off";
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("fs");
@@ -59,7 +60,29 @@ function sourceBackedEntry(id, text) {
   };
 }
 
-function createFixtureWorkspace({ config = fictionalConfig(), evidenceEntries = [], configFileName = "fabrikam-ai.json" } = {}) {
+function fixtureProfile(override) {
+  return {
+    schemaVersion: "1.0",
+    candidate: { id: "test-candidate", preferredName: "Sample Candidate", links: [] },
+    skills: [],
+    experience: [
+      {
+        id: "exp-001",
+        organization: "Contoso Labs",
+        title: "Senior Platform Program Manager",
+        startDate: "2022-04",
+        endDate: null,
+        highlights: [{ text: "Led launch coordination for an internal developer platform." }],
+      },
+    ],
+    projects: [],
+    education: [],
+    sources: [],
+    ...override,
+  };
+}
+
+function createFixtureWorkspace({ config = fictionalConfig(), evidenceEntries = [], configFileName = "fabrikam-ai.json", profile } = {}) {
   const workspace = fs.mkdtempSync(path.join(os.tmpdir(), "tailor-workspace-"));
   const paths = workspacePaths(workspace);
   ensureDir(paths.resumeConfigs);
@@ -69,6 +92,9 @@ function createFixtureWorkspace({ config = fictionalConfig(), evidenceEntries = 
 
   const evidenceText = evidenceEntries.length > 0 ? `${evidenceEntries.map((entry) => JSON.stringify(entry)).join("\n")}\n` : "";
   fs.writeFileSync(paths.evidence, evidenceText);
+
+  // The fact audit compares the config's employer/title/dates with the profile.
+  writeJson(paths.profile, fixtureProfile(profile));
 
   return { workspace, configPath, paths };
 }
@@ -117,7 +143,7 @@ test("tailor validates, renders, and registers a tracked role landing un-applied
     });
 
     // DOCX rendered at the expected D2 render seam path.
-    const expectedDocx = path.join(workspace, "outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai.docx");
+    const expectedDocx = path.join(workspace, "outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai-developer-platform-product-manager.docx");
     assert.ok(fs.existsSync(expectedDocx), `expected rendered file at ${expectedDocx}`);
     const text = readDocxText(expectedDocx);
     assert.match(text, /Sample Candidate/);
@@ -140,7 +166,7 @@ test("tailor validates, renders, and registers a tracked role landing un-applied
 
     // Resume artifacts linked back to the role.
     assert.strictEqual(role.resume.configPath, "resume-configs/fabrikam-ai.json");
-    assert.strictEqual(role.resume.outputPath, path.join("outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai.docx"));
+    assert.strictEqual(role.resume.outputPath, path.join("outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai-developer-platform-product-manager.docx"));
     assert.strictEqual(role.resume.status, "review-needed");
 
     // Tracker rebuilt (md + html) as part of the set-status reuse.
@@ -237,7 +263,7 @@ test("tailor prints (does not block on) a thin-ledger warning, and still renders
     }
     // A thin-ledger warning is non-blocking: the DOCX and tracked role must
     // still land, not be silently skipped alongside the warning.
-    assert.ok(fs.existsSync(path.join(workspace, "outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai.docx")));
+    assert.ok(fs.existsSync(path.join(workspace, "outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai-pm.docx")));
     const [role] = readJson(paths.rolesTracked);
     assert.strictEqual(role.company, "Fabrikam AI");
     assert.strictEqual(role.application.status, "interested");
@@ -276,7 +302,7 @@ test("tailor is safe to re-run: does not duplicate the tracked role or reset an 
     assert.strictEqual(roles[0].resume.configPath, "resume-configs/fabrikam-ai.json", "resume.configPath must still be correct after a re-run");
     assert.strictEqual(
       roles[0].resume.outputPath,
-      path.join("outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai.docx"),
+      path.join("outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai-developer-platform-product-manager.docx"),
       "resume.outputPath must still be correct after a re-run",
     );
   });
@@ -340,7 +366,7 @@ test("tailor with --keywords prints keyword coverage report (advisory-only D7 in
     }
 
     // Command must still succeed and produce artifacts (not blocked by keyword advisory).
-    assert.ok(fs.existsSync(path.join(workspace, "outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai.docx")));
+    assert.ok(fs.existsSync(path.join(workspace, "outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai-developer-platform-product-manager.docx")));
     const [role] = readJson(paths.rolesTracked);
     assert.strictEqual(role.application.status, "interested");
   });
@@ -365,7 +391,7 @@ test("tailor without --keywords does not print keyword coverage report", async (
     }
 
     // Command must still succeed normally.
-    assert.ok(fs.existsSync(path.join(workspace, "outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai.docx")));
+    assert.ok(fs.existsSync(path.join(workspace, "outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai-developer-platform-product-manager.docx")));
     const [role] = readJson(paths.rolesTracked);
     assert.strictEqual(role.application.status, "interested");
   });
@@ -397,7 +423,7 @@ test("tailor with --keywords never blocks, even with zero coverage", async () =>
     }
 
     // Command must STILL succeed and produce artifacts (keyword coverage never blocks).
-    assert.ok(fs.existsSync(path.join(workspace, "outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai.docx")));
+    assert.ok(fs.existsSync(path.join(workspace, "outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai-developer-platform-product-manager.docx")));
     const roles = readJson(paths.rolesTracked);
     assert.strictEqual(roles.length, 1, "role must be tracked despite zero keyword coverage");
     assert.strictEqual(roles[0].application.status, "interested");
@@ -428,7 +454,7 @@ test("tailor with invalid --keywords file path warns but does not block", async 
     }
 
     // Command must still succeed (keyword errors never block).
-    assert.ok(fs.existsSync(path.join(workspace, "outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai.docx")));
+    assert.ok(fs.existsSync(path.join(workspace, "outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai-developer-platform-product-manager.docx")));
     const [role] = readJson(paths.rolesTracked);
     assert.strictEqual(role.application.status, "interested");
   });
@@ -459,7 +485,7 @@ test("tailor with a malformed (non-array) --keywords file warns but does not blo
     }
 
     // Command must still succeed (malformed keywords input never blocks).
-    assert.ok(fs.existsSync(path.join(workspace, "outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai.docx")));
+    assert.ok(fs.existsSync(path.join(workspace, "outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai-developer-platform-product-manager.docx")));
     const [role] = readJson(paths.rolesTracked);
     assert.strictEqual(role.application.status, "interested");
   });
@@ -565,7 +591,7 @@ test("tailor with --cover-letter flag renders and links the cover letter to the 
     });
 
     // Resume DOCX rendered at the expected path.
-    const expectedDocx = path.join(workspace, "outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai.docx");
+    const expectedDocx = path.join(workspace, "outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai-developer-platform-product-manager.docx");
     assert.ok(fs.existsSync(expectedDocx), `expected rendered file at ${expectedDocx}`);
 
     // Cover letter DOCX rendered at the expected path.
@@ -582,7 +608,7 @@ test("tailor with --cover-letter flag renders and links the cover letter to the 
     const [role] = readJson(paths.rolesTracked);
     assert.strictEqual(role.company, "Fabrikam AI");
     assert.strictEqual(role.resume.configPath, "resume-configs/fabrikam-ai.json");
-    assert.strictEqual(role.resume.outputPath, path.join("outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai.docx"));
+    assert.strictEqual(role.resume.outputPath, path.join("outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai-developer-platform-product-manager.docx"));
     assert.strictEqual(role.resume.status, "review-needed");
 
     // Cover letter is linked with same shape as resume.
@@ -681,7 +707,8 @@ test("tailor marks onboarding-state.firstRoleAdded true after the first tracked 
     });
 
     const state = readJson(paths.onboardingState);
-    assert.strictEqual(state.firstRoleAdded, true);
+    assert.equal(state.firstRoleAdded.done, true);
+    assert.equal(typeof state.firstRoleAdded.at, "string");
   });
 });
 
@@ -709,6 +736,52 @@ test("tailor does not touch onboarding-state on a second tracked role (already t
     const roles = readJson(paths.rolesTracked);
     assert.strictEqual(roles.length, 2, "sanity check: a second distinct role was actually tracked");
     const state = readJson(paths.onboardingState);
-    assert.strictEqual(state.firstRoleAdded, true, "still true after a second role — never reset");
+    assert.equal(state.firstRoleAdded.done, true, "still true after a second role — never reset");
+    assert.equal(typeof state.firstRoleAdded.at, "string");
+  });
+});
+
+test("tailor blocks on an invented employer before rendering or tracking (fact audit)", async () => {
+  const config = fictionalConfig();
+  config.experienceSections[0].jobs[0].company = "Globex Dynamics";
+  await withWorkspace({ config, evidenceEntries: backedEvidence }, async ({ workspace, configPath, paths }) => {
+    await assert.rejects(
+      () => command.run({ workspace, config: configPath, title: "PM" }),
+      (error) => {
+        assert.match(error.message, /Employer not found/);
+        assert.match(error.message, /Globex Dynamics/);
+        return true;
+      },
+    );
+    assert.ok(!fs.existsSync(paths.outputResumes), "no DOCX should be written");
+    assert.deepStrictEqual(readJson(paths.rolesTracked, []), []);
+  });
+});
+
+test("tailor blocks an inflated title and an unsupported scope verb, but only warns about unknown tools", async () => {
+  const inflated = fictionalConfig();
+  inflated.experienceSections[0].jobs[0].title = "Director of Platform Program Management";
+  await withWorkspace({ config: inflated, evidenceEntries: backedEvidence }, async ({ workspace, configPath }) => {
+    await assert.rejects(() => command.run({ workspace, config: configPath, title: "PM" }), /Job title does not match/);
+  });
+
+  const scope = fictionalConfig();
+  scope.experienceSections[0].jobs[0].bullets = ["Founded the platform guild and coordinated launches."];
+  await withWorkspace({ config: scope, evidenceEntries: backedEvidence }, async ({ workspace, configPath }) => {
+    await assert.rejects(() => command.run({ workspace, config: configPath, title: "PM" }), /Unsupported scope claim/);
+  });
+
+  const tools = fictionalConfig();
+  tools.experienceSections[0].jobs[0].bullets = ["Led launch coordination for an internal developer platform, tracked in Jira."];
+  await withWorkspace({ config: tools, evidenceEntries: backedEvidence }, async ({ workspace, configPath }) => {
+    const warnings = [];
+    const original = console.warn;
+    console.warn = (message) => warnings.push(String(message));
+    try {
+      await command.run({ workspace, config: configPath, title: "PM" });
+    } finally {
+      console.warn = original;
+    }
+    assert.ok(warnings.some((message) => /"Jira"/.test(message) && /confirm with the candidate/.test(message)));
   });
 });

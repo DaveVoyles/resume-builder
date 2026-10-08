@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "1.0",
+  "company": "Lumen Cloud",
+  "outputFileName": "morgan-ellis-lumen-cloud.docx",
+  "candidate": {
+    "name": "Morgan Ellis",
+    "headline": "Educator moving into customer education",
+    "contact": [
+      { "text": "Columbus, OH" },
+      { "text": "morgan.ellis@example.invalid", "link": "mailto:morgan.ellis@example.invalid" }
+    ]
+  },
+  "summary": {
+    "text": "Science teacher who writes handouts, runs training workshops, and collects feedback to improve the material. Now moving into customer education."
+  },
+  "experienceSections": [
+    {
+      "heading": "Experience",
+      "jobs": [
+        {
+          "title": "Science Teacher",
+          "company": "Maple Grove Middle School",
+          "dates": "2016 - Present",
+          "subHeader": "Columbus, OH",
+          "bullets": [
+            "Ran 6 workshops for new teachers on lesson planning and classroom routines.",
+            "Wrote the handouts and collected feedback after each session.",
+            "Wrote an online help guide for the school's learning platform and answered questions about it.",
+            "Built a weekly lab routine and a shared grading guide for the science team."
+          ],
+          "bulletEvidenceIds": [["ev_notes-inputs-notes-training-notes-md_26f33b87cb"]]
+        },
+        {
+          "title": "Teaching Assistant",
+          "company": "Riverbend Elementary",
+          "dates": "2014 - 2016",
+          "bullets": ["Supported classroom instruction and prepared materials for small-group lessons."]
+        }
+      ]
+    }
+  ],
+  "skills": [
+    ["Training", "Live workshops, lesson planning, feedback collection"],
+    ["Documentation", "Help guides, handouts, technical writing coursework"]
+  ],
+  "education": [
+    {
+      "degree": "B.A. Biology",
+      "institution": "Example State University",
+      "dates": "2014"
+    }
+  ],
+  "includeEducation": true,
+  "includePublicationsSpeaking": false
+}

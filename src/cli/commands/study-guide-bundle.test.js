@@ -64,6 +64,7 @@ function createFixtureWorkspace() {
         job: "https://example.invalid/job",
         apply: "https://example.invalid/apply",
       },
+      resume: { configPath: "resume-configs/test-company-senior-test-engineer.json" },
       fit: {
         level: "strong",
         rationale: "Good fit for test skills.",
@@ -210,32 +211,18 @@ test("study-guide-bundle: includes evidence references", async () => {
   }
 });
 
-test("study-guide-bundle: does not silently match a config for an unrelated company via filename substring coincidence", async () => {
+test("study-guide-bundle: refuses to guess a config by company name when the role has no resume link", async () => {
   const tmpDir = createFixtureWorkspace();
   try {
-    // "Ab" is a substring of "test-company...json"'s neighbor below — the
-    // old filename-substring matcher would have silently paired this role
-    // with an unrelated company's config just because the slug happened to
-    // appear inside the filename. Add a role whose company is a substring
-    // of an existing filename fragment, but whose config's own `company`
-    // field does NOT match — this must fail loud, not silently succeed.
+    // The fixture has a config whose company is "Test Company" -- the old
+    // company-name match would have found it. With no resume.configPath the
+    // bundle must fail loud and say to run tailor.
     const paths = workspacePaths(tmpDir);
     const roles = readJson(paths.rolesTracked);
-    roles.push({
-      id: "role-tracked-002",
-      company: "Comp",
-      title: "Other Role",
-      status: "tracked",
-      urls: {},
-      updatedAt: "2026-06-08",
-    });
+    delete roles[0].resume;
     writeJson(paths.rolesTracked, roles);
 
-    await assert.rejects(
-      () => run({ workspace: tmpDir, id: "role-tracked-002" }),
-      /Resume config not found/i,
-      "A company-name substring coincidence in the filename must not produce a silent wrong match"
-    );
+    await assert.rejects(() => run({ workspace: tmpDir, id: "role-tracked-001" }), /No resume is linked.*Run tailor/i);
   } finally {
     cleanupWorkspace(tmpDir);
   }
@@ -275,30 +262,23 @@ test("study-guide-bundle: prefers role.resume.configPath (set by tailor, D4) ove
   }
 });
 
-test("study-guide-bundle: falls back to content-matching instead of following a path-traversal resume.configPath", async () => {
+test("study-guide-bundle: does not follow a path-traversal resume.configPath", async () => {
   const tmpDir = createFixtureWorkspace();
   try {
-    // roles.tracked.json is a plain, hand-editable JSON file — a
-    // `../`-laden resume.configPath must not be trusted to escape the
-    // workspace. Point it at this test file itself (a real file outside
-    // the workspace) to prove an escaping path is never read, not just that
-    // a missing one falls back.
+    // roles.tracked.json is hand-editable: an escaping path must never be
+    // read. Point it at this test file (a real file outside the workspace).
     const paths = workspacePaths(tmpDir);
     const roles = readJson(paths.rolesTracked);
     roles[0].resume = { configPath: "../../../study-guide-bundle.test.js" };
     writeJson(paths.rolesTracked, roles);
 
-    await run({ workspace: tmpDir, id: "role-tracked-001" });
-
-    const bundlePath = path.join(tmpDir, "outputs", "study-guide-bundles", "role-tracked-001.json");
-    const bundle = readJson(bundlePath);
-    assert.equal(bundle.resumeConfig.company, "Test Company", "must fall back to the content-matched config, not read the traversal target");
+    await assert.rejects(() => run({ workspace: tmpDir, id: "role-tracked-001" }), /not found inside the workspace/i);
   } finally {
     cleanupWorkspace(tmpDir);
   }
 });
 
-test("study-guide-bundle: falls back to content-matching when resume.configPath points to a missing file", async () => {
+test("study-guide-bundle: fails loud when resume.configPath points to a missing file", async () => {
   const tmpDir = createFixtureWorkspace();
   try {
     const paths = workspacePaths(tmpDir);
@@ -306,34 +286,33 @@ test("study-guide-bundle: falls back to content-matching when resume.configPath 
     roles[0].resume = { configPath: "resume-configs/does-not-exist.json" };
     writeJson(paths.rolesTracked, roles);
 
-    await run({ workspace: tmpDir, id: "role-tracked-001" });
-
-    const bundlePath = path.join(tmpDir, "outputs", "study-guide-bundles", "role-tracked-001.json");
-    const bundle = readJson(bundlePath);
-    assert.equal(bundle.resumeConfig.company, "Test Company", "should fall back to the content-matched config");
+    await assert.rejects(() => run({ workspace: tmpDir, id: "role-tracked-001" }), /does-not-exist\.json.*Re-run tailor/i);
   } finally {
     cleanupWorkspace(tmpDir);
   }
 });
 
-test("study-guide-bundle: fails loud (ambiguous) rather than guessing when two configs match the same company", async () => {
+test("study-guide-bundle: two roles at one company each bundle their own linked config", async () => {
   const tmpDir = createFixtureWorkspace();
   try {
-    const configDir = path.join(tmpDir, "resume-configs");
-    writeJson(path.join(configDir, "test-company-second-config.json"), {
+    const paths = workspacePaths(tmpDir);
+    writeJson(path.join(tmpDir, "resume-configs", "second.json"), {
       schemaVersion: "1.0",
       company: "Test Company",
       candidate: { name: "Test User", contact: [{ text: "test@example.invalid" }] },
-      summary: { text: "A second, different config for the same company." },
+      summary: { text: "Second role config." },
       experienceSections: [{ heading: "Experience", jobs: [{ title: "X", company: "Y", dates: "Z", bullets: ["b"] }] }],
       skills: [["A", "B"]],
     });
+    const roles = readJson(paths.rolesTracked);
+    roles.push({ id: "role-tracked-002", company: "Test Company", title: "Other Role", status: "tracked", urls: {}, resume: { configPath: "resume-configs/second.json" }, updatedAt: "2026-06-08" });
+    writeJson(paths.rolesTracked, roles);
 
-    await assert.rejects(
-      () => run({ workspace: tmpDir, id: "role-tracked-001" }),
-      /Ambiguous resume config/i,
-      "Two configs matching the same company must fail loud instead of silently picking one"
-    );
+    await run({ workspace: tmpDir, id: "role-tracked-001" });
+    await run({ workspace: tmpDir, id: "role-tracked-002" });
+    const dir = path.join(tmpDir, "outputs", "study-guide-bundles");
+    assert.equal(readJson(path.join(dir, "role-tracked-001.json")).resumeConfig.summary.text, "Test candidate with experience in testing.");
+    assert.equal(readJson(path.join(dir, "role-tracked-002.json")).resumeConfig.summary.text, "Second role config.");
   } finally {
     cleanupWorkspace(tmpDir);
   }

@@ -43,7 +43,7 @@ function renderTracker(roles, options = {}) {
       cell(role.applied),
       link("Job", role.jobUrl),
       link("Apply", role.applyUrl),
-      cell(role.resume),
+      cell(role.reportPath && role.resume ? `${role.resume} ([Report](${role.reportPath.replace(/^outputs\//u, "")}))` : role.resume),
       cell(role.coverLetterStatus),
       cell(staleInfo),
       cell(role.notes),

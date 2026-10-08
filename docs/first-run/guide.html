@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>What the assistant produces before anything leaves your desk</title>
+  <style>
+    :root {
+      --ink: #1a1a1a;
+      --ink-muted: #3f3f3f;
+      --paper: #f7f5f0;
+      --paper-elevated: #fffef9;
+      --rule: #c9c4b8;
+      --accent: #2c3e50;
+      --focus: #1a5276;
+      --measure: 42rem;
+      --font-serif: Georgia, "Times New Roman", Times, serif;
+      --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    html { font-size: 100%; -webkit-text-size-adjust: 100%; }
+
+    body {
+      margin: 0;
+      padding: 2.5rem 1.25rem 4rem;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--font-sans);
+      font-size: 1.0625rem;
+      line-height: 1.55;
+    }
+
+    ::selection { background: #d6e4f0; color: var(--ink); }
+
+    .memo {
+      max-width: var(--measure);
+      margin: 0 auto;
+      background: var(--paper-elevated);
+      padding: 2.75rem 2.5rem 3rem;
+      box-shadow: 0 1px 0 var(--rule), 0 12px 28px rgba(26, 26, 26, 0.06);
+    }
+
+    @media (max-width: 520px) {
+      body { padding: 1.25rem 0.75rem 3rem; }
+      .memo { padding: 2rem 1.35rem 2.5rem; }
+    }
+
+    header {
+      border-bottom: 1px solid var(--ink);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.75rem, 4vw, 2.15rem);
+      font-weight: 600;
+      line-height: 1.2;
+      margin: 0 0 0.75rem;
+      letter-spacing: -0.02em;
+    }
+
+    .meta {
+      font-size: 1rem;
+      color: var(--ink);
+      margin: 0;
+    }
+
+    h2 {
+      font-family: var(--font-serif);
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin: 2.25rem 0 1rem;
+      color: var(--accent);
+    }
+
+    h2:first-of-type { margin-top: 0; }
+
+    .outcomes {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 2.5rem;
+      counter-reset: outcome;
+    }
+
+    .outcomes li {
+      counter-increment: outcome;
+      padding: 0.85rem 0 0.85rem 2.25rem;
+      border-bottom: 1px solid var(--rule);
+      position: relative;
+    }
+
+    .outcomes li::before {
+      content: counter(outcome) ".";
+      position: absolute;
+      left: 0;
+      font-family: var(--font-serif);
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .outcomes li:last-child { border-bottom-color: var(--ink); }
+
+    .outcomes strong {
+      display: block;
+      font-size: 1.05rem;
+      margin-bottom: 0.2rem;
+    }
+
+    .outcomes span {
+      color: var(--ink-muted);
+      font-size: 0.98rem;
+    }
+
+    details {
+      margin: 0;
+      border-top: 1px solid var(--rule);
+    }
+
+    details:last-of-type { border-bottom: 1px solid var(--rule); }
+
+    summary {
+      cursor: pointer;
+      padding: 1rem 1.75rem 1rem 0;
+      font-weight: 500;
+      line-height: 1.45;
+      list-style: none;
+      position: relative;
+    }
+
+    summary::-webkit-details-marker { display: none; }
+    summary::marker { content: ""; }
+
+    summary::after {
+      content: "+";
+      position: absolute;
+      right: 0.15rem;
+      top: 1rem;
+      font-family: var(--font-serif);
+      font-size: 1.25rem;
+      font-weight: 400;
+      color: var(--ink-muted);
+      line-height: 1;
+    }
+
+    details[open] summary::after { content: "\2212"; }
+
+    summary:hover { color: var(--accent); }
+    summary:focus { outline: none; }
+
+    summary:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 3px;
+      border-radius: 2px;
+    }
+
+    .detail-body { padding: 0 0 1.35rem; }
+
+    .detail-body p { margin: 0 0 1rem; }
+    .detail-body p:last-child { margin-bottom: 0; }
+
+    .sample {
+      margin: 1.15rem 0 0;
+      padding: 1rem 1.15rem;
+      background: var(--paper);
+      border: 1px solid var(--rule);
+      font-size: 0.98rem;
+    }
+
+    .sample-label {
+      display: block;
+      font-family: var(--font-sans);
+      font-size: 0.75rem;
+      font-style: normal;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--ink-muted);
+      margin-bottom: 0.65rem;
+      font-weight: 650;
+    }
+
+    .sample p {
+      margin: 0 0 0.65rem;
+      font-family: var(--font-serif);
+      color: var(--ink);
+    }
+
+    .sample p:last-child { margin-bottom: 0; }
+
+    footer {
+      margin-top: 2.5rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--rule);
+      font-size: 0.95rem;
+      color: var(--ink-muted);
+    }
+
+    a:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+<body>
+  <article class="memo">
+    <header>
+      <h1>What the assistant produces before anything leaves your desk</h1>
+      <p class="meta">Nothing is sent until you say so. The samples below are fictional.</p>
+    </header>
+
+    <h2>Outcomes</h2>
+    <ol class="outcomes">
+      <li>
+        <strong>A private profile</strong>
+        <span>Your roles, what you did, and what you have not done, drawn from material you already have.</span>
+      </li>
+      <li>
+        <strong>A resume for one approved role</strong>
+        <span>Written only after you approve that opening. Other roles wait.</span>
+      </li>
+      <li>
+        <strong>A list that can hold several roles</strong>
+        <span>Each resume stays tied to a single role. The list remembers where every role stands.</span>
+      </li>
+      <li>
+        <strong>An interview brief the night before</strong>
+        <span>Written from your profile and that one role. It cites work you did and names the gaps.</span>
+      </li>
+    </ol>
+
+    <h2>How each piece is produced</h2>
+
+    <details>
+      <summary>The profile is assembled from your resumes, notes, and published work. A job posting tells the assistant which role to write for. It does not change the profile.</summary>
+      <div class="detail-body">
+        <p>The assistant reads what you already have: past resumes, notes, and work you have published. From that it writes a private profile of how you have actually worked. The profile stays on your computer. It is not published, and it is not a resume. When a role is worth pursuing, the assistant uses the profile to write for that role. The posting does not rewrite your history.</p>
+        <aside class="sample">
+          <span class="sample-label">Fictional sample. Profile excerpt.</span>
+          <p>Alex Rivera. Contoso Labs. Led one product launch with one team. Did not manage a budget. The work depended on prioritization inside that team.</p>
+        </aside>
+      </div>
+    </details>
+
+    <details>
+      <summary>Several roles can sit on the list at once. A resume is written for one role at a time, and only after you approve that role.</summary>
+      <div class="detail-body">
+        <p>You can track more than one opening without a resume for each. Approval is the gate. Until you confirm that a given opening should have a tailored resume, the assistant does not draft one. When you approve, the work is that single role, until the resume is ready for you to read.</p>
+        <aside class="sample">
+          <span class="sample-label">Fictional sample. List.</span>
+          <p>Northwind Tools, Senior Product Manager. Approved. Resume in review.</p>
+          <p>Fabrikam Studio, Product Manager. On the list. Not yet approved for a draft.</p>
+        </aside>
+      </div>
+    </details>
+
+    <details>
+      <summary>You review every resume. A sentence you would not say comes off. Nothing is emailed or submitted until you say so. Telling the assistant you applied does not send an application.</summary>
+      <div class="detail-body">
+        <p>The assistant proposes wording. You own the voice. A line that overstates the work comes off. There is no automatic email and no submission in the background. Saying you applied updates your list. It does not file an application. You send it when you are ready.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>The interview brief uses your profile and the one role you are preparing for. It cites work you did and names gaps without softening them.</summary>
+      <div class="detail-body">
+        <p>Ask for it the evening before the conversation. It connects that role to specific work in your profile, and it flags where your record is thinner so you can decide what to say. It is a brief, not a script.</p>
+        <aside class="sample">
+          <span class="sample-label">Fictional sample. Brief for Northwind Tools, Senior Product Manager.</span>
+          <p>Lead with the Contoso launch: one team, no budget, delivery through prioritization. Gap: Alex has not managed a budget. If they ask, say so.</p>
+        </aside>
+      </div>
+    </details>
+
+    <footer>
+      When you are ready, tell your assistant. Put past resumes and notes in my-documents at the top of the resume-builder folder. It will open the finished resume, the role list, and the interview brief for you. Names and companies in the samples are fictional.
+    </footer>
+  </article>
+</body>
+</html>

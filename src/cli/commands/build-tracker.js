@@ -3,8 +3,9 @@
 const fs = require("fs");
 const { renderTracker } = require("../../renderers/markdown-tracker");
 const { renderHtmlTracker } = require("../../renderers/html-tracker");
-const { readJson, resolveWorkspace, workspacePaths, writeTextIfMissing } = require("../../core/workspace");
+const { readJson, relativeToWorkspace, resolveWorkspace, workspacePaths, writeTextIfMissing } = require("../../core/workspace");
 const { DEFAULT_THRESHOLDS } = require("../../core/staleness");
+const { syncOnboardingState } = require("../../core/onboarding-state");
 
 function run(options) {
   const workspace = resolveWorkspace(options.workspace);
@@ -29,19 +30,34 @@ function run(options) {
     let onboardingState;
     if (fs.existsSync(paths.onboardingState)) {
       try {
-        onboardingState = readJson(paths.onboardingState);
+        onboardingState = syncOnboardingState(workspace);
       } catch (error) {
         console.warn(`Warning: ignoring unreadable .onboarding-state.json (${error.message})`);
       }
     }
     writeTextIfMissing(output, renderHtmlTracker(roles, { title, stalenessThresholds, onboardingState, notice: options.notice }), true);
-    console.log(`Built html tracker for ${roles.length} tracked role(s): ${output}`);
+    if (!options.quiet) console.log(`Built html tracker for ${roles.length} tracked role(s): ${relativeToWorkspace(workspace, output)}`);
     return;
   }
 
   const output = options.output || paths.tracker;
   writeTextIfMissing(output, renderTracker(roles, { stalenessThresholds }), true);
-  console.log(`Built tracker for ${roles.length} tracked role(s): ${output}`);
+  if (!options.quiet) console.log(`Built tracker for ${roles.length} tracked role(s): ${relativeToWorkspace(workspace, output)}`);
 }
 
-module.exports = { run };
+function rebuildTrackers(workspaceOption) {
+  // Quiet: callers like home Save and ingest print their own result line.
+  run({ workspace: workspaceOption, format: "md", quiet: true });
+  run({ workspace: workspaceOption, format: "html", quiet: true });
+}
+
+function tryRebuildTrackers(workspaceOption) {
+  try {
+    rebuildTrackers(workspaceOption);
+  } catch (error) {
+    console.error(`Warning: tracker rebuild failed (${error && error.message ? error.message : error})`);
+  }
+}
+
+
+module.exports = { run, rebuildTrackers, tryRebuildTrackers };

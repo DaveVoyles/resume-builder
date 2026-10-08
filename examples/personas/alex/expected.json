@@ -1,0 +1,29 @@
+{
+  "persona": "alex",
+  "setupSteps": 10,
+  "maxStyleWarnings": 0,
+  "postings": [
+    {
+      "id": "northwind-ai-workflows",
+      "file": "postings/northwind-ai-workflows.md",
+      "config": "resume-configs/northwind-ai-workflows.json",
+      "company": "Northwind Tools",
+      "title": "Senior product manager, AI developer workflows",
+      "url": "https://jobs.example.invalid/northwind/ai-developer-workflows",
+      "keywords": ["developer platform", "platform strategy", "internal tooling", "developer experience", "launch", "AI workflow", "AI-assisted"],
+      "minKeywordPercent": 85,
+      "maxProxyScore": 250
+    },
+    {
+      "id": "fabrikam-platform-pm",
+      "file": "postings/fabrikam-platform-pm.md",
+      "config": "resume-configs/fabrikam-platform-pm.json",
+      "company": "Fabrikam AI",
+      "title": "Developer platform product manager",
+      "url": "https://jobs.example.invalid/fabrikam/developer-platform-product-manager",
+      "keywords": ["developer platform", "launch coordination", "AI-assisted", "workflow", "internal tooling", "roadmap", "product teams"],
+      "minKeywordPercent": 85,
+      "maxProxyScore": 250
+    }
+  ]
+}

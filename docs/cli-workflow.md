@@ -44,13 +44,14 @@ The CLI does not currently:
 | Run the sample workflow | `npm start` |
 | Create the default private workspace | `npm run setup` (also opens a browser tab to the tracker automatically — pass `--noServe` to skip, or `--noOpen` to start the server without opening a tab) |
 | Initialize a named workspace | `npm run workspace:init -- --workspace <dir>` |
-| Ingest resumes, notes, text, or public GitHub metadata | `npm run workspace:ingest -- --workspace <dir> --resume <file> --notes <file> --github <user>` |
+| Ingest resumes and notes from `inputs/resumes` and `inputs/notes` by default, or pass `--resume`/`--notes`/`--github` | `npm run workspace:ingest -- --workspace <dir>` |
 | Add a seed or tracked role | `npm run workspace:add-role -- --workspace <dir> --url <url>` or add `--tracked` |
 | Build similar-role review output | `npm run workspace:similar -- --workspace <dir> [--candidates <file>]` |
 | Render the application tracker | `npm run workspace:tracker -- --workspace <dir>` |
 | Render an interactive HTML tracker (searchable/filterable, stat cards, pipeline funnel, stale badges) | `npm run workspace:tracker -- --workspace <dir> --format html` |
 | Render a schema-validated resume config to DOCX | `npm run workspace:render -- --workspace <dir> --config <resume-config.json>` |
 | Validate, render, and track a role for a job posting in one pass | `npm run workspace:tailor -- --workspace <dir> --config <resume-config.json> --url <url> --title <title>` |
+| Rank experience and skills against a saved posting before drafting a resume config (writes `outputs/tailor-plans/<role-id>.json`) | `npm run workspace:tailor-plan -- --workspace <dir> --company "<name>" --title "<name>"` |
 | Score how well a resume config covers a job posting's keywords | `npm run workspace:score-keywords -- --config <resume-config.json> --keywords <keywords.json>` |
 | Classify missing keywords into gap types and render a markdown gap report | `npm run workspace:gap-report -- --input <gaps.json> --workspace <dir> [--roleId <id>]` |
 | Record an application status change (including `ghosted`) and rebuild the tracker | `npm run workspace:set-status -- --workspace <dir> --company "<name>" --title "<name>" --status <status>` |
@@ -62,7 +63,7 @@ The CLI does not currently:
 
 ```bash
 npm run setup
-npm run workspace:ingest -- --workspace candidate --resume ./my-resume.docx --notes ./notes.md
+npm run workspace:ingest -- --workspace candidate
 npm run workspace:add-role -- --workspace candidate --url https://example.com/job
 npm run workspace:similar -- --workspace candidate
 npm run workspace:tracker -- --workspace candidate

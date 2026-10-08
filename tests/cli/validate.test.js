@@ -76,7 +76,9 @@ function createFixtureWorkspace({ resumeConfig, resumeConfigFiles, emptyResumeCo
     schemaVersion: "1.0",
     candidate: { id: "test-candidate", preferredName: "Test User", links: [] },
     skills: [],
-    experience: [],
+    experience: [
+      { id: "exp-001", organization: "Northwind Widgets", title: "Senior Fictional Engineer", startDate: "2022-01", endDate: null, highlights: [{ text: "Led launch coordination for an internal developer platform." }] },
+    ],
     projects: [],
     education: [],
     sources: [],
@@ -536,6 +538,44 @@ test("validate fails when a feedback.jsonl line parses to a non-object value", (
       return true;
     });
   } finally {
+    cleanupWorkspace(tmpDir);
+  }
+});
+
+test("validate blocks a resume config whose employer, title, or dates disagree with profile.json", () => {
+  const cases = [
+    [{ company: "Globex Dynamics" }, /Employer not found/],
+    [{ title: "Head of Fictional Engineering" }, /Job title does not match/],
+    [{ dates: "2015 - Present" }, /Start date does not match/],
+  ];
+  for (const [override, pattern] of cases) {
+    const config = baseResumeConfig(["Led launch coordination for an internal developer platform."]);
+    Object.assign(config.experienceSections[0].jobs[0], override);
+    const tmpDir = createFixtureWorkspace({
+      resumeConfig: config,
+      evidenceEntries: [sourceBackedEntry("ev-001", "Led launch coordination for an internal developer platform.")],
+    });
+    try {
+      assert.throws(() => run({ workspace: tmpDir }), pattern);
+    } finally {
+      cleanupWorkspace(tmpDir);
+    }
+  }
+});
+
+test("validate warns (does not block) about a tool that is not in the profile or evidence", () => {
+  const tmpDir = createFixtureWorkspace({
+    resumeConfig: baseResumeConfig(["Led launch coordination for an internal developer platform, tracked in Jira."]),
+    evidenceEntries: [sourceBackedEntry("ev-001", "Led launch coordination for an internal developer platform.")],
+  });
+  const originalWarn = console.warn;
+  const warnings = [];
+  console.warn = (message) => warnings.push(message);
+  try {
+    assert.doesNotThrow(() => run({ workspace: tmpDir }));
+    assert.ok(warnings.some((message) => /"Jira"/.test(message) && /role\.json/.test(message)), JSON.stringify(warnings));
+  } finally {
+    console.warn = originalWarn;
     cleanupWorkspace(tmpDir);
   }
 });

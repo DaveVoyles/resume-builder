@@ -110,6 +110,16 @@ function rowCell(rowHtml, columnName) {
   return cells[index];
 }
 
+function funnelStageCounts(html) {
+  const counts = {};
+  const pattern = /<div class="funnel-stage">([^<]*)<\/div><div class="funnel-count">(\d+)<\/div>/g;
+  let match;
+  while ((match = pattern.exec(html)) !== null) {
+    counts[match[1]] = Number(match[2]);
+  }
+  return counts;
+}
+
 test("html tracker renders a table with all columns including Cover Letter", () => {
   const roles = [
     {
@@ -463,6 +473,21 @@ test("html tracker renders the resume cell as a clickable link with the outputs\
   assert.equal(context.resumeCell({}), "—");
 });
 
+test("html tracker links the tailor report next to the resume, and ignores unsafe report paths", () => {
+  const roles = [
+    { id: "role-001", company: "Fabrikam AI", title: "PM", resume: { outputPath: "outputs/resumes/fabrikam-ai.docx", reportPath: "outputs/tailor-reports/role-001.md" } },
+    { id: "role-002", company: "Contoso", title: "PM", resume: { outputPath: "outputs/resumes/contoso.docx", reportPath: "../secrets.md" } },
+    { id: "role-003", company: "Northwind", title: "PM", resume: { outputPath: "outputs/resumes/northwind.docx" } },
+  ];
+  const { context, tbody } = runClientScript(renderHtmlTracker(roles));
+
+  assert.match(tbody.innerHTML, /fabrikam-ai\.docx<\/a> · <a href="tailor-reports\/role-001\.md" target="_blank" rel="noopener">Report<\/a>/);
+  assert.equal(tbody.innerHTML.includes("secrets.md"), false);
+  assert.equal((tbody.innerHTML.match(/>Report<\/a>/g) || []).length, 1);
+  // No resume file means no report link, same as before.
+  assert.equal(context.resumeCell({ resume: "", reportPath: "outputs/tailor-reports/x.md" }), "—");
+});
+
 test("html tracker renders a pipeline funnel section with stage counts", () => {
   const roles = [
     {
@@ -530,6 +555,81 @@ test("html tracker renders a pipeline funnel section with stage counts", () => {
   assert.match(output, /funnel-stage.*?Rejected[\s\S]*?funnel-count.*?>1</i);
   assert.match(output, /funnel-stage.*?Withdrawn[\s\S]*?funnel-count.*?>1</i);
   assert.match(output, /funnel-stage.*?Ghosted[\s\S]*?funnel-count.*?>1</i);
+});
+
+test("html tracker funnel does not count a Not applied role as Applied", () => {
+  const roles = [
+    { id: "role-001", company: "Northwind Tools", title: "Engineer", status: "tracked", applied: "Not applied" },
+  ];
+
+  const counts = funnelStageCounts(renderHtmlTracker(roles));
+
+  assert.strictEqual(counts.Applied, 0);
+  assert.strictEqual(counts.Interview, 0);
+  assert.strictEqual(counts.Offer, 0);
+  assert.strictEqual(counts.Rejected, 0);
+  assert.strictEqual(counts.Withdrawn, 0);
+  assert.strictEqual(counts.Ghosted, 0);
+  assert.strictEqual(counts["Not Applied"], 1);
+});
+
+test("html tracker funnel counts every stage from a mixed status set", () => {
+  const roles = [
+    { id: "role-001", company: "Northwind Tools", title: "Engineer", status: "tracked", applied: "Not applied" },
+    { id: "role-002", company: "Fabrikam AI", title: "PM", application: { status: "applied", appliedAt: "2026-07-15" } },
+    { id: "role-003", company: "Contoso", title: "Lead", applied: "Interviewing" },
+    { id: "role-004", company: "Adventure Works", title: "Director", application: { status: "offer", appliedAt: "2026-07-08" } },
+    { id: "role-005", company: "Wide World Importers", title: "Manager", application: { status: "rejected", appliedAt: "2026-07-01" } },
+    { id: "role-006", company: "Litware", title: "Staff", application: { status: "withdrawn" } },
+    { id: "role-007", company: "Tailspin Toys", title: "Principal", application: { status: "ghosted" } },
+  ];
+
+  const counts = funnelStageCounts(renderHtmlTracker(roles));
+
+  assert.strictEqual(counts["Not Applied"], 1);
+  assert.strictEqual(counts.Applied, 1);
+  assert.strictEqual(counts.Interview, 1);
+  assert.strictEqual(counts.Offer, 1);
+  assert.strictEqual(counts.Rejected, 1);
+  assert.strictEqual(counts.Withdrawn, 1);
+  assert.strictEqual(counts.Ghosted, 1);
+});
+
+test("html tracker funnel counts a role with only application.appliedAt 2026-06-08 as Applied", () => {
+  const roles = [{ id: "role-001", company: "Northwind Tools", title: "Engineer", application: { appliedAt: "2026-06-08" } }];
+
+  const counts = funnelStageCounts(renderHtmlTracker(roles));
+
+  assert.strictEqual(counts.Applied, 1);
+  assert.strictEqual(counts["Not Applied"], 0);
+});
+
+test("html tracker funnel counts Interview scheduled as Interview and Applied via referral as Applied", () => {
+  const roles = [
+    { id: "role-001", company: "Northwind Tools", title: "Engineer", applied: "Interview scheduled" },
+    { id: "role-002", company: "Fabrikam AI", title: "PM", applied: "Applied via referral" },
+  ];
+
+  const counts = funnelStageCounts(renderHtmlTracker(roles));
+
+  assert.strictEqual(counts.Interview, 1);
+  assert.strictEqual(counts.Applied, 1);
+});
+
+test("html tracker funnel first-word rule: Not applied stays not Applied, Not yet is not-applied, Phone interview is other", () => {
+  const roles = [
+    { id: "role-001", company: "Northwind Tools", title: "Engineer", applied: "Not applied" },
+    { id: "role-002", company: "Fabrikam AI", title: "PM", applied: "Not yet" },
+    { id: "role-003", company: "Contoso", title: "Lead", applied: "Phone interview" },
+  ];
+
+  const output = renderHtmlTracker(roles);
+  const counts = funnelStageCounts(output);
+
+  assert.strictEqual(counts.Applied, 0);
+  assert.strictEqual(counts.Interview, 0);
+  assert.strictEqual(counts["Not Applied"], 2);
+  assert.match(output, /"statusBucket": "other"/);
 });
 
 test("html tracker displays stale badges for old applications", () => {
@@ -798,16 +898,21 @@ test("renderOnboardingChecklist covers all 10 steps in order and counts done acc
 
   // setupComplete is already true in defaultOnboardingState() (setup itself
   // just ran) — so this is 4, not 3: setup + materialIngested + 2 sections.
-  assert.match(html, /Onboarding: 4 of 10 steps/);
-  ["Workspace created", "Material ingested", "Basic information", "Work history", "Education", "Target role", "Location and work mode", "Salary and compensation", "Constraints and deal breakers", "First role added"].forEach(
+  assert.match(html, /Setup: 4 of 10 done/);
+  ["Workspace created", "Your resumes and notes are read in", "Basic information", "Work history", "Education", "Target role", "Location and work mode", "Salary and compensation", "Constraints and deal breakers", "First role added"].forEach(
     (label) => assert.match(html, new RegExp(label)),
   );
 });
 
 test("renderOnboardingChecklist shows 1 of 10 for the fresh default state (setup itself already counts as done)", () => {
   const html = renderOnboardingChecklist(defaultOnboardingState());
-  assert.match(html, /Onboarding: 1 of 10 steps/);
-  assert.match(html, /onboarding-check-done">✓<\/span><span class="onboarding-item-label">Workspace created/);
+  assert.match(html, /Setup: 1 of 10 done/);
+  assert.match(html, /onboarding-check-done">✓<\/span>/);
+  assert.match(html, /onboarding-item-label">Workspace created/);
+  assert.match(html, /onboarding-item-howto/);
+  assert.match(html, /my-documents/);
+  assert.match(html, /candidate\/inputs\/resumes/);
+  assert.match(html, /candidate\/inputs\/notes/);
 });
 
 test("renderOnboardingChecklist shows 10 of 10 once every step is complete", () => {
@@ -816,12 +921,12 @@ test("renderOnboardingChecklist shows 10 of 10 once every step is complete", () 
   state.firstRoleAdded = true;
   Object.keys(state.sections).forEach((key) => { state.sections[key] = true; });
   const html = renderOnboardingChecklist(state);
-  assert.match(html, /Onboarding: 10 of 10 steps/);
+  assert.match(html, /Setup: 10 of 10 done/);
 });
 
 test("renderOnboardingChecklist tolerates a missing sections object entirely", () => {
   assert.doesNotThrow(() => renderOnboardingChecklist({}));
-  assert.match(renderOnboardingChecklist({}), /Onboarding: 0 of 10 steps/);
+  assert.match(renderOnboardingChecklist({}), /Setup: 0 of 10 done/);
 });
 
 test("renderHtmlTracker without onboardingState renders exactly as before — checklist hidden, no pill", () => {
@@ -838,9 +943,29 @@ test("renderHtmlTracker shows the checklist (and hides the dashboard) while onbo
 
   assert.match(html, /class="onboarding-section" style="display:block"/);
   assert.match(html, /class="dashboard-section" style="display:none"/);
-  assert.match(html, /Onboarding: 2 of 10 steps/);
+  assert.match(html, /Setup: 2 of 10 done/);
   assert.doesNotMatch(html, /Onboarding complete/);
 });
+
+test("renderHtmlTracker with 8 of 10 onboarding and one tracked role shows jobs and the checklist", () => {
+  const state = defaultOnboardingState();
+  state.materialIngested = true;
+  state.sections.basicInfo = true;
+  state.sections.workHistory = true;
+  state.sections.targetRole = true;
+  state.sections.location = true;
+  state.sections.dealBreakers = true;
+  state.firstRoleAdded = true;
+  const roles = [{ id: "role-001", company: "Contoso Health", title: "Operations Manager" }];
+  const html = renderHtmlTracker(roles, { onboardingState: state });
+
+  assert.match(html, /Setup: 8 of 10 done/);
+  assert.match(html, /class="onboarding-section" style="display:block"/);
+  assert.match(html, /class="dashboard-section" style="display:block"/);
+  assert.match(html, /Contoso Health/);
+  assert.doesNotMatch(html, /Onboarding complete/);
+});
+
 
 test("renderHtmlTracker shows the normal dashboard plus a completion pill once onboarding is done", () => {
   const state = defaultOnboardingState();
@@ -879,8 +1004,8 @@ test("renderHtmlTracker's filter buttons still work normally when the checklist 
 
 test("renderOnboardingChecklist treats a sections object missing some keys entirely the same as those keys being false", () => {
   const html = renderOnboardingChecklist({ setupComplete: true, sections: { workHistory: true } });
-  assert.match(html, /Onboarding: 2 of 10 steps/);
-  assert.match(html, /onboarding-check-pending"><\/span><span class="onboarding-item-label onboarding-item-label-pending">Education/);
+  assert.match(html, /Setup: 2 of 10 done/);
+  assert.match(html, /onboarding-item-label onboarding-item-label-pending">Education/);
 });
 
 test("isOnboardingComplete ignores unrecognized extra keys in the state object", () => {
@@ -910,10 +1035,17 @@ test("renderHtmlTracker with notice option renders a visible banner with escaped
 test("renderHtmlTracker without notice option renders no banner and is byte-identical to previous behavior", () => {
   const htmlWithoutNotice = renderHtmlTracker([], {});
   const htmlWithoutOption = renderHtmlTracker([]);
+  const stamp = /Generated [^<]+ from/g;
 
-  // Both calls should produce identical output (no notice banner added, no whitespace differences).
-  assert.strictEqual(htmlWithoutNotice, htmlWithoutOption, "output must be identical whether notice is undefined or an empty options object");
+  // The generated clock can tick between the two calls. Compare everything else.
+  assert.strictEqual(
+    htmlWithoutNotice.replace(stamp, "Generated STAMP from"),
+    htmlWithoutOption.replace(stamp, "Generated STAMP from"),
+    "output must be identical whether notice is undefined or an empty options object"
+  );
 
   // The notice banner must not appear anywhere in the output.
   assert.doesNotMatch(htmlWithoutNotice, /class="notice-banner"/, "no notice-banner div should appear when notice is not provided");
+  assert.doesNotMatch(htmlWithoutNotice, /<p class="subtitle">/, "generation metadata must not be a visible subtitle");
+  assert.match(htmlWithoutNotice, /<!-- Generated /, "generation metadata may stay in an HTML comment");
 });

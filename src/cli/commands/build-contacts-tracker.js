@@ -3,7 +3,7 @@
 const path = require("path");
 const { renderContactsTracker } = require("../../renderers/markdown-contacts-tracker");
 const { renderHtmlContactsTracker } = require("../../renderers/html-contacts-tracker");
-const { readJson, resolveWorkspace, workspacePaths, writeTextIfMissing } = require("../../core/workspace");
+const { readJson, relativeToWorkspace, resolveWorkspace, workspacePaths, writeTextIfMissing } = require("../../core/workspace");
 
 function run(options) {
   const workspace = resolveWorkspace(options.workspace);
@@ -17,13 +17,13 @@ function run(options) {
     const candidateName = profile.candidate?.preferredName || profile.candidate?.name;
     const title = options.title || (candidateName ? `${candidateName} - Contact Tracker` : "Contact Tracker");
     writeTextIfMissing(output, renderHtmlContactsTracker(contacts, { title }), true);
-    console.log(`Built html contacts tracker for ${contacts.length} tracked contact(s): ${output}`);
+    console.log(`Built html contacts tracker for ${contacts.length} tracked contact(s): ${relativeToWorkspace(workspace, output)}`);
     return;
   }
 
   const output = options.output || path.join(paths.outputs, "contacts.md");
   writeTextIfMissing(output, renderContactsTracker(contacts), true);
-  console.log(`Built contacts tracker for ${contacts.length} tracked contact(s): ${output}`);
+  console.log(`Built contacts tracker for ${contacts.length} tracked contact(s): ${relativeToWorkspace(workspace, output)}`);
 }
 
 module.exports = { run };

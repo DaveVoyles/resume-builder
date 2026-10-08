@@ -11,83 +11,40 @@ candidate ("Troy McClure"). Not Dave's real job search.
 
 ## Start here if you are a person
 
-You do not need to code. You need a **terminal AI agent**: Claude, Grok, or Gemini (Google Antigravity counts) all work. Copilot or ChatGPT also work.
+You do not need to code. You need a chat assistant that can work on your computer for you. Claude, Grok, or Gemini (Google Antigravity counts) all work. Copilot or ChatGPT also work.
 
-This program does not call the AI and needs no API key. Your agent reads the playbooks and runs the commands. The program checks facts, writes the Word file, and updates the tracker.
+You talk. The assistant does the computer work. This program does not call an AI and needs no key.
 
-Paste this to your agent:
-
-```text
-Clone https://github.com/DaveVoyles/resume-builder and help me get started. Follow
-docs/playbooks/onboarding.md to set up my private workspace in candidate/, then walk me
-through dropping my resumes, notes, and links into candidate/inputs/. Ask me questions
-before you write any claim about me.
-```
-
-After setup you will have a tailored resume, a tracker page, and an interview study guide.
-
-Your real files live in the `candidate/` folder. It is gitignored. Do not commit it.
-
-The 8 steps:
-
-1. **Onboard.** The agent sets up your private folder. ([onboarding](docs/playbooks/onboarding.md))
-2. **Interview for your history.** The agent asks you questions and records what you really did. ([grill](docs/playbooks/grill.md))
-3. **Find roles.** The agent looks for jobs that fit and checks the links are live. ([find-roles](docs/playbooks/find-roles.md))
-4. **Tailor.** The agent shapes your resume for one job, using only facts you gave it. ([tailor](docs/playbooks/tailor.md))
-5. **Review the Word file.** You open the `.docx` and fix anything that is not true. ([tailor](docs/playbooks/tailor.md))
-6. **Track.** The role goes into your tracker page. ([find-roles](docs/playbooks/find-roles.md))
-7. **Update status.** When you apply, hear back, or get rejected, the agent updates the tracker. ([status recipe](AGENTS.md#-status-update-recipe))
-8. **Study guide.** Before an interview, the agent writes a guide from your evidence. ([study-guide](docs/playbooks/study-guide.md))
-
-Commands for a saved lead, a form fill, and a PDF:
-
-```bash
-npm run workspace:add-lead -- --workspace candidate --company "Northwind Tools" --title "Senior Product Manager" --url https://jobs.example.invalid/northwind
-npm run workspace:approve-apply -- --workspace candidate --company "Northwind Tools" --title "Senior Product Manager"
-npm run workspace:apply -- --workspace candidate --company "Northwind Tools" --title "Senior Product Manager" --dry-run
-npm run workspace:export-pdf -- --workspace candidate --docx <path>
-```
-
-Fill does not press Submit unless you say so (`--confirm-submit`). `export-pdf` needs LibreOffice and shows a clear error if it is missing.
-
-Your AI agent turns years of scattered work history into resumes that hold up under scrutiny,
-applications that track themselves, and interview study guides that make you sound like *you*
-actually did the work — because you did.
-
-Free and open source, no API key required, updated daily. See [why it's free](#-why-this-is-free).
-
-This project assumes you have a **terminal AI agent at all times** — GitHub Copilot CLI, Claude,
-ChatGPT, or anything else that can read and edit files in your repo. The agent interviews you,
-drafts resume content, and does the semantic work. The CLI is its deterministic toolbelt — no
-LLM calls, no API key, and it validates, renders, tracks, and audits every claim against the
-evidence you actually gave it. See
-[ADR 0001: Agent-operated CLI](docs/decisions/0001-agent-operated-cli.md) for the full rationale.
-
-You can also drive the CLI yourself without an agent — see
-[CLI workflow](docs/cli-workflow.md) — but the docs and UX are written for the agent-first path.
-
-## 🚀 Start here
-
-Paste this to your terminal agent:
+Paste this to your assistant:
 
 ```text
-Download https://github.com/DaveVoyles/resume-builder and help me get started. Run the sample
-workflow first (npm start), then follow docs/playbooks/onboarding.md to set up my private
-workspace and walk me through dropping my resumes, notes, and links into candidate/inputs/.
-Ask clarifying questions before making resume claims.
+Clone https://github.com/DaveVoyles/resume-builder and help me get started.
+Open docs/first-run/guide.html in my browser first and walk me through it.
+Then follow docs/first-run/FAQ.md. Ask me questions before you write any claim about me.
+Do not ask me to run commands.
 ```
 
-Prefer to drive it yourself first?
+Your assistant will open a one-page briefing. It describes a private profile built from your own material, a resume written for one role you approve, a list that can hold several roles, and a brief before an interview. Your files stay on your computer. They are not published with this project.
+
+The page is also here: [docs/first-run/guide.html](docs/first-run/guide.html).
+
+The three-tab home page (Introduction, FAQ, Jobs) opens with `npm run home` at http://localhost:4321. Put your files in `my-documents/`. RB writes drafts in `output/`. Open the tracker from the home page ("Open my tracker") at http://localhost:4321/tracker.html. Rebuild it with `npm run workspace:tracker:html -- --workspace candidate` if it is missing. The file also lives at `candidate/outputs/tracker.html`.
+
+Free and open source, no API key required. See [why it's free](#-why-this-is-free).
+
+## For agents and developers
+
+The person-facing start is the section above. You run the commands. The full script is [`docs/first-run/FAQ.md`](docs/first-run/FAQ.md).
+
+`npm start` runs a fictional sample (Alex Rivera) through the lifecycle in a temporary folder and then deletes that folder. It is not the first page to show a person. The first page is [`docs/first-run/guide.html`](docs/first-run/guide.html).
+
+If you are driving the tool yourself, without an assistant, see [CLI workflow](docs/cli-workflow.md). The design note is [ADR 0001](docs/decisions/0001-agent-operated-cli.md). Run the practice below only in that case, or when the person asks to see an example.
 
 ```bash
+# practice sample only; not the first page for a person
 npm install
 npm start
 ```
-
-`npm start` runs a fictional sample candidate through the **entire lifecycle** — tracker,
-similar-role review, a rendered DOCX resume, a full `tailor` pass, a status update, and an
-interview study-guide bundle — so you see every stage before touching real data. Nothing it
-touches is real: the sample candidate ("Alex Rivera"), companies, and postings are fictional.
 
 ## 🎓 Study guides that make you sound like you already know the answer
 
@@ -113,9 +70,7 @@ projects you've built, and helps you (1) anticipate the kinds of problems and qu
 come up for a specific role, and (2) remember — with receipts — exactly how you've already
 solved that problem in the real world.
 
-```bash
-npm run workspace:bundle -- --workspace candidate --company "Northwind Tools" --title "Senior Product Manager"
-```
+Ask your assistant for a study guide before the interview. Your assistant gathers your history, the resume, and the job posting, then writes the guide. You do not run a command.
 
 No API key, no re-scraping the job board — just the context you already built while tailoring
 the resume, organized for the interview. Full playbook:
@@ -140,7 +95,7 @@ the reason I'm walking into interviews prepared instead of scrambling the night 
 
 | Stage | What happens | Playbook / command |
 | --- | --- | --- |
-| 1. Onboarding | Drop resumes, notes, and links into `candidate/inputs/` (or share a GitHub username); your agent ingests them. | [`docs/playbooks/onboarding.md`](docs/playbooks/onboarding.md) · `npm run workspace:ingest` |
+| 1. Onboarding | You put resumes and notes in `my-documents` (or share a GitHub username). The agent copies them into `candidate/inputs/resumes` and `candidate/inputs/notes`, writes `candidate/inputs/links.md`, and ingests them. | [`docs/playbooks/onboarding.md`](docs/playbooks/onboarding.md) · `npm run workspace:ingest` |
 | 2. Grill intake | The agent interviews you one question at a time — work history, target roles, location, compensation, constraints — and writes `profile.json`, `preferences.json`, `evidence.jsonl`. | [`docs/playbooks/grill.md`](docs/playbooks/grill.md) |
 | 3. Find roles | The agent searches, vets postings against your preferences, verifies links are live, and maintains `leads.json`; you accept or skip each lead. | [`docs/playbooks/find-roles.md`](docs/playbooks/find-roles.md) |
 | 4. Tailor | The agent drafts a resume config for one posting; `tailor` validates it, audits every claim against your evidence ledger, renders the DOCX, and tracks the role — all in one pass. Add `--cover-letter` for an evidence-audited cover letter alongside it. | [`docs/playbooks/tailor.md`](docs/playbooks/tailor.md) · `npm run workspace:tailor` |
@@ -270,6 +225,9 @@ Every top-level folder has its own README explaining what it holds:
 | [`scripts/`](scripts/) | Standalone scripts behind `npm run check:*` and `npm start`. |
 | [`templates/`](templates/) | Blank starter files scaffolded into a new candidate workspace. |
 | [`tests/`](tests/) | Test suite, mirroring `src/`'s folder layout. |
+| [`onboarding/`](onboarding/) | The public three-tab home page served by `npm run home`. |
+| [`my-documents/`](my-documents/) | Where you put resumes and notes. Starts with two sample files. |
+| [`output/`](output/) | Where RB writes drafts. You do not put files here. |
 
 ## ✅ Requirements
 
