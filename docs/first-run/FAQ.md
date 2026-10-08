@@ -32,7 +32,7 @@ Do not skip ahead. Do not show them a pile of commands.
 
 5. **Collect old material.** Open `my-documents` for them (`open` / `start` / `xdg-open` on that folder). If Open folder fails, open `my-documents` yourself from the repo root. Say both sentences in section 3 of [what-to-say.md](what-to-say.md). Wait until they say the files are in, or they ask what to include.
 
-   They put files in `my-documents`. You copy resumes into `candidate/inputs/resumes` and notes into `candidate/inputs/notes`, then ingest from those paths. A link can be pasted in chat, or you write it into `candidate/inputs/links.md`. Enough to start: one old resume, or a notes file, or a GitHub username. More is better. LinkedIn pages are behind a login, so you cannot pull a LinkedIn profile the way you can pull public GitHub repos. If they want LinkedIn included, ask them to export their data from LinkedIn settings, or paste the parts they care about into a notes file.
+   They put files in `my-documents`. You copy resumes into `candidate/inputs/resumes` and notes into `candidate/inputs/notes`, then ingest from those paths. A link can be pasted in chat, or you write it into `candidate/inputs/links.md`. Enough to start: one old resume, or a notes file, or a GitHub username. More is better. A PDF resume is read with `pdftotext` when it is installed, so each job and bullet can be used as proof; if the text cannot be read (no `pdftotext`, a scan, or a damaged file), the PDF is recorded as metadata-only and you ask for a Word or text copy in `my-documents`. LinkedIn pages are behind a login, so you cannot pull a LinkedIn profile the way you can pull public GitHub repos. If they want LinkedIn included, ask them to export their data from LinkedIn settings, or paste the parts they care about into a notes file.
 
    Home Introduction tells the person that copy happens, without showing `candidate/inputs/` paths. Those paths stay in this FAQ and in the collapsed "For your AI agent" note on home. If they click Open folder and the fallback note appears, open `my-documents` yourself from the repo root.
 
@@ -48,7 +48,7 @@ Do not skip ahead. Do not show them a pile of commands.
 
 8. **One job.** Say sentence 6. Follow `docs/playbooks/find-roles.md`. Check the link is live. If it is dead, say so and stop. Do not write a resume until they say yes to that job.
 
-9. **Write the resume.** Follow `docs/playbooks/tailor.md`. The new role lands as interested, not applied. Open the Word file for them. Say sentence 7. Change any sentence they reject. Do not invent a metric, title, or employer to fill a gap.
+9. **Write the resume.** Follow `docs/playbooks/tailor.md`. The new role lands as interested, not applied. Open the Word file for them. Say sentence 7. Open the role's report (`candidate/outputs/tailor-reports/<role-id>.md`, also linked from the role list) and ask its questions one at a time. Change any sentence they reject. Do not invent a metric, title, or employer to fill a gap.
 
 10. **Show the list.** Rebuild and open the tracker if it is not already open. Say sentence 8.
 

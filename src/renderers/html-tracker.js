@@ -151,6 +151,7 @@ function renderHtmlTracker(roles, options = {}) {
       resume: role.resume || "",
       keywordScore: role.keywordScore,
       keywordMissing: role.keywordMissing,
+      reportPath: role.reportPath || "",
       coverLetterStatus: role.coverLetterStatus || "",
       notes: notesHtml(sortedSourceRoles[index]),
       isStale: staleness.isStale,
@@ -612,9 +613,14 @@ function renderHtmlTracker(roles, options = {}) {
       const parts = role.resume.split("/");
       const filename = parts[parts.length - 1] || role.resume;
       const link = '<a href="' + esc(href) + '" target="_blank" rel="noopener">' + esc(filename) + "</a>";
-      if (role.keywordScore === null || role.keywordScore === undefined) return link;
-      const missing = role.keywordMissing ? role.keywordMissing + " missing" : "none missing";
-      return link + '<br><span class="kw-score">Keywords ' + esc(String(role.keywordScore)) + "% (" + esc(missing) + ")</span>";
+      let cell = link;
+      if (role.keywordScore !== null && role.keywordScore !== undefined) {
+        const missing = role.keywordMissing ? role.keywordMissing + " missing" : "none missing";
+        cell += '<br><span class="kw-score">Keywords ' + esc(String(role.keywordScore)) + "% (" + esc(missing) + ")</span>";
+      }
+      if (!role.reportPath || /^([a-zA-Z]:)?[\\/]/.test(role.reportPath) || role.reportPath.split(/[\\/]/).indexOf("..") !== -1) return cell;
+      const reportHref = role.reportPath.replace(/^outputs\\//, "");
+      return cell + ' · <a href="' + esc(reportHref) + '" target="_blank" rel="noopener">Report</a>';
     }
 
     function linkCell(role) {

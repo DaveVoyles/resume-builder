@@ -37,7 +37,7 @@ For each persona the script builds a temp workspace and runs: `init`, copy input
 | keyword coverage | below `minKeywordPercent` for the posting |
 | style-lint warnings | more than `maxStyleWarnings` |
 | proxy score | above `maxProxyScore` (summary words + bullet words + 40 per job + 20 per education row) |
-| page count | more than one page. Runs only when LibreOffice (`soffice`) is installed, otherwise skipped |
+| page count | more than one page, counted with `src/core/page-count.js` (the same check `tailor` runs). Runs only when LibreOffice (`soffice`) is installed, otherwise skipped |
 | tracker lists the role | company missing from `tracker.md` or `tracker.html`, or a role is marked applied |
 | golden DOCX text | extracted text differs from `golden/<role>.txt` |
 | no absolute paths in CLI output | Reported as a warning only. Some commands still print absolute paths. |

@@ -116,13 +116,68 @@ test("re-running ingest on a chunked resume adds no duplicates and keeps ids sta
   });
 });
 
-test("a PDF resume gets a plain-language ask for a Word or text copy", async () => {
+const missingPdftotext = () => ({ error: new Error("spawn pdftotext ENOENT"), status: null });
+const PDF_TEXT = [
+  "Pat Example",
+  "",
+  "EXPERIENCE",
+  "Operations Lead, Fictional Freight Co    2019 - 2024",
+  "- Cut dock turnaround from 90 to 45 minutes across 3 depots.",
+  "- Ran day-to-day operations for 40 drivers.",
+  "",
+].join("\n");
+const fakePdftotext = (text) => (cmd, args) => {
+  assert.equal(cmd, "pdftotext");
+  assert.equal(args[0], "-layout");
+  return { status: 0, stdout: text, stderr: "" };
+};
+
+test("a PDF resume gets a plain-language ask for a Word or text copy when text can't be read", async () => {
   await withWorkspace(async ({ workspace, paths }) => {
     fs.writeFileSync(path.join(paths.resumes, "old.pdf"), "%PDF-1.4 fake");
-    const logs = await captureLogs(() => command.run({ workspace }));
+    const logs = await captureLogs(() => command.run({ workspace }, { spawnSync: missingPdftotext }));
     assert.match(logs.join("\n"), /can't read the text inside old\.pdf.*Word \(\.docx\) or plain text copy.*my-documents/);
     const entries = readJsonLines(paths.evidence);
     assert.equal(entries.length, 1);
     assert.equal(entries[0].confidence, "metadata-only");
+    assert.equal(entries[0].metadata.extractionMode, "pdf-not-supported");
   });
 });
+
+test("a PDF resume with extracted text produces granular source-backed evidence and no ask", async () => {
+  await withWorkspace(async ({ workspace, paths }) => {
+    fs.writeFileSync(path.join(paths.resumes, "old.pdf"), "%PDF-1.4 fake");
+    const logs = await captureLogs(() => command.run({ workspace }, { spawnSync: fakePdftotext(PDF_TEXT) }));
+    assert.doesNotMatch(logs.join("\n"), /can't read the text/);
+    const entries = readJsonLines(paths.evidence);
+    assert.ok(entries.length > 2, "whole-file entry plus one entry per piece");
+    assert.ok(entries.every((entry) => entry.confidence === "source-text"));
+    assert.ok(entries.every((entry) => entry.metadata.extractionMode === "pdf-pdftotext"));
+    assert.ok(entries.some((entry) => entry.metadata.chunkKind === "bullet" && /90 to 45 minutes/.test(entry.snippet)));
+    assert.deepEqual(validateEvidence(entries), []);
+  });
+});
+
+test("a PDF whose extraction fails or is empty stays metadata-only and cannot support a claim", async () => {
+  const failures = [
+    () => ({ status: 1, stdout: "", stderr: "Syntax Error: bad xref" }),
+    () => ({ status: 0, stdout: "\f\n", stderr: "" }),
+  ];
+  for (const spawn of failures) {
+    await withWorkspace(async ({ workspace, paths }) => {
+      fs.writeFileSync(path.join(paths.resumes, "scan.pdf"), "%PDF-1.4 fake");
+      const logs = await captureLogs(() => command.run({ workspace }, { spawnSync: spawn }));
+      assert.match(logs.join("\n"), /my-documents/);
+      const entries = readJsonLines(paths.evidence);
+      assert.equal(entries.length, 1);
+      assert.equal(entries[0].confidence, "metadata-only");
+      const config = {
+        summary: { text: "Fictional lead." },
+        experienceSections: [{ jobs: [{ title: "Lead", company: "Fictional Freight Co", bullets: ["Raised renewal rate by 37%."] }] }],
+        skills: [],
+      };
+      assert.ok(auditResumeConfig(config, entries).errors.length > 0, "metadata-only PDF must not back a number");
+    });
+  }
+});
+

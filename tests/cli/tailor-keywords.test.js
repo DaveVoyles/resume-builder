@@ -186,7 +186,7 @@ test("tailor resolves a resume config that extends a base config", async () => {
       summary: { text: "Fictional product leader for developer platforms." },
     });
     const result = await captureResult(() => tailor.run({ workspace, config: childPath, title: "Platform PM" }));
-    const expectedDocx = path.join(workspace, "outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai.docx");
+    const expectedDocx = path.join(workspace, "outputs", "resumes", "Fabrikam AI", "sample-candidate-fabrikam-ai-platform-pm.docx");
     assert.strictEqual(result.outputPath, expectedDocx, "company is the child's, and the base outputFileName is not inherited");
     const text = readDocxText(expectedDocx);
     assert.match(text, /Fictional product leader for developer platforms/u);

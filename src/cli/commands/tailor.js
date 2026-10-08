@@ -14,6 +14,7 @@ const { buildCoverageRecord, classifyMissingKeywords, scoreKeywordCoverage } = r
 const { displayPath } = require("../../core/role-lookup");
 const { lintConfig } = require("../../core/style-lint");
 const { allKeywords, hasPosting, parseKeywordsOption } = require("../../core/role-posting");
+const { writeTailorReport } = require("../../core/tailor-report");
 const { updateOnboardingState } = require("../../core/onboarding-state");
 const { readJson, readJsonLines, relativeToWorkspace, resolveWorkspace, workspacePaths, writeJson } = require("../../core/workspace");
 
@@ -70,6 +71,18 @@ function analyzeCoverage(keywords, config, paths, source) {
   return { result, support, source };
 }
 
+// A blocked run renders nothing and tracks nothing, but the person still gets
+// a plain-language report saying what to confirm. Never masks the real error.
+function writeBlockedReport(workspace, options, config, audits) {
+  try {
+    const role = createRole({ ...options, tracked: true, company: options.company || config.company });
+    const { path: reportPath } = writeTailorReport(workspace, role, { config, ...audits });
+    console.log(`Report ready: ${reportPath}`);
+  } catch {
+    // Report is a courtesy; the audit error below is what matters.
+  }
+}
+
 /**
  * Tailor workflow (design plan 0001, D4): validates a drafted resume config
  * (D2 schema + D3 claim audit), renders it to DOCX (D2), and registers the
@@ -81,7 +94,7 @@ function analyzeCoverage(keywords, config, paths, source) {
  * dedup, and the enum status write + tracker rebuild are each delegated to
  * their own module/command.
  */
-async function run(options) {
+async function run(options, deps = {}) {
   if (!options.config) {
     throw new Error("tailor requires --config <path-to-drafted-resume-config.json>");
   }
@@ -108,12 +121,15 @@ async function run(options) {
   // tracked, not discovered later by a separate `validate` pass.
   const evidence = readJsonLines(paths.evidence);
   const audit = auditResumeConfig(config, evidence);
+  const claimAudit = { ...audit, errors: [...audit.errors], warnings: [...audit.warnings] };
   // Fact-consistency audit (src/core/fact-audit.js): employers, titles, dates,
   // education, scope verbs (blocking) and named tools (advisory).
-  const facts = auditFacts(config, readJson(paths.profile, null), evidence);
+  const profile = readJson(paths.profile, null);
+  const facts = auditFacts(config, profile, evidence);
   audit.errors.push(...facts.errors);
   audit.warnings.push(...facts.warnings);
   if (audit.errors.length > 0) {
+    writeBlockedReport(workspace, options, config, { profile, evidence, claimAudit, factAudit: facts });
     throw new Error(`Resume config failed the evidence-backed claim audit:\n${audit.errors.map((error) => `  - ${error}`).join("\n")}`);
   }
   audit.warnings.forEach((warning) => console.warn(`Warning: ${warning}`));
@@ -160,7 +176,10 @@ async function run(options) {
   // Step 3: render the DOCX (D2, render-resume) — delegate to the render
   // command itself so path sanitization, directory layout, and file writing
   // all stay in one place instead of a second, drifting copy here.
-  const outputPath = await renderResume.run({ workspace: options.workspace, config: options.config, includeApplied: options.includeApplied });
+  const { outputPath, pageCount } = await renderResume.runDetailed(
+    { workspace: options.workspace, config: options.config, includeApplied: options.includeApplied, title: options.title, noPageCheck: options.noPageCheck, pageCheck: options.pageCheck },
+    deps,
+  );
 
   // Step 4: register the tracked role (D6, add-role) — delegate to
   // add-role's own command (dedup by id or job URL, tracked-list
@@ -213,6 +232,7 @@ async function run(options) {
   if (coverageRun) {
     role.resume.keywordCoverage = buildCoverageRecord(coverageRun.result, coverageRun.support, { source: coverageRun.source });
   }
+  if (pageCount) role.resume.pageCount = pageCount;
 
   // Persist the resume linkage now, before attempting the cover letter step
   // below. The cover letter's independent claim audit can throw and abort
@@ -252,6 +272,13 @@ async function run(options) {
     role.coverLetter.status = "review-needed";
     writeJson(paths.rolesTracked, trackedRoles);
   }
+
+  // Step 5c: plain-language report for the person (src/core/tailor-report.js).
+  // Written before the tracker rebuild below so the tracker row can link it.
+  const report = writeTailorReport(workspace, role, { config, profile, evidence, claimAudit, factAudit: facts, styleLint: styleLintResult });
+  role.resume.reportPath = report.path;
+  writeJson(paths.rolesTracked, trackedRoles);
+  console.log(`Report ready: ${report.path}`);
 
   // Step 6: land the role un-applied (plan 0001 Decision 8 / D4 acceptance
   // criteria — a human reviews the resume before anything is sent). Reuse

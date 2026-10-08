@@ -35,6 +35,7 @@ const { lintConfig } = require("../src/core/style-lint");
 const { validateResumeConfig } = require("../src/core/resume-config");
 const { readJson, readJsonLines, workspacePaths } = require("../src/core/workspace");
 const { findSoffice } = require("../src/cli/commands/export-pdf");
+const { checkPageCount, countPdfPages } = require("../src/core/page-count");
 const { readDocxText } = require("../tests/helpers/read-docx-text");
 
 const FORBIDDEN_COMMANDS = new Set(["apply", "approve-apply"]);
@@ -59,12 +60,6 @@ function listPersonas() {
 
 function normalizeText(text) {
   return `${String(text).replace(/\r\n/gu, "\n").trim()}\n`;
-}
-
-function countPdfPages(pdfPath) {
-  const text = fs.readFileSync(pdfPath).toString("latin1");
-  const pages = text.match(/\/Type\s*\/Page(?![A-Za-z])/gu);
-  return pages ? pages.length : 0;
 }
 
 function copyDir(from, to) {
@@ -103,7 +98,11 @@ async function runPersona(name, options = {}) {
   function runCli(args, { scanPaths = true } = {}) {
     assertSafeCommand(args);
     commandsRun.push(args[0]);
-    const result = spawnSync(process.execPath, [cliPath, ...args], { cwd: repoRoot, encoding: "utf8" });
+    const result = spawnSync(process.execPath, [cliPath, ...args], {
+      cwd: repoRoot,
+      encoding: "utf8",
+      env: withPages ? process.env : { ...process.env, RESUME_BUILDER_PAGE_CHECK: "off" },
+    });
     const output = `${result.stdout || ""}${result.stderr || ""}`;
     if (scanPaths) cliLog.push({ command: args[0], output });
     if (result.status !== 0) {
@@ -184,6 +183,12 @@ async function runPersona(name, options = {}) {
       expect(stage, "keywords stored on the role", storedKeywords.length > 0 && storedKeywords.length <= 25, `${storedKeywords.length} keyword(s)`);
       expect(stage, "tailor coverage uses the stored keywords", /Keyword coverage: \d+% .*stored posting keywords/u.test(tailorOutput), "tailor ran without --keywords");
 
+      const reportRelative = storedRole && storedRole.resume && storedRole.resume.reportPath;
+      const reportFile = reportRelative ? path.join(workspace, reportRelative) : "";
+      const reportText = reportFile && fs.existsSync(reportFile) ? fs.readFileSync(reportFile, "utf8") : "";
+      expect(stage, "tailor report written with a status line", /\*\*Status: (Ready to review|Needs your confirmation|Blocked)\*\*/u.test(reportText), reportRelative || "no report path on role");
+      expect(stage, "tracker row links the report", Boolean(reportRelative) && /^outputs\/tailor-reports\/[^/]+\.md$/u.test(reportRelative));
+
       const config = readJson(configPath);
       const schema = validateResumeConfig(config);
       expect(stage, "resume config schema valid", schema.valid, schema.errors.join("; "));
@@ -219,9 +224,8 @@ async function runPersona(name, options = {}) {
         if (!soffice) {
           add(stage, "page count <= 1", "skip", "LibreOffice (soffice) not found");
         } else {
-          const pdfPath = path.join(tmpRoot, `${posting.id}.pdf`);
-          runCli(["export-pdf", "--docx", docxPath, "--out", pdfPath], { scanPaths: false });
-          const pages = countPdfPages(pdfPath);
+          const result = checkPageCount(docxPath);
+          const pages = result.pages || 0;
           expect(stage, "page count <= 1", pages > 0 && pages <= 1, `${pages} page(s)`);
         }
       }
