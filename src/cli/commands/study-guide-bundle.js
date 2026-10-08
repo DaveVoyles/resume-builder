@@ -44,21 +44,11 @@ function findRole(roles, options) {
 }
 
 /**
- * A role registered via `tailor` (design plan 0001, D4) carries an explicit
- * `resume.configPath` link back to the exact config it rendered, relative to
- * the workspace root — see src/cli/commands/tailor.js. Prefer it when
- * present and the file still exists: it's an exact, unambiguous reference,
- * not a content-based guess, and it resolves the same-company/two-configs
- * ambiguity findRoleConfigPath below has to fail loud on. Falls through to
- * the content-match scan for roles registered before this link existed
- * (e.g. via plain `add-role`), so no schema migration is required.
- *
- * `role.resume.configPath` is normally written by `tailor` itself (always a
- * clean workspace-relative path), but roles.tracked.json is a plain,
- * hand-editable JSON file — a `../`-laden or absolute value there must not
- * be trusted to escape the workspace. Treat an escaping path the same as a
- * missing one (fall through to the content-match scan below) rather than
- * reading it.
+ * A role registered via `tailor` carries an explicit `resume.configPath` link
+ * back to the exact config it rendered, relative to the workspace root (see
+ * src/cli/commands/tailor.js). roles.tracked.json is hand-editable, so a
+ * `../`-laden or absolute value must not be trusted to escape the workspace:
+ * an escaping path is treated the same as a missing file.
  */
 function findLinkedConfigPath(workspace, role) {
   const configPath = role.resume?.configPath;
@@ -70,58 +60,24 @@ function findLinkedConfigPath(workspace, role) {
 }
 
 /**
- * Find the role config file for a given role by matching each candidate
- * config's own `company` field (read from its content), not by guessing
- * from the filename — a filename substring match can silently return the
- * WRONG config (e.g. company "Ab" matching a file named "fabrikam-co.json"),
- * bundling the wrong role's resume into a study guide with no error. There's
- * no explicit link field between a tracked role and its config file in the
- * schema yet, so this can't disambiguate two DIFFERENT roles at the SAME
- * company that each have their own config — that case fails loud (ambiguous
- * match) rather than silently guessing, which is the safe default until a
- * schema-level link exists.
+ * The resume config for a role comes ONLY from the role's own
+ * `resume.configPath` link (written by `tailor`). Matching by company name
+ * is gone: two roles at one company can each have their own config, and a
+ * name match would quietly bundle the wrong one. A role without a usable
+ * link fails loud with the fix.
  */
 function findRoleConfigPath(workspace, role) {
   const linked = findLinkedConfigPath(workspace, role);
   if (linked) return linked;
-
-  const configDir = path.join(workspace, "resume-configs");
-
-  if (!fs.existsSync(configDir)) {
-    throw new Error(`Resume configs directory not found: ${configDir}`);
-  }
-
-  const files = fs.readdirSync(configDir).filter((file) => file.endsWith(".json"));
-  if (files.length === 0) {
+  const label = `${role.company} — ${role.title}`;
+  if (!role.resume?.configPath) {
     throw new Error(
-      `No resume configs found for ${role.company} — ${role.title}. Create a config in ${configDir}/<name>.json.`
+      `No resume is linked to ${label} (role id ${role.id}). Run tailor for this role first so its resume config is recorded, then re-run study-guide-bundle.`
     );
   }
-
-  const companyLower = role.company.toLowerCase();
-  const matches = files
-    .map((file) => {
-      const fullPath = path.join(configDir, file);
-      try {
-        return { file, fullPath, config: readJson(fullPath) };
-      } catch (error) {
-        return null;
-      }
-    })
-    .filter((entry) => entry && typeof entry.config.company === "string" && entry.config.company.toLowerCase() === companyLower);
-
-  if (matches.length === 0) {
-    throw new Error(
-      `Resume config not found for ${role.company} — ${role.title}. No config in ${configDir}/ has a matching "company" field. Found files: ${files.join(", ")}.`
-    );
-  }
-  if (matches.length > 1) {
-    throw new Error(
-      `Ambiguous resume config: ${matches.length} configs in ${configDir}/ match company "${role.company}" (${matches.map((m) => m.file).join(", ")}). This tool can't yet distinguish multiple tracked roles at the same company by config alone — consolidate or remove the extra config.`
-    );
-  }
-
-  return matches[0].fullPath;
+  throw new Error(
+    `The resume config linked to ${label} (${role.resume.configPath}) was not found inside the workspace. Re-run tailor for this role to relink it.`
+  );
 }
 
 /**

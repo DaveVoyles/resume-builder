@@ -1,5 +1,6 @@
 "use strict";
 
+process.env.RESUME_BUILDER_PAGE_CHECK = process.env.RESUME_BUILDER_PAGE_CHECK || "off";
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("fs");

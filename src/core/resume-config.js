@@ -13,6 +13,8 @@
  *   schemaVersion: "1.0",
  *   company: string,
  *   outputFileName?: string,
+ *   roleTitle?: string,                     // used in the default output file name
+ *   pageLimit?: 1 | 2 | 3,                  // default 1; page-count check warns above it
  *   candidate: { name: string, contact: [{ text: string, link?: string }] },
  *   summary: { text: string, fitOverride?: string|null },
  *   experienceSections: [
@@ -209,6 +211,13 @@ function validateResumeConfig(config) {
   if (!isNonEmptyString(config.company)) errors.push("company: required non-empty string");
   if (config.outputFileName !== undefined && !isNonEmptyString(config.outputFileName)) {
     errors.push("outputFileName: must be a non-empty string when present");
+  }
+
+  if (config.roleTitle !== undefined && !isNonEmptyString(config.roleTitle)) {
+    errors.push("roleTitle: must be a non-empty string when present");
+  }
+  if (config.pageLimit !== undefined && !(Number.isInteger(config.pageLimit) && config.pageLimit >= 1 && config.pageLimit <= 3)) {
+    errors.push("pageLimit: must be a whole number from 1 to 3 when present (default 1)");
   }
 
   if (!isObject(config.candidate)) {

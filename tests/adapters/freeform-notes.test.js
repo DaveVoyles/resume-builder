@@ -448,17 +448,37 @@ test("readTextSource: image-only .pptx (no text runs) is not silently reported a
   }
 });
 
-test("readTextSource: .pdf source is honestly recorded as unsupported with a conversion-recommending warning", () => {
+test("readTextSource: .pdf text comes from pdftotext -layout when it succeeds", () => {
+  const dir = tmpDir("readtextsource-pdf-ok-");
+  try {
+    const pdfPath = writeFakePdfFixture(dir, "resume.pdf");
+    const calls = [];
+    const result = readTextSource(pdfPath, {
+      spawnSync: (cmd, args) => {
+        calls.push([cmd, ...args]);
+        return { status: 0, stdout: "Pat Example   \nOperations Lead\f\n- Did a thing\n", stderr: "" };
+      },
+    });
+    assert.deepEqual(calls[0], ["pdftotext", "-layout", pdfPath, "-"]);
+    assert.equal(result.text, "Pat Example\nOperations Lead\n\n- Did a thing");
+    assert.equal(result.metadata.extractionMode, "pdf-pdftotext");
+    assert.equal(result.warning, null);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("readTextSource: .pdf without pdftotext is recorded as metadata-only with a conversion-recommending warning", () => {
   const dir = tmpDir("readtextsource-pdf-");
   try {
     const pdfPath = writeFakePdfFixture(dir, "resume.pdf");
-    const result = readTextSource(pdfPath);
+    const result = readTextSource(pdfPath, { spawnSync: () => ({ error: new Error("ENOENT"), status: null }) });
     assert.equal(result.text, "");
     assert.equal(result.metadata.extractionMode, "pdf-not-supported");
     assert.ok(result.warning, "warning should be set for a .pdf source");
-    assert.match(result.warning, /not supported yet/);
+    assert.match(result.warning, /pdftotext/);
     assert.match(result.warning, /\.docx/);
-    assert.match(result.warning, /\.md/);
+    assert.match(result.warning, /my-documents/);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

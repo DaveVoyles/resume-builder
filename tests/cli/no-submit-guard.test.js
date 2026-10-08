@@ -29,6 +29,7 @@ const ALLOWLIST = {
   "src/adapters/github.js": { allow: ["http/https module"], why: "reads public GitHub profile metadata (GET only)" },
   "src/adapters/freeform-notes.js": { allow: ["child_process"], why: "runs unzip to read .docx/.pptx inputs" },
   "src/cli/commands/export-pdf.js": { allow: ["child_process"], why: "runs LibreOffice to convert a DOCX to PDF locally" },
+  "src/core/page-count.js": { allow: ["child_process"], why: "runs LibreOffice locally to count the pages of a rendered DOCX" },
   "src/cli/commands/init.js": { allow: ["http/https module"], why: "probes localhost for an already-running RB server" },
   "src/cli/commands/serve.js": { allow: ["child_process", "http/https module"], why: "local tracker server (listens on localhost); opens it in the default browser" },
   "src/cli/commands/serve-home.js": { allow: ["child_process", "http/https module"], why: "local home server (listens on localhost); opens a folder or the page" },

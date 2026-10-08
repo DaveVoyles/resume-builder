@@ -42,7 +42,7 @@
     "workspace:approve-apply": "node src/cli/index.js approve-apply",
     "workspace:apply": "node src/cli/index.js apply",
     "sample:quickstart": "node scripts/sample-quickstart.js",
-    "test": "node --test",
+    "test": "node --require ./tests/helpers/skip-page-check.js --test",
     "check:privacy": "node scripts/check-privacy.js",
     "check:workspace": "node scripts/check-workspace.js --workspace examples/sample-candidate",
     "check": "npm run check:workspace && npm run check:privacy",
