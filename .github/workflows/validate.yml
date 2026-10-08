@@ -27,5 +27,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run sample quickstart, workspace validation, and privacy check
+      - name: Run tests, sample quickstart, sample workspace check, and privacy check
         run: npm run validate
+
+      - name: Install Chromium for browser checks
+        run: npx playwright install --with-deps chromium
+
+      - name: Run headless browser checks
+        run: npm run test:browser

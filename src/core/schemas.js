@@ -35,6 +35,17 @@ function requireBoolean(value, label, errors) {
   return true;
 }
 
+function checkDuplicateIds(entries, label, errors) {
+  if (!Array.isArray(entries)) return;
+  const seen = new Set();
+  entries.forEach((entry, index) => {
+    const id = entry && typeof entry === "object" ? entry.id : undefined;
+    if (typeof id !== "string" || id === "") return;
+    if (seen.has(id)) errors.push(`${label}[${index}]: duplicate id ${id}`);
+    seen.add(id);
+  });
+}
+
 function validateProfile(profile) {
   const errors = [];
   if (!requireObject(profile, "profile", errors)) return errors;
@@ -42,6 +53,9 @@ function validateProfile(profile) {
   ["links", "skills", "experience", "projects", "education", "sources"].forEach((field) => {
     const value = field === "links" ? profile.candidate?.links : profile[field];
     requireArray(value, field === "links" ? "profile.candidate.links" : `profile.${field}`, errors);
+  });
+  ["experience", "projects", "education"].forEach((field) => {
+    checkDuplicateIds(profile[field], `profile.${field}`, errors);
   });
   if (profile.educationSkip !== undefined) {
     const skip = profile.educationSkip;
@@ -83,6 +97,7 @@ function validatePreferences(preferences) {
       errors.push('preferences.dealBreakersSkip must be exactly { "skipped": true } or { "none": true }');
     }
   }
+  checkDuplicateIds(preferences.dealBreakers, "preferences.dealBreakers", errors);
   if (preferences.compensation !== undefined) {
     const compensation = preferences.compensation;
     if (!requireObject(compensation, "preferences.compensation", errors)) return errors;
