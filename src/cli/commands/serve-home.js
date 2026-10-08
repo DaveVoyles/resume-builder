@@ -338,6 +338,7 @@ async function run(options, { openFolder = defaultOpenFolder, openHome = openInB
               setupComplete: payload.setupComplete,
               nextStep: payload.nextStep,
               form: payload.form,
+              salaryChanged: saved.salaryChanged || null,
             });
           } catch (error) {
             if (error.code === "GOAL_REQUIRED" || error.code === "SALARY_INVALID") {

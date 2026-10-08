@@ -46,7 +46,7 @@ test("build-tracker shows the checklist when .onboarding-state.json is present a
     command.run({ workspace, format: "html" });
     const html = fs.readFileSync(paths.htmlTracker, "utf8");
     assert.match(html, /class="onboarding-section" style="display:block"/);
-    assert.match(html, /Onboarding: 2 of 10 steps/);
+    assert.match(html, /Setup: 2 of 10 done/);
   });
 });
 
@@ -104,5 +104,39 @@ test("build-tracker without --notice flag renders no banner, preserving backward
 
     // The notice banner must not appear
     assert.doesNotMatch(html, /class="notice-banner"/, "no notice banner should appear when --notice flag is not provided");
+  });
+});
+
+test("build-tracker logs a workspace-relative path, never an absolute one", () => {
+  withTempWorkspace(({ workspace }) => {
+    const lines = [];
+    const original = console.log;
+    console.log = (line) => lines.push(String(line));
+    try {
+      command.run({ workspace, format: "md" });
+      command.run({ workspace, format: "html" });
+    } finally {
+      console.log = original;
+    }
+    assert.equal(lines.length, 2);
+    for (const line of lines) {
+      assert.ok(!line.includes(workspace), line);
+      assert.ok(!path.isAbsolute(line.split(": ").pop()), line);
+    }
+    assert.match(lines[0], /: outputs[\\/]tracker\.md$/);
+  });
+});
+
+test("rebuildTrackers is quiet", () => {
+  withTempWorkspace(({ workspace }) => {
+    const lines = [];
+    const original = console.log;
+    console.log = (line) => lines.push(String(line));
+    try {
+      command.rebuildTrackers(workspace);
+    } finally {
+      console.log = original;
+    }
+    assert.deepEqual(lines, []);
   });
 });

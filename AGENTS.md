@@ -49,6 +49,10 @@ Throughout the lifecycle, not just at first launch:
 - Phrase low-confidence claims cautiously and mark them for candidate review.
 - Do not promote a similar role to tracked status until the candidate approves it.
 
+## 🔀 Merging
+
+This is a solo project and the stakes are low. When CI is green, agents may merge their own pull requests to `main` without asking first. If CI is red, fix it first. Privacy and no-submission rules below still apply.
+
 ## 🔒 Privacy rules
 
 - Treat `candidate/` as private workspace data.

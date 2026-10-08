@@ -814,3 +814,34 @@ test("new Education and deal-breaker ids use highest id plus one, not the count"
     fs.rmSync(workspace, { recursive: true, force: true });
   }
 });
+
+test("saveHomeAnswers reports salaryChanged only when a prior amount exists and differs", () => {
+  const workspace = tempWorkspace();
+  try {
+    const base = { name: "Jordan Sample", goal: "Operations manager" };
+    const first = saveHomeAnswers(workspace, { ...base, salary: "100000" });
+    assert.equal(first.salaryChanged, null);
+    const same = saveHomeAnswers(workspace, { ...base, salary: "$100,000" });
+    assert.equal(same.salaryChanged, null);
+    const changed = saveHomeAnswers(workspace, { ...base, salary: "120k" });
+    assert.deepEqual(changed.salaryChanged, { from: 100000, to: 120000 });
+    const blank = saveHomeAnswers(workspace, base);
+    assert.equal(blank.salaryChanged, null);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("a blank when select keeps the previous value, like where", () => {
+  const workspace = tempWorkspace();
+  try {
+    const base = { name: "Jordan Sample", goal: "Operations manager" };
+    saveHomeAnswers(workspace, { ...base, where: "Hybrid", when: "Just exploring" });
+    saveHomeAnswers(workspace, { ...base, where: "", when: "" });
+    const answers = JSON.parse(fs.readFileSync(path.join(workspace, HOME_ANSWERS_FILENAME), "utf8"));
+    assert.equal(answers.where, "Hybrid");
+    assert.equal(answers.when, "Just exploring");
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});

@@ -216,6 +216,7 @@ function applyCompensation(preferences, answers) {
     if (prefillAmount != null && parsed.value === prefillAmount) {
       return { salary: text, salaryChoice: "" };
     }
+    const salaryChanged = prefillAmount != null ? { from: prefillAmount, to: parsed.value } : null;
     const current = preferences.compensation;
     if (isExclusiveTrueKey(current, "skipped") || !isRecord(current)) {
       preferences.compensation = { currency: "USD", baseMinimum: parsed.value };
@@ -226,7 +227,7 @@ function applyCompensation(preferences, answers) {
       if (!next.currency) next.currency = "USD";
       preferences.compensation = next;
     }
-    return { salary: text, salaryChoice: "" };
+    return { salary: text, salaryChoice: "", salaryChanged };
   }
   if (choice === "skip") {
     if (hasRealCompensation(preferences.compensation)) {
@@ -442,14 +443,15 @@ function saveHomeAnswers(workspace, answers) {
   const nextHomeWorkMode = nextHomeModes ? nextHomeModes[0] : "";
   // Name and location: a blank Save keeps the previous home-answers value.
   // Where (select): a blank Save keeps previous where and lastHomeWorkMode (#177).
-  // History, when, extra: a blank Save stores "" — the form always sends these keys.
+  // When (select): same as where, a blank Save keeps the previous value.
+  // History, extra: a blank Save stores "" — the form always sends these keys.
   const payload = {
     name: keepPreviousHomeField(submittedName, previousAnswers.name),
     location: keepPreviousHomeField(submittedLocation, previousAnswers.location),
     history: trimmed(answers && answers.history),
     goal,
     where: keepPreviousHomeField(submittedWhere, previousAnswers.where),
-    when: trimmed(answers && answers.when),
+    when: keepPreviousHomeField(answers && answers.when, previousAnswers.when),
     extra: trimmed(answers && answers.extra),
     dealBreakers: dealBreakersRecord.dealBreakers,
     dealBreakersChoice: dealBreakersRecord.dealBreakersChoice,
@@ -530,6 +532,7 @@ function saveHomeAnswers(workspace, answers) {
     filename: HOME_ANSWERS_FILENAME,
     displayPath: `resume-builder / candidate / ${HOME_ANSWERS_FILENAME}`,
     state,
+    salaryChanged: compensationRecord.salaryChanged || null,
   };
 }
 
