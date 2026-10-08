@@ -54,9 +54,12 @@
   ol.steps{list-style:none;padding:0;margin:0;counter-reset:s}
   ol.steps li{counter-increment:s;display:flex;gap:.85rem;padding:.8rem 0;border-top:1px solid var(--line)}
   ol.steps li:first-child{border-top:0}
-  ol.steps li::before{content:counter(s);flex:0 0 30px;height:30px;border-radius:50%;
+  ol.steps li::before{content:counter(s);flex:0 0 auto;min-width:30px;padding:0 .3rem;height:30px;border-radius:999px;
        background:var(--navy);color:#fff;display:grid;place-items:center;font-weight:700;font-size:.9rem}
-  ol.steps li.done::before{content:"✓";background:var(--ok)}
+  ol.steps li.done::before{content:counter(s) " ✓";background:var(--ok);font-size:.8rem}
+  ol.jobs-list{list-style:decimal;padding:0 0 0 1.75rem;margin:.5rem 0 0;font-size:.92rem}
+  ol.jobs-list li{padding:.3rem 0 .3rem .25rem;border-top:1px solid #c7d2fe}
+  ol.jobs-list li:first-child{border-top:0}
   .who{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;
        padding:.1rem .45rem;border-radius:6px;margin-left:.35rem}
   .who.agent{background:var(--info-bg);color:var(--info)}
@@ -164,6 +167,7 @@
     <div class="card">
       <h2>Your steps</h2>
       <p class="muted">Tags show who does each step: <span class="who agent">Agent</span> or <span class="who you">You</span>.</p>
+      <p class="muted" id="homeStepCount"><strong>2 of 6 steps done</strong></p>
       <ol class="steps" data-home-checklist>
         <li data-home-step="downloadRb" class="done"><div><strong>Download RB</strong> <span class="who agent">Agent</span><br><span class="muted">Done. RB is now on your computer.</span></div></li>
         <li data-home-step="startRb" class="done"><div><strong>Start RB and open this page</strong> <span class="who agent">Agent</span><br><span class="muted">Done. You're looking at it.</span></div></li>
@@ -284,7 +288,8 @@
   <div class="card success" id="saved" hidden tabindex="-1" role="status" style="margin-top:1.25rem">
     <h2 id="savedHeading">Answers saved.</h2>
     <p id="savedMessage">Your answers are saved on this computer.</p>
-    <p class="hint">This is not a resume draft. A draft comes later, after files in my-documents are read in.</p>
+    <p class="hint" id="draftNote">This is not a resume draft. A draft comes later, after files in my-documents are read in.</p>
+    <p class="hint" id="savedSalaryNote" hidden></p>
     <ol class="steps" style="margin:1rem 0">
       <li class="done"><div><strong>Answers saved</strong></div></li>
       <li id="savedNextStep"><div><strong>Next step</strong></div></li>
@@ -340,7 +345,7 @@
     </div>
   </div>
   <div class="card" id="jobsList" hidden>
-    <ul class="files" id="jobsItems" aria-label="Tracked jobs"></ul>
+    <ol class="jobs-list" id="jobsItems" aria-label="Tracked jobs"></ol>
   </div>
 </section>
 
@@ -412,9 +417,25 @@
       if(li) li.classList.toggle("done", Boolean(step.done));
     });
     var done=homeSteps.filter(function(step){return step.done;}).length;
+    var count=document.getElementById("homeStepCount");
+    if(count) count.innerHTML="<strong>"+done+" of "+homeSteps.length+" steps done</strong>";
+    renderDraftNote(homeSteps);
     if(homeSteps.length){
       updateSetupProgress(Math.round((done/homeSteps.length)*100));
     }
+  }
+
+  function renderDraftNote(homeSteps){
+    var note=document.getElementById("draftNote");
+    if(!note||!homeSteps) return;
+    function isDone(key){
+      return homeSteps.some(function(step){return step.key===key&&step.done;});
+    }
+    if(isDone("firstDraft")){note.hidden=true;return;}
+    note.hidden=false;
+    note.textContent="This is not a resume draft. "+(isDone("addFiles")
+      ?"Next: ask your agent for your first resume draft."
+      :"Ask your agent to read the files in my-documents.");
   }
 
   function applySetupComplete(complete){
@@ -434,8 +455,32 @@
     li.innerHTML="<div><strong>"+escapeHtml(step.label||"Setup complete")+"</strong>"+how+"</div>";
   }
 
+  var prefillSalary="";
+  var companions=[["dealBreakers","dealBreakersChoice"],["education","educationChoice"],["salary","salaryChoice"]];
+  // A typed answer wins over its companion select: clear and disable the select
+  // so the choice is not silently dropped on Save.
+  function syncCompanion(pair){
+    var text=document.getElementById(pair[0]),choice=document.getElementById(pair[1]);
+    if(!text||!choice) return;
+    var typed=text.value.trim()!=="";
+    if(typed) choice.value="";
+    choice.disabled=typed;
+  }
+  companions.forEach(function(pair){
+    var text=document.getElementById(pair[0]);
+    if(text) text.addEventListener("input",function(){syncCompanion(pair);});
+  });
+
+  function parseSalaryText(text){
+    var t=String(text||"").toLowerCase().replace(/[$,\s]/g,"");
+    var m=/^(\d+(?:\.\d+)?)(k?)$/.exec(t);
+    return m?Math.round(Number(m[1])*(m[2]?1000:1)):null;
+  }
+  function money(n){return "$"+Number(n).toLocaleString("en-US");}
+
   function applyFormPrefill(formValues){
     if(!formValues) return;
+    prefillSalary=formValues.salary==null?"":String(formValues.salary);
     var fields=[
       ["name","name"],["loc","location"],["hist","history"],["goal","goal"],
       ["where","where"],["when","when"],["extra","extra"],
@@ -447,6 +492,7 @@
       var el=document.getElementById(pair[0]);
       if(el) el.value=formValues[pair[1]]==null?"":String(formValues[pair[1]]);
     });
+    companions.forEach(syncCompanion);
   }
 
   function applyRoles(data){
@@ -537,6 +583,10 @@
       salary:document.getElementById("salary").value,
       salaryChoice:document.getElementById("salaryChoice").value
     };
+    var newSalary=parseSalaryText(payload.salary),oldSalary=parseSalaryText(prefillSalary);
+    if(newSalary!=null&&oldSalary!=null&&newSalary!==oldSalary){
+      if(!window.confirm("Change your salary from "+money(oldSalary)+" to "+money(newSalary)+"?")) return;
+    }
     fetch("/api/save-intake",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
@@ -558,6 +608,11 @@
       applySetupComplete(result.body.setupComplete);
       renderNextStep(result.body.nextStep);
       applyFormPrefill(result.body.form);
+      var salaryNote=document.getElementById("savedSalaryNote"),change=result.body.salaryChanged;
+      if(salaryNote){
+        salaryNote.hidden=!change;
+        salaryNote.textContent=change?"Salary changed from "+money(change.from)+" to "+money(change.to)+".":"";
+      }
       saved.scrollIntoView({behavior:"smooth"});
       saved.focus({preventScroll:true});
     }).catch(function(){

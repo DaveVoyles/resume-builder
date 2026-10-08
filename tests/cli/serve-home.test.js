@@ -298,6 +298,25 @@ test("serve-home save-intake writes answers, not a fake resume draft", async () 
   }
 });
 
+test("serve-home save-intake passes salaryChanged through when the amount changes", async () => {
+  const tmpDir = createHomeRoot();
+  const server = await run({ root: tmpDir, port: 0, noOpen: true }, { rebuildTrackers: () => {} });
+  const port = server.address().port;
+  try {
+    const first = JSON.parse(
+      (await post(port, "/api/save-intake", { goal: "Operations manager", salary: "100000" })).body,
+    );
+    assert.equal(first.salaryChanged, null);
+    const second = JSON.parse(
+      (await post(port, "/api/save-intake", { goal: "Operations manager", salary: "125000" })).body,
+    );
+    assert.deepEqual(second.salaryChanged, { from: 100000, to: 125000 });
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
 test("serve-home save-intake returns 400 when goal is missing", async () => {
   const tmpDir = createHomeRoot();
   const server = await run({ root: tmpDir, port: 0, noOpen: true });
@@ -747,7 +766,7 @@ test("home Save rebuilds tracker.html to the same step count as the state file",
     const state = JSON.parse(fs.readFileSync(path.join(tmpDir, "candidate", ".onboarding-state.json"), "utf8"));
     const done = onboardingSteps(state).filter((step) => step.done).length;
     const html = fs.readFileSync(path.join(tmpDir, "candidate", "outputs", "tracker.html"), "utf8");
-    assert.match(html, new RegExp(`Onboarding: ${done} of 10 steps`));
+    assert.match(html, new RegExp(`Setup: ${done} of 10 done`));
   } finally {
     server.close();
     cleanup(tmpDir);
@@ -1010,7 +1029,7 @@ test("full home flow reaches 10 of 10 on the built tracker", async () => {
     assert.equal(isOnboardingComplete(state), true);
     assert.equal(onboardingSteps(state).filter((step) => step.done).length, 10);
     const html = fs.readFileSync(path.join(workspace, "outputs", "tracker.html"), "utf8");
-    assert.match(html, /Onboarding: 10 of 10 steps/);
+    assert.match(html, /Setup: 10 of 10 done/);
   } finally {
     server.close();
     cleanup(tmpDir);

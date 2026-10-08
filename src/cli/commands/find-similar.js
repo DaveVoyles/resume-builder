@@ -2,7 +2,7 @@
 
 const { buildDiscovery } = require("../../core/similar-roles");
 const { renderSimilarRoles } = require("../../renderers/markdown-similar-roles");
-const { readJson, resolveWorkspace, workspacePaths, writeTextIfMissing } = require("../../core/workspace");
+const { readJson, relativeToWorkspace, resolveWorkspace, workspacePaths, writeTextIfMissing } = require("../../core/workspace");
 
 function run(options) {
   const workspace = resolveWorkspace(options.workspace);
@@ -17,7 +17,7 @@ function run(options) {
   const output = options.output || paths.similarRoles;
   writeTextIfMissing(output, renderSimilarRoles(discovery, { max: options.max }), true);
 
-  console.log(`Built similar-role review for ${discovery.recommendations.length} candidate role(s): ${output}`);
+  console.log(`Built similar-role review for ${discovery.recommendations.length} candidate role(s): ${relativeToWorkspace(workspace, output)}`);
   console.log("Review candidates before adding accepted roles to roles.tracked.json.");
 }
 

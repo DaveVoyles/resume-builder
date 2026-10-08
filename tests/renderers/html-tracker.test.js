@@ -883,7 +883,7 @@ test("renderOnboardingChecklist covers all 10 steps in order and counts done acc
 
   // setupComplete is already true in defaultOnboardingState() (setup itself
   // just ran) — so this is 4, not 3: setup + materialIngested + 2 sections.
-  assert.match(html, /Onboarding: 4 of 10 steps/);
+  assert.match(html, /Setup: 4 of 10 done/);
   ["Workspace created", "Your resumes and notes are read in", "Basic information", "Work history", "Education", "Target role", "Location and work mode", "Salary and compensation", "Constraints and deal breakers", "First role added"].forEach(
     (label) => assert.match(html, new RegExp(label)),
   );
@@ -891,7 +891,7 @@ test("renderOnboardingChecklist covers all 10 steps in order and counts done acc
 
 test("renderOnboardingChecklist shows 1 of 10 for the fresh default state (setup itself already counts as done)", () => {
   const html = renderOnboardingChecklist(defaultOnboardingState());
-  assert.match(html, /Onboarding: 1 of 10 steps/);
+  assert.match(html, /Setup: 1 of 10 done/);
   assert.match(html, /onboarding-check-done">✓<\/span>/);
   assert.match(html, /onboarding-item-label">Workspace created/);
   assert.match(html, /onboarding-item-howto/);
@@ -906,12 +906,12 @@ test("renderOnboardingChecklist shows 10 of 10 once every step is complete", () 
   state.firstRoleAdded = true;
   Object.keys(state.sections).forEach((key) => { state.sections[key] = true; });
   const html = renderOnboardingChecklist(state);
-  assert.match(html, /Onboarding: 10 of 10 steps/);
+  assert.match(html, /Setup: 10 of 10 done/);
 });
 
 test("renderOnboardingChecklist tolerates a missing sections object entirely", () => {
   assert.doesNotThrow(() => renderOnboardingChecklist({}));
-  assert.match(renderOnboardingChecklist({}), /Onboarding: 0 of 10 steps/);
+  assert.match(renderOnboardingChecklist({}), /Setup: 0 of 10 done/);
 });
 
 test("renderHtmlTracker without onboardingState renders exactly as before — checklist hidden, no pill", () => {
@@ -928,7 +928,7 @@ test("renderHtmlTracker shows the checklist (and hides the dashboard) while onbo
 
   assert.match(html, /class="onboarding-section" style="display:block"/);
   assert.match(html, /class="dashboard-section" style="display:none"/);
-  assert.match(html, /Onboarding: 2 of 10 steps/);
+  assert.match(html, /Setup: 2 of 10 done/);
   assert.doesNotMatch(html, /Onboarding complete/);
 });
 
@@ -944,7 +944,7 @@ test("renderHtmlTracker with 8 of 10 onboarding and one tracked role shows jobs 
   const roles = [{ id: "role-001", company: "Contoso Health", title: "Operations Manager" }];
   const html = renderHtmlTracker(roles, { onboardingState: state });
 
-  assert.match(html, /Onboarding: 8 of 10 steps/);
+  assert.match(html, /Setup: 8 of 10 done/);
   assert.match(html, /class="onboarding-section" style="display:block"/);
   assert.match(html, /class="dashboard-section" style="display:block"/);
   assert.match(html, /Contoso Health/);
@@ -989,7 +989,7 @@ test("renderHtmlTracker's filter buttons still work normally when the checklist 
 
 test("renderOnboardingChecklist treats a sections object missing some keys entirely the same as those keys being false", () => {
   const html = renderOnboardingChecklist({ setupComplete: true, sections: { workHistory: true } });
-  assert.match(html, /Onboarding: 2 of 10 steps/);
+  assert.match(html, /Setup: 2 of 10 done/);
   assert.match(html, /onboarding-item-label onboarding-item-label-pending">Education/);
 });
 
