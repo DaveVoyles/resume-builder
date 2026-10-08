@@ -392,7 +392,7 @@ test("ingest rebuilds tracker.html so its step count matches the state file", as
       const state = readJson(paths.onboardingState);
       const done = onboardingSteps(state).filter((step) => step.done).length;
       const html = fs.readFileSync(paths.htmlTracker, "utf8");
-      assert.match(html, new RegExp(`Onboarding: ${done} of 10 steps`));
+      assert.match(html, new RegExp(`Setup: ${done} of 10 done`));
     } finally {
       fs.rmSync(linksFixture, { recursive: true, force: true });
     }

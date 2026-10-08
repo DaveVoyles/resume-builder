@@ -70,8 +70,10 @@ function renderOnboardingChecklist(onboardingState) {
       );
     })
     .join("");
+  const pending = steps.find((step) => !step.done);
+  const nextText = pending ? ` · Next: ${pending.label}` : "";
   return (
-    `<div class="onboarding-progress-pill">Onboarding: ${doneCount} of ${steps.length} steps</div>` +
+    `<div class="onboarding-progress-pill">Setup: ${doneCount} of ${steps.length} done${escapeHtml(nextText)}</div>` +
     `<div class="onboarding-checklist">${items}</div>`
   );
 }

@@ -179,7 +179,7 @@ test("init's initial tracker.html shows the onboarding checklist, all-pending ex
     const paths = workspacePaths(workspace);
     const html = fs.readFileSync(paths.htmlTracker, "utf8");
     assert.match(html, /class="onboarding-section" style="display:block"/);
-    assert.match(html, /Onboarding: 1 of 10 steps/);
+    assert.match(html, /Setup: 1 of 10 done/);
   });
 });
 
@@ -200,7 +200,7 @@ test("init --force resets both tracker.html and onboarding-state together, consi
     // that same reset, not a stale mix of old progress and a fresh render.
     assert.deepEqual(JSON.parse(fs.readFileSync(paths.onboardingState, "utf8")), defaultOnboardingState());
     const html = fs.readFileSync(paths.htmlTracker, "utf8");
-    assert.match(html, /Onboarding: 1 of 10 steps/);
+    assert.match(html, /Setup: 1 of 10 done/);
   });
 });
 
@@ -222,7 +222,7 @@ test("init without --force re-renders a missing tracker.html against real, untou
     // ...and the freshly-written tracker.html must reflect that real state,
     // not reset to all-pending.
     const html = fs.readFileSync(paths.htmlTracker, "utf8");
-    assert.match(html, /Onboarding: 3 of 10 steps/);
+    assert.match(html, /Setup: 3 of 10 done/);
   });
 });
 
