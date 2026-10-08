@@ -122,6 +122,24 @@ function validateJob(job, path, errors) {
   } else if (!job.bullets.every(isNonEmptyString)) {
     errors.push(`${path}.bullets: every entry must be a non-empty string`);
   }
+  validateEvidenceIdList(job.evidenceIds, `${path}.evidenceIds`, errors);
+  if (job.bulletEvidenceIds !== undefined) {
+    if (!Array.isArray(job.bulletEvidenceIds)) {
+      errors.push(`${path}.bulletEvidenceIds: must be an array with one list of evidence ids per bullet`);
+    } else {
+      if (Array.isArray(job.bullets) && job.bulletEvidenceIds.length > job.bullets.length) {
+        errors.push(`${path}.bulletEvidenceIds: has ${job.bulletEvidenceIds.length} lists but the job has only ${job.bullets.length} bullets`);
+      }
+      job.bulletEvidenceIds.forEach((ids, i) => validateEvidenceIdList(ids, `${path}.bulletEvidenceIds[${i}]`, errors));
+    }
+  }
+}
+
+function validateEvidenceIdList(ids, path, errors) {
+  if (ids === undefined) return;
+  if (!Array.isArray(ids) || !ids.every(isNonEmptyString)) {
+    errors.push(`${path}: must be a list of evidence ids (strings from evidence.jsonl)`);
+  }
 }
 
 function validateExperienceSections(sections, errors) {
@@ -204,6 +222,8 @@ function validateResumeConfig(config) {
     errors.push("summary: required object");
   } else if (!isNonEmptyString(config.summary.text)) {
     errors.push("summary.text: required non-empty string");
+  } else {
+    validateEvidenceIdList(config.summary.evidenceIds, "summary.evidenceIds", errors);
   }
 
   validateExperienceSections(config.experienceSections, errors);
