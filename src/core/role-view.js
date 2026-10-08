@@ -158,6 +158,7 @@ function normalizeRole(role) {
     jobUrl: role.urls?.job,
     applyUrl: role.urls?.apply,
     resume,
+    reportPath: firstNonEmpty(role.resume?.reportPath),
     coverLetterStatus: role.coverLetter?.status || null,
     notes: formatNotes(role),
     sortKey: `${role.company || ""} ${role.title || role.role || ""} ${role.id || ""}`,

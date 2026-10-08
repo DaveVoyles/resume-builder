@@ -206,8 +206,18 @@ function validateRoles(roles, label) {
     if (!Array.isArray(role.notes)) errors.push(`${roleLabel}: notes must be an array`);
     if (!Array.isArray(role.followUpQuestions)) errors.push(`${roleLabel}: followUpQuestions must be an array`);
     validatePostingMetadata(role.posting, `${roleLabel}.posting`, errors);
+    validateReportPath(role.resume && role.resume.reportPath, `${roleLabel}.resume.reportPath`, errors);
   });
   return errors;
+}
+
+function validateReportPath(value, label, errors) {
+  if (value === undefined) return;
+  if (typeof value !== "string" || value.trim() === "") {
+    errors.push(`${label}: must be a non-empty string`);
+  } else if (/^([a-zA-Z]:)?[\\/]/u.test(value) || value.split(/[\\/]/u).includes("..")) {
+    errors.push(`${label}: must be a workspace-relative path without ".."`);
+  }
 }
 
 const POSTING_SOURCES = new Set(["url", "pasted", "file"]);
