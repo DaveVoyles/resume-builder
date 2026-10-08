@@ -99,7 +99,13 @@ const DENY_TERMS = [
   { term: "Daves-MacBook-Pro", reason: "candidate's real machine name" },
   { term: "Jack Kaley", reason: "candidate's private personal/education detail" },
   { term: "UnrealScript Game Programming Cookbook", reason: "candidate's real publication title" },
-  { term: "Bentley Systems", reason: "real employer from the private application history" },
+  {
+    term: "Bentley Systems",
+    reason: "real employer from the private application history",
+    // The repo owner chose a Bentley posting for their own public demo, so the
+    // name may appear in their persona and showcase. Nowhere else.
+    allowInPrefixes: ["examples/personas/owner/", "docs/showcase/"],
+  },
   { term: "DeepMind", reason: "real employer from the private application history" },
   { term: "Horizon3", reason: "real employer from the private application history" },
   { term: "Instacart", reason: "real employer from the private application history" },
@@ -203,7 +209,8 @@ function collectTermFindings(paths, state) {
     // (README.md, package.json, docs/generator-refactor-plan.md, and others).
     // A casing-obfuscated leak is a much smaller realistic risk than breaking
     // the check on the repo's own URLs.
-    for (const { term, reason } of DENY_TERMS) {
+    for (const { term, reason, allowInPrefixes } of DENY_TERMS) {
+      if (allowInPrefixes && allowInPrefixes.some((prefix) => filePath.startsWith(prefix))) continue;
       if (content.includes(term)) {
         findings.push({ path: filePath, state, term, reason });
       }
