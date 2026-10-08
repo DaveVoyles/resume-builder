@@ -29,7 +29,7 @@ Before you start:
 
 ### Step 1.1: Gather the posting
 
-Read the job posting at the given URL (or the pasted text). Extract:
+Read the job posting at the given URL (or the pasted text). **Save the posting with the role** (`--jd-file <file>` or `--jd-text` on `tailor`, see Step 3.1) so later steps do not have to read the URL again. Extract:
 
 - **Company** and **role title**.
 - **Required and preferred skills**, technologies, and experience.
@@ -108,7 +108,7 @@ npm run workspace:tailor -- --workspace candidate \
   --title "<Role Title>"
 ```
 
-`--company` is optional — it defaults to the resume config's own `company` field. Pass `--applyUrl`, `--location`, `--compensation`, `--fit`, or `--notes` the same way you would with `add-role` if you want them captured on the tracked role right away. Add `--keywords <keywords.json>` for a keyword-coverage advisory (see Step 3.1a below) or `--cover-letter <config.json>` to draft a cover letter alongside the resume (see [`cover-letter.md`](cover-letter.md)).
+`--company` is optional — it defaults to the resume config's own `company` field. Pass `--applyUrl`, `--location`, `--compensation`, `--fit`, or `--notes` the same way you would with `add-role` if you want them captured on the tracked role right away. Save the posting with the role by adding `--jd-file <posting.md>` (or `--jd-text "<text>"`): the text goes to `postings/<role-id>.md` and its keywords (required and preferred) are stored on the role. When you do not pass `--keywords`, the coverage advisory uses those stored keywords. Add `--keywords <keywords.json>` (or a comma list) to override them with your own list for a keyword-coverage advisory (see Step 3.1a below) or `--cover-letter <config.json>` to draft a cover letter alongside the resume (see [`cover-letter.md`](cover-letter.md)).
 
 **This command, in one pass:**
 
@@ -146,8 +146,9 @@ Present: Python, AWS, Product management
 Missing: Kubernetes
 ```
 
-**The CLI never fetches or parses the job posting itself** — it has no scraper and no keyword
-extractor. Reading the posting and pulling out the required/preferred skills is agent work,
+**The CLI never fetches a job posting** — it has no scraper. With `--jd-file` / `--jd-text` it stores
+the text you give it and extracts keywords with a simple deterministic rule set, which can miss
+things or catch noise. Reading the posting and judging the required/preferred skills is still agent work,
 exactly like Section 1's posting-to-evidence mapping above; `--keywords` (and the standalone
 `score-keywords` command it shares logic with) only *scores* a list you already extracted. If you
 want to act on the `Missing` list — decide what kind of gap each one represents and get a

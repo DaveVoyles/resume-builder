@@ -79,10 +79,6 @@ function copyDir(from, to) {
   return count;
 }
 
-function jobDescriptionNotes(postingPath) {
-  return fs.readFileSync(postingPath, "utf8").replace(/\s+/gu, " ").trim().slice(0, 1500);
-}
-
 async function runPersona(name, options = {}) {
   const personaDir = path.join(personasDir, name);
   if (!fs.existsSync(path.join(personaDir, "expected.json"))) {
@@ -152,26 +148,32 @@ async function runPersona(name, options = {}) {
         "--title", posting.title,
         "--company", posting.company,
         "--tracked",
-        "--notes", jobDescriptionNotes(postingPath),
+        "--jd-file", postingPath,
       ]);
 
       fs.mkdirSync(paths.resumeConfigs, { recursive: true });
       const configPath = path.join(paths.resumeConfigs, path.basename(posting.config));
       const configText = fs.readFileSync(configSource, "utf8");
       fs.writeFileSync(configPath, options.mutateConfig ? options.mutateConfig(configText, posting) : configText);
-      const keywordsPath = path.join(tmpRoot, `${posting.id}-keywords.json`);
-      fs.writeFileSync(keywordsPath, `${JSON.stringify(posting.keywords)}\n`);
 
-      runCli([
+      // The posting was saved with the role by add-role --jd-file; tailor is
+      // run without --keywords so its coverage step must use the stored ones.
+      const tailorOutput = runCli([
         "tailor",
         "--workspace", workspace,
         "--config", configPath,
         "--url", posting.url,
         "--title", posting.title,
         "--company", posting.company,
-        "--keywords", keywordsPath,
       ]);
       runCli(["render-resume", "--workspace", workspace, "--config", configPath]);
+
+      const storedRole = readJson(paths.rolesTracked, []).find((role) => role.company === posting.company && role.title === posting.title);
+      const stored = storedRole && storedRole.posting;
+      expect(stage, "posting saved with the role", Boolean(stored) && stored.source === "file" && fs.existsSync(path.join(workspace, stored.path || "")), stored ? stored.path : "no posting on role");
+      const storedKeywords = stored && stored.keywords ? [...stored.keywords.required, ...stored.keywords.preferred] : [];
+      expect(stage, "keywords stored on the role", storedKeywords.length > 0 && storedKeywords.length <= 25, `${storedKeywords.length} keyword(s)`);
+      expect(stage, "tailor coverage uses the stored keywords", /Keyword coverage: \d+% .*stored posting keywords/u.test(tailorOutput), "tailor ran without --keywords");
 
       const config = readJson(configPath);
       const schema = validateResumeConfig(config);

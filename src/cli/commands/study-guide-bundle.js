@@ -2,6 +2,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const { readStoredPostingText } = require("../../core/role-posting");
 const { readJson, readJsonLines, resolveWorkspace, workspacePaths, ensureDir, writeJson } = require("../../core/workspace");
 
 /**
@@ -130,7 +131,7 @@ function findRoleConfigPath(workspace, role) {
  * - evidence ledger
  * - the role's tracked entry
  * - the role's resume config
- * - JD reference (URL from role.urls.job)
+ * - JD reference (URL from role.urls.job) plus the stored posting text and keywords
  *
  * Writes to outputs/study-guide-bundles/<role-id>.json
  */
@@ -170,6 +171,12 @@ async function run(options) {
     jobPosting: {
       url: role.urls?.job || null,
       applyUrl: role.urls?.apply || null,
+      // Stored posting (add-role --jd-file); null fields mean "only the URL is known".
+      text: readStoredPostingText(workspace, role),
+      path: role.posting?.path || null,
+      source: role.posting?.source || null,
+      fetchedAt: role.posting?.fetchedAt || null,
+      keywords: role.posting?.keywords || null,
     },
     generatedAt: new Date().toISOString(),
   };

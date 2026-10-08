@@ -113,8 +113,8 @@ Stop. Tell them the posting is gone. Do not write a resume for it.
 | Private folder | `npm run setup` | onboarding |
 | Read their files | `npm run workspace:ingest` | onboarding |
 | Interview | you write profile and evidence | grill |
-| Check a job | you vet the link, then `add-role` when they say yes | find-roles |
-| Resume | `npm run workspace:tailor` | tailor |
+| Check a job | you vet the link, then `add-role` when they say yes. Save the posting with the role (`--jd-file`) | find-roles |
+| Resume | `npm run workspace:tailor`. Save the posting with the role (`--jd-file`) | tailor |
 | Job list | `npm run workspace:tracker` | — |
 | Status change | `npm run workspace -- set-status ...` | status recipe in `AGENTS.md` |
 | Study guide | `npm run workspace:bundle`, then you write the guide | study-guide |

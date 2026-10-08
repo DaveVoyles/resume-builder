@@ -3,6 +3,8 @@
 const fs = require("fs");
 const path = require("path");
 const { readJson, resolveWorkspace, writeJson } = require("../../core/workspace");
+const { stableId } = require("../../core/ids");
+const { parseKeywordsOption, readPostingInput, savePosting } = require("../../core/role-posting");
 
 function today() {
   return new Date().toISOString().split("T")[0];
@@ -41,9 +43,16 @@ function run(options) {
   const lead = { company, title, url, createdAt: today() };
   if (typeof options.fit === "string") lead.fit = options.fit;
   if (typeof options.notes === "string") lead.notes = options.notes;
+  const input = readPostingInput(options);
+  if (input) {
+    const pseudo = { id: stableId("lead", [company, title, url]) };
+    savePosting(workspace, pseudo, input, parseKeywordsOption(options.keywords));
+    lead.posting = pseudo.posting;
+  }
   leads.push(lead);
   writeJson(file, leads);
   console.log(`Added lead: ${company} — ${title}`);
+  if (lead.posting) console.log(`Saved posting to ${lead.posting.path}.`);
 }
 
 module.exports = { run };

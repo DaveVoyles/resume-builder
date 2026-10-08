@@ -151,4 +151,4 @@ function createDefaultProfile() {
   };
 }
 
-module.exports = { createDefaultProfile, extractFacts, mergeProfileSource, isPubliclyShareableLink };
+module.exports = { SKILL_KEYWORDS, createDefaultProfile, extractFacts, mergeProfileSource, isPubliclyShareableLink };
