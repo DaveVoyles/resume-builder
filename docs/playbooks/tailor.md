@@ -121,7 +121,8 @@ npm run workspace:tailor -- --workspace candidate \
 5. Renders the DOCX to `outputs/resumes/<Company>/<file>.docx`.
 6. If `--cover-letter` was passed: validates, audits, lints, and renders the cover letter the same way, and links it on the tracked role.
 7. Registers the role in `roles.tracked.json`, linked to the exact resume config and DOCX it just produced.
-8. Sets the role's application status to **`interested`** — not-yet-applied — and rebuilds the tracker (md + html).
+8. Writes a plain-language report for the role to `outputs/tailor-reports/<role-id>.md`, records it on the role (`resume.reportPath`), and prints `Report ready: ...`. The tracker row links it. If the audit blocks in step 2, the report is still written with status "Blocked" and explains each problem.
+9. Sets the role's application status to **`interested`** — not-yet-applied — and rebuilds the tracker (md + html).
 
 **Example output:**
 
@@ -212,6 +213,17 @@ npm run workspace:tailor -- --workspace candidate \
 ```
 
 The rerun produces a fresh DOCX with the rewritten text. If lint warnings remain, repeat the cycle until none appear (or until you're satisfied the resume reads naturally).
+
+### Step 3.2b: Open the report with the person
+
+Open `candidate/outputs/tailor-reports/<role-id>.md` with them. Its status is **Ready to review**, **Needs your confirmation**, or **Blocked**. Each item under "Needs your confirmation" is a question. Ask them one at a time, in the report's words. Do not paste the report or its file names at them.
+
+- **Answer is yes (they did it, the number is right):** record it in `evidence.jsonl` as a source-backed entry in their words, tie the line to it with `evidenceIds` or `bulletEvidenceIds`, then re-run `tailor`.
+- **Answer is no, or they are unsure:** reword or remove the line, then re-run `tailor`.
+- **Missing keywords:** "you have the experience" ones can be added, with evidence. "No proof" ones are never added without a yes and a recorded source.
+- After the config changes without a re-render (for example, after a page count or keyword step), regenerate the report with `npm run workspace:tailor-report -- --workspace candidate --id <role-id>`.
+
+Say it as the sentences in [`what-to-say.md`](../first-run/what-to-say.md) allow: no command names, real paths from the repo root.
 
 ### Step 3.3: Re-running tailor for the same role
 

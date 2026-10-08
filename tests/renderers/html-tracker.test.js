@@ -473,6 +473,21 @@ test("html tracker renders the resume cell as a clickable link with the outputs\
   assert.equal(context.resumeCell({}), "—");
 });
 
+test("html tracker links the tailor report next to the resume, and ignores unsafe report paths", () => {
+  const roles = [
+    { id: "role-001", company: "Fabrikam AI", title: "PM", resume: { outputPath: "outputs/resumes/fabrikam-ai.docx", reportPath: "outputs/tailor-reports/role-001.md" } },
+    { id: "role-002", company: "Contoso", title: "PM", resume: { outputPath: "outputs/resumes/contoso.docx", reportPath: "../secrets.md" } },
+    { id: "role-003", company: "Northwind", title: "PM", resume: { outputPath: "outputs/resumes/northwind.docx" } },
+  ];
+  const { context, tbody } = runClientScript(renderHtmlTracker(roles));
+
+  assert.match(tbody.innerHTML, /fabrikam-ai\.docx<\/a> · <a href="tailor-reports\/role-001\.md" target="_blank" rel="noopener">Report<\/a>/);
+  assert.equal(tbody.innerHTML.includes("secrets.md"), false);
+  assert.equal((tbody.innerHTML.match(/>Report<\/a>/g) || []).length, 1);
+  // No resume file means no report link, same as before.
+  assert.equal(context.resumeCell({ resume: "", reportPath: "outputs/tailor-reports/x.md" }), "—");
+});
+
 test("html tracker renders a pipeline funnel section with stage counts", () => {
   const roles = [
     {

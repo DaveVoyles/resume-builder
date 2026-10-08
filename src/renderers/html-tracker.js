@@ -149,6 +149,7 @@ function renderHtmlTracker(roles, options = {}) {
       jobUrl: role.jobUrl || "",
       applyUrl: role.applyUrl || "",
       resume: role.resume || "",
+      reportPath: role.reportPath || "",
       coverLetterStatus: role.coverLetterStatus || "",
       notes: notesHtml(sortedSourceRoles[index]),
       isStale: staleness.isStale,
@@ -608,7 +609,10 @@ function renderHtmlTracker(roles, options = {}) {
       const href = role.resume.replace(/^outputs\\//, "");
       const parts = role.resume.split("/");
       const filename = parts[parts.length - 1] || role.resume;
-      return '<a href="' + esc(href) + '" target="_blank" rel="noopener">' + esc(filename) + "</a>";
+      const link = '<a href="' + esc(href) + '" target="_blank" rel="noopener">' + esc(filename) + "</a>";
+      if (!role.reportPath || /^([a-zA-Z]:)?[\\/]/.test(role.reportPath) || role.reportPath.split(/[\\/]/).indexOf("..") !== -1) return link;
+      const reportHref = role.reportPath.replace(/^outputs\\//, "");
+      return link + ' · <a href="' + esc(reportHref) + '" target="_blank" rel="noopener">Report</a>';
     }
 
     function linkCell(role) {
