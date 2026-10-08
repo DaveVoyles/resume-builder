@@ -109,7 +109,16 @@ const DENY_TERMS = [
 
 // The deny-list terms themselves live in this file as literal strings, so
 // this file is excluded from its own content scan to avoid self-matching.
-const CONTENT_SCAN_EXCLUDE_PATHS = new Set(["scripts/check-privacy.js"]);
+//
+// The second entry is the repo owner's own resume, committed on purpose with
+// their permission (see AGENTS.md privacy rules). It legitimately contains the
+// owner's public handles and publication title, so only this one text file is
+// exempt from the term scan. The email and phone are scrubbed and a test
+// guards that. Nothing else under examples/real-resume/ is exempt.
+const CONTENT_SCAN_EXCLUDE_PATHS = new Set([
+  "scripts/check-privacy.js",
+  "examples/real-resume/owner/owner-resume.txt",
+]);
 const BINARY_EXTENSIONS = new Set([".docx", ".png", ".jpg", ".jpeg", ".gif", ".ico", ".zip", ".pdf", ".woff", ".woff2"]);
 
 function git(args) {
