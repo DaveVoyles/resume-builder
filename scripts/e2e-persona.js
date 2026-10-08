@@ -174,6 +174,12 @@ async function runPersona(name, options = {}) {
       expect(stage, "keywords stored on the role", storedKeywords.length > 0 && storedKeywords.length <= 25, `${storedKeywords.length} keyword(s)`);
       expect(stage, "tailor coverage uses the stored keywords", /Keyword coverage: \d+% .*stored posting keywords/u.test(tailorOutput), "tailor ran without --keywords");
 
+      const reportRelative = storedRole && storedRole.resume && storedRole.resume.reportPath;
+      const reportFile = reportRelative ? path.join(workspace, reportRelative) : "";
+      const reportText = reportFile && fs.existsSync(reportFile) ? fs.readFileSync(reportFile, "utf8") : "";
+      expect(stage, "tailor report written with a status line", /\*\*Status: (Ready to review|Needs your confirmation|Blocked)\*\*/u.test(reportText), reportRelative || "no report path on role");
+      expect(stage, "tracker row links the report", Boolean(reportRelative) && /^outputs\/tailor-reports\/[^/]+\.md$/u.test(reportRelative));
+
       const config = readJson(configPath);
       const schema = validateResumeConfig(config);
       expect(stage, "resume config schema valid", schema.valid, schema.errors.join("; "));

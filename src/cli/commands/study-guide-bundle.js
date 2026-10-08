@@ -147,4 +147,4 @@ async function run(options) {
   return bundlePath;
 }
 
-module.exports = { run };
+module.exports = { run, findRole };

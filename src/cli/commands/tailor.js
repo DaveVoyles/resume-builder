@@ -13,6 +13,7 @@ const { auditFacts } = require("../../core/fact-audit");
 const { scoreKeywordCoverage } = require("../../core/keyword-coverage");
 const { lintConfig } = require("../../core/style-lint");
 const { allKeywords, hasPosting, parseKeywordsOption } = require("../../core/role-posting");
+const { writeTailorReport } = require("../../core/tailor-report");
 const { updateOnboardingState } = require("../../core/onboarding-state");
 const { readJson, readJsonLines, relativeToWorkspace, resolveWorkspace, workspacePaths, writeJson } = require("../../core/workspace");
 
@@ -62,6 +63,18 @@ function printKeywordCoverage(keywords, config, suffix) {
   console.log(`Missing: ${missingList}`);
 }
 
+// A blocked run renders nothing and tracks nothing, but the person still gets
+// a plain-language report saying what to confirm. Never masks the real error.
+function writeBlockedReport(workspace, options, config, audits) {
+  try {
+    const role = createRole({ ...options, tracked: true, company: options.company || config.company });
+    const { path: reportPath } = writeTailorReport(workspace, role, { config, ...audits });
+    console.log(`Report ready: ${reportPath}`);
+  } catch {
+    // Report is a courtesy; the audit error below is what matters.
+  }
+}
+
 /**
  * Tailor workflow (design plan 0001, D4): validates a drafted resume config
  * (D2 schema + D3 claim audit), renders it to DOCX (D2), and registers the
@@ -100,12 +113,15 @@ async function run(options, deps = {}) {
   // tracked, not discovered later by a separate `validate` pass.
   const evidence = readJsonLines(paths.evidence);
   const audit = auditResumeConfig(config, evidence);
+  const claimAudit = { ...audit, errors: [...audit.errors], warnings: [...audit.warnings] };
   // Fact-consistency audit (src/core/fact-audit.js): employers, titles, dates,
   // education, scope verbs (blocking) and named tools (advisory).
-  const facts = auditFacts(config, readJson(paths.profile, null), evidence);
+  const profile = readJson(paths.profile, null);
+  const facts = auditFacts(config, profile, evidence);
   audit.errors.push(...facts.errors);
   audit.warnings.push(...facts.warnings);
   if (audit.errors.length > 0) {
+    writeBlockedReport(workspace, options, config, { profile, evidence, claimAudit, factAudit: facts });
     throw new Error(`Resume config failed the evidence-backed claim audit:\n${audit.errors.map((error) => `  - ${error}`).join("\n")}`);
   }
   audit.warnings.forEach((warning) => console.warn(`Warning: ${warning}`));
@@ -241,6 +257,13 @@ async function run(options, deps = {}) {
     role.coverLetter.status = "review-needed";
     writeJson(paths.rolesTracked, trackedRoles);
   }
+
+  // Step 5c: plain-language report for the person (src/core/tailor-report.js).
+  // Written before the tracker rebuild below so the tracker row can link it.
+  const report = writeTailorReport(workspace, role, { config, profile, evidence, claimAudit, factAudit: facts, styleLint: styleLintResult });
+  role.resume.reportPath = report.path;
+  writeJson(paths.rolesTracked, trackedRoles);
+  console.log(`Report ready: ${report.path}`);
 
   // Step 6: land the role un-applied (plan 0001 Decision 8 / D4 acceptance
   // criteria — a human reviews the resume before anything is sent). Reuse

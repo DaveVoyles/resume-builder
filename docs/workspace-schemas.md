@@ -1011,6 +1011,23 @@ npm run workspace:tailor -- --workspace <workspace> \
 5. If `--cover-letter` was passed: validates and audits the cover-letter config the same way (blocking on an unsupported claim), lints its text, renders its DOCX, and sets `role.coverLetter.configPath`/`outputPath`/`status` (`review-needed`) on the tracked role.
 6. Registers (or finds the existing) tracked role via `add-role`'s own command, then sets `resume.configPath` and `resume.outputPath` on it (relative to the workspace root) so the role carries an explicit link back to the exact config and DOCX it was tailored from — `study-guide-bundle` (D8) uses this link strictly: a role with no usable `resume.configPath` fails with a message to run `tailor`, and it never guesses a config by company name. After rendering, the page-count check runs and `resume.pageCount` is saved.
 7. Sets `application.status` to `interested` — the D7 enum's not-yet-applied value (buckets to `not-applied` in the tracker) — via `set-status`, unless the role already has a real `application.status` (a re-run never reverts genuine progress), and rebuilds the tracker.
+8. Writes the plain-language report to `outputs/tailor-reports/<role-id>.md` and sets `role.resume.reportPath` (see [Tailor report](#tailor-report-tailor-report)) before the tracker rebuild, so the tracker row links it. If the claim or fact audit blocks, a report with status "Blocked" is still written (nothing is rendered or tracked).
+
+### Tailor report (`tailor-report`)
+
+`outputs/tailor-reports/<role-id>.md` is written for the person, not for the agent: plain words, workspace-relative paths, no command names. Sections: headline (role, company, resume file name, date, status), "Needs your confirmation" (each warning phrased as a question), "What the checks found", "Job match", "Fit", "Open gaps", and "Where the files are". Status is derived deterministically: **Blocked** when a claim or fact audit error exists, **Needs your confirmation** when any question is open (an unbound claim, a tool not found in the profile or evidence, evidence marked low confidence or needing confirmation, a missing keyword with no evidence, or more than one page), otherwise **Ready to review**.
+
+Regenerate it from stored data, without rendering anything, with `npm run workspace:tailor-report -- --workspace <workspace> (--id <role-id> | --company <name> --title <name>)`.
+
+Stored on the role (`roles.tracked.json`), all optional:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `resume.reportPath` | string | Workspace-relative path of the report. `validate` rejects an absolute path or one containing `..`. The HTML tracker links it next to the resume; the markdown tracker adds a `Report` link in the Resume cell. |
+| `resume.keywordCoverage` | object | `{ score, weightedScore?, covered: [{ keyword, where }], missing: [{ keyword, supported }], checkedAt }`. Written by the keyword-coverage step; the report reads it defensively. Absent means "not checked yet". `score` of 1 or less is read as a fraction. |
+| `resume.pageCount` | object | `{ pages, checkedAt }`. Written by the page-count step. Absent means "not checked yet". |
+
+The gap section reads `outputs/roles/<role-id>/gap-report.md` when `gap-report --roleId` has written one.
 
 ### Saved job postings
 

@@ -48,7 +48,7 @@ Do not skip ahead. Do not show them a pile of commands.
 
 8. **One job.** Say sentence 6. Follow `docs/playbooks/find-roles.md`. Check the link is live. If it is dead, say so and stop. Do not write a resume until they say yes to that job.
 
-9. **Write the resume.** Follow `docs/playbooks/tailor.md`. The new role lands as interested, not applied. Open the Word file for them. Say sentence 7. Change any sentence they reject. Do not invent a metric, title, or employer to fill a gap.
+9. **Write the resume.** Follow `docs/playbooks/tailor.md`. The new role lands as interested, not applied. Open the Word file for them. Say sentence 7. Open the role's report (`candidate/outputs/tailor-reports/<role-id>.md`, also linked from the role list) and ask its questions one at a time. Change any sentence they reject. Do not invent a metric, title, or employer to fill a gap.
 
 10. **Show the list.** Rebuild and open the tracker if it is not already open. Say sentence 8.
 
