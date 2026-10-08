@@ -118,6 +118,11 @@ function saveHomeAnswers(workspace, answers) {
   };
   if (nextHomeWorkMode) {
     payload.lastHomeWorkMode = nextHomeWorkMode;
+  } else {
+    const previousHomeWorkMode = lastRecordedHomeWorkMode(previousAnswers);
+    if (previousHomeWorkMode) {
+      payload.lastHomeWorkMode = previousHomeWorkMode;
+    }
   }
 
   writeJson(answersPath, payload);

@@ -253,3 +253,36 @@ test("home Save Hybrid on empty workModes writes hybrid", () => {
     fs.rmSync(workspace, { recursive: true, force: true });
   }
 });
+
+test("blank where Save keeps lastHomeWorkMode so a later Remote Save can replace on-site", () => {
+  const workspace = tempWorkspace();
+  try {
+    writePreferencesWorkModes(workspace, ["hybrid"]);
+    saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+      where: "Near where I live",
+    });
+    const paths = workspacePaths(workspace);
+    const answersPath = path.join(workspace, HOME_ANSWERS_FILENAME);
+    let preferences = JSON.parse(fs.readFileSync(paths.preferences, "utf8"));
+    assert.deepEqual(preferences.locations.workModes, ["hybrid", "on-site"]);
+
+    saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+    });
+    const blankAnswers = JSON.parse(fs.readFileSync(answersPath, "utf8"));
+    assert.equal(blankAnswers.lastHomeWorkMode, "on-site");
+    preferences = JSON.parse(fs.readFileSync(paths.preferences, "utf8"));
+    assert.deepEqual(preferences.locations.workModes, ["hybrid", "on-site"]);
+
+    saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+      where: "Remote (from home)",
+    });
+    preferences = JSON.parse(fs.readFileSync(paths.preferences, "utf8"));
+    assert.equal(preferences.locations.workModes.includes("on-site"), false);
+    assert.deepEqual(preferences.locations.workModes, ["hybrid", "remote"]);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
