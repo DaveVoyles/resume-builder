@@ -94,3 +94,88 @@ test("validateRoles rejects malformed posting metadata", () => {
     assert.ok(errors.some((e) => pattern.test(e)), `expected ${pattern} in ${JSON.stringify(errors)}`);
   }
 });
+
+// --- Noise filtering (fictional postings) -----------------------------------
+
+const CLINIC_POSTING = `# Operations manager
+
+Company: Harborview Family Health (fictional)
+Location: Philadelphia, PA (on site)
+
+Harborview Family Health runs three neighborhood clinics and needs an operations manager.
+
+You will:
+- Own staff scheduling and patient billing questions.
+- Keep patient records in order.
+
+You have:
+- Office operations experience in a healthcare setting.
+`;
+
+function allOf(result) {
+  return [...result.required, ...result.preferred];
+}
+
+test("posting-keywords drops the company name and its fragments", () => {
+  const found = allOf(extractPostingKeywords(CLINIC_POSTING)).map((k) => k.toLowerCase());
+  for (const noisy of ["family health", "harborview", "harborview family health", "family"]) {
+    assert.ok(!found.includes(noisy), `${noisy} should be filtered: ${found.join(", ")}`);
+  }
+  assert.ok(found.includes("scheduling"));
+});
+
+test("posting-keywords uses the company option when the posting has no Company line", () => {
+  const text = "# Analyst\n\nAcme Dynamics is hiring. You will use Snowflake and Acme Dynamics Portal daily.\n";
+  const withOption = allOf(extractPostingKeywords(text, { company: "Acme Dynamics" })).map((k) => k.toLowerCase());
+  assert.ok(!withOption.some((k) => k.includes("acme")), withOption.join(", "));
+  assert.ok(withOption.includes("snowflake"));
+});
+
+test("posting-keywords strips filler words like setting and environment", () => {
+  const found = allOf(extractPostingKeywords(CLINIC_POSTING)).map((k) => k.toLowerCase());
+  assert.ok(!found.includes("healthcare setting"));
+  assert.ok(found.includes("healthcare"));
+  assert.ok(!allOf(extractPostingKeywords("# Role\n\nRequirements:\n- Experience in a fast-paced environment.\n")).some((k) => /environment/iu.test(k)));
+});
+
+test("posting-keywords drops location words, from the Location line and the option", () => {
+  const text = "# Analyst\n\nCompany: Example Corp\nLocation: Raleigh, North Carolina, Remote\n\nRequirements:\n- Experience with SQL, based in Raleigh or remote United States.\n";
+  const found = allOf(extractPostingKeywords(text, { location: "Raleigh, NC" })).map((k) => k.toLowerCase());
+  for (const place of ["raleigh", "remote", "united states", "north carolina", "nc"]) assert.ok(!found.includes(place), `${place}: ${found.join(", ")}`);
+  assert.ok(found.includes("sql"));
+});
+
+test("posting-keywords keeps a known skill when the company name is that one word", () => {
+  const text = "# Engineer\n\nCompany: Docker\n\nRequirements:\n- Experience with Docker and Kubernetes.\n";
+  const found = allOf(extractPostingKeywords(text));
+  assert.ok(found.includes("Kubernetes"));
+  assert.ok(found.includes("Docker"));
+});
+
+test("posting-keywords drops a longer phrase that restates a known term, and plurals", () => {
+  const text = "# PM\n\nRequirements:\n- Own the developer platform roadmap and internal tooling priorities.\n- Experience with developer platforms.\n";
+  const found = allOf(extractPostingKeywords(text));
+  assert.ok(found.includes("developer platform"));
+  assert.ok(found.includes("roadmap"));
+  assert.ok(found.includes("internal tooling"));
+  assert.ok(!found.includes("developer platform roadmap"));
+  assert.ok(!found.includes("internal tooling priorities"));
+  assert.ok(!found.includes("developer platforms"));
+});
+
+test("role-posting passes the role's company to extraction", () => {
+  const { savePosting } = require("../../src/core/role-posting");
+  const fs = require("fs");
+  const os = require("os");
+  const path = require("path");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "kw-company-"));
+  try {
+    const role = { id: "zephyr-analyst", company: "Zephyr Analytics", title: "Analyst" };
+    savePosting(dir, role, { text: "# Analyst\n\nRequirements:\n- Zephyr Analytics Portal and SQL experience.\n", source: "pasted" });
+    const stored = allOf(role.posting.keywords).map((k) => k.toLowerCase());
+    assert.ok(!stored.some((k) => k.includes("zephyr")), stored.join(", "));
+    assert.ok(stored.includes("sql"));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

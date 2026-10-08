@@ -62,7 +62,7 @@ function savePosting(workspace, role, input, keywordsOverride) {
   const relPath = path.posix.join("postings", `${role.id}.md`);
   ensureDir(path.join(workspace, "postings"));
   fs.writeFileSync(path.join(workspace, relPath), text.endsWith("\n") ? text : `${text}\n`);
-  const extracted = extractPostingKeywords(text);
+  const extracted = extractPostingKeywords(text, { company: role.company, location: role.location });
   const keywords = keywordsOverride ? { required: keywordsOverride, preferred: [] } : extracted;
   role.posting = {
     ...(role.posting || {}),

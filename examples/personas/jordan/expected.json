@@ -10,7 +10,19 @@
       "company": "Harborview Family Health",
       "title": "Operations manager",
       "url": "https://jobs.example.invalid/harborview/operations-manager",
-      "keywords": ["operations", "scheduling", "billing", "front-desk", "train", "records", "checklist", "wait time"],
+      "expectedKeywords": [
+        "scheduling",
+        "billing",
+        "front-desk",
+        "electronic records"
+      ],
+      "forbiddenKeywords": [
+        "Family Health",
+        "Harborview",
+        "Harborview Family Health",
+        "healthcare setting",
+        "Philadelphia"
+      ],
       "minKeywordPercent": 85,
       "maxProxyScore": 250
     }

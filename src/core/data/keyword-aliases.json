@@ -26,6 +26,8 @@
     ["developer experience", "DevEx"],
     ["large language models", "LLM", "LLMs"],
     ["Microsoft Excel", "Excel"],
-    ["Google Workspace", "G Suite"]
+    ["Google Workspace", "G Suite"],
+    ["front-desk", "front desk"],
+    ["electronic records", "electronic health records", "EHR", "electronic medical records"]
   ]
 }

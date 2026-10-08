@@ -10,7 +10,7 @@ Every run of the persona suite uses fictional people, so the whole path from emp
 | `inputs/resumes/`, `inputs/notes/` | Old resumes and notes, copied into the temp workspace and ingested. |
 | `postings/*.md` | Job-description text for each target role. |
 | `resume-configs/*.json` | The committed tailored resume per posting. Every number in them must be backed by the persona's notes. |
-| `expected.json` | Scorecard thresholds and posting metadata (company, title, URL, keywords). |
+| `expected.json` | Scorecard thresholds and posting metadata (company, title, URL). Per posting: `expectedKeywords` (keywords posting extraction must store on the role), `forbiddenKeywords` (company names, places, and filler it must not store), `minKeywordPercent`. |
 | `golden/*.txt` | Expected extracted DOCX text per role. |
 
 Personas: `alex` (product manager, two roles, adapted from `examples/sample-candidate`), `jordan` (office and operations, skips salary), `morgan` (teacher moving into customer education, has a counted claim "6 workshops" backed by a note).
@@ -34,7 +34,8 @@ For each persona the script builds a temp workspace and runs: `init`, copy input
 | --- | --- |
 | setup reaches 10/10 | any of the ten tracker steps is still pending |
 | claim audit | a number in the resume config has no matching evidence |
-| keyword coverage | below `minKeywordPercent` for the posting |
+| keyword coverage | the percent stored on the role (`resume.keywordCoverage.percent`, scored against the keywords extracted from the posting) is below `minKeywordPercent`. This is the same number the tailor report prints, and the scorecard also fails if the two differ |
+| posting keywords | an `expectedKeywords` entry was not stored, or a `forbiddenKeywords` entry was |
 | style-lint warnings | more than `maxStyleWarnings` |
 | proxy score | above `maxProxyScore` (summary words + bullet words + 40 per job + 20 per education row) |
 | page count | more than one page, counted with `src/core/page-count.js` (the same check `tailor` runs). Runs only when LibreOffice (`soffice`) is installed, otherwise skipped |
