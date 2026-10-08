@@ -17,7 +17,7 @@ const { run } = require("../../src/cli/commands/serve-home");
 const init = require("../../src/cli/commands/init");
 const ingest = require("../../src/cli/commands/ingest");
 const tailor = require("../../src/cli/commands/tailor");
-const { listPersonas } = require("../../scripts/e2e-persona");
+const { listPersonas, personaInputFiles } = require("../../scripts/e2e-persona");
 
 const personasDir = path.join(__dirname, "..", "..", "examples", "personas");
 
@@ -91,9 +91,10 @@ async function quietly(fn) {
   }
 }
 
-function copyFiles(from, to) {
+function copyFiles(files, to) {
+  if (files.length === 0) return;
   fs.mkdirSync(to, { recursive: true });
-  for (const name of fs.readdirSync(from)) fs.copyFileSync(path.join(from, name), path.join(to, name));
+  for (const file of files) fs.copyFileSync(file, path.join(to, path.basename(file)));
 }
 
 async function startHome() {
@@ -133,8 +134,9 @@ for (const persona of listPersonas()) {
     // The agent's part before the person opens the form: workspace + files read in.
     await quietly(async () => {
       await init.run({ workspace, noServe: true });
-      copyFiles(path.join(personaDir, "inputs", "resumes"), path.join(workspace, "inputs", "resumes"));
-      copyFiles(path.join(personaDir, "inputs", "notes"), path.join(workspace, "inputs", "notes"));
+      const inputFiles = personaInputFiles(personaDir, expected);
+      copyFiles(inputFiles.resumes, path.join(workspace, "inputs", "resumes"));
+      copyFiles(inputFiles.notes, path.join(workspace, "inputs", "notes"));
       await ingest.run({ workspace });
     });
 

@@ -182,6 +182,25 @@ test("isCdfv2Compound detects the CDFV2 magic byte signature", () => {
   }
 });
 
+test("readDocx decodes apostrophes written as &apos; (the owner's real resume uses them)", () => {
+  const realDocx = path.join(__dirname, "..", "..", "examples", "real-resume", "owner", "owner-resume.docx");
+  const text = readDocx(realDocx);
+  assert.match(text, /I'm a senior technical PM/u);
+  assert.doesNotMatch(text, /&apos;|&amp;|&quot;/u);
+});
+
+test("readDocx marks Word list items with a bullet so each one stays its own evidence entry", () => {
+  const realDocx = path.join(__dirname, "..", "..", "examples", "real-resume", "owner", "owner-resume.docx");
+  const lines = readDocx(realDocx).split("\n");
+  const bullets = lines.filter((line) => line.startsWith("• "));
+  assert.equal(bullets.length, 17, "the example resume has 17 list items");
+  assert.ok(bullets.some((line) => line.startsWith("• Led Fast Game Package Publishing inside Partner Center")));
+  assert.ok(!lines.some((line) => line.startsWith("• David Voyles") || line.startsWith("• SUMMARY")), "headings and the name line are not list items");
+  const { chunkResumeText } = require("../../src/core/resume-chunker");
+  const chunks = chunkResumeText(readDocx(realDocx));
+  assert.equal(chunks.filter((chunk) => chunk.kind === "bullet").length, 17);
+});
+
 test("readDocx extracts text normally from a valid .docx", async () => {
   const dir = tmpDir("valid-docx-");
   try {

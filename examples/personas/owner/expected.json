@@ -1,0 +1,111 @@
+{
+  "persona": "owner",
+  "inputs": {
+    "resumes": ["../../real-resume/owner/owner-resume.docx"],
+    "notes": []
+  },
+  "setupSteps": 10,
+  "maxStyleWarnings": 0,
+  "postings": [
+    {
+      "id": "jpmc-lead-technical-program-manager",
+      "file": "postings/jpmc-lead-technical-program-manager.md",
+      "config": "resume-configs/jpmc-lead-technical-program-manager.json",
+      "company": "JPMorgan Chase",
+      "title": "Lead Technical Program Manager",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210763533",
+      "expectedKeywords": [
+        "program management",
+        "stakeholder management",
+        "release management",
+        "change management",
+        "risk management",
+        "dependency management",
+        "agile",
+        "ServiceNow",
+        "AI"
+      ],
+      "forbiddenKeywords": [
+        "JPMorgan",
+        "Chase",
+        "Wilmington",
+        "210763533",
+        "Equal Opportunity",
+        "Corporate Sector",
+        "Technical Program Delivery",
+        "Enterprise Technology",
+        "Specialty Services Group"
+      ],
+      "minKeywordPercent": 20,
+      "maxProxyScore": 450,
+      "note": "Closest fit and the highest of the three. 20% is 3 of 15 keywords (AI, cross-functional, program management). Stakeholder, release, change, risk and dependency management, agile, RAID and ServiceNow are not on the resume, so they stay off the tailored one. The floor is today's result."
+    },
+    {
+      "id": "bentley-senior-principal-engineer-developer-platform",
+      "file": "postings/bentley-senior-principal-engineer-developer-platform.md",
+      "config": "resume-configs/bentley-senior-principal-engineer-developer-platform.json",
+      "company": "Bentley Systems",
+      "title": "Senior Principal Engineer, Developer Platform",
+      "url": "https://bentleysystems.wd5.myworkdayjobs.com/en-US/bentley/job/Senior-Principal-Engineer--US-_RC81-1",
+      "expectedKeywords": [
+        "API",
+        "developer platform",
+        "API gateway",
+        "authentication",
+        "metering",
+        "billing",
+        "MCP",
+        "OAuth",
+        "OIDC",
+        "MuleSoft",
+        "Apigee",
+        "Kong",
+        "Workato",
+        "Backstage"
+      ],
+      "forbiddenKeywords": [
+        "Bentley",
+        "Bentley Systems",
+        "Philadelphia",
+        "RC81",
+        "Nasdaq",
+        "Impact Day",
+        "iTwin",
+        "LI-Hybrid"
+      ],
+      "minKeywordPercent": 12,
+      "maxProxyScore": 500,
+      "note": "Stretch role. 12% is 3 of 25 keywords (API, cloud, AI). The resume shows no API gateway, authentication, metering, billing, MCP or API-management tool work, and its last hands-on engineering job ended in 2020. The general resume already says everything the resume supports, so tailoring cannot lift this number; it only changes what leads. The floor is today's result."
+    },
+    {
+      "id": "deloitte-lead-fde-frontier-genai",
+      "file": "postings/deloitte-lead-fde-frontier-genai.md",
+      "config": "resume-configs/deloitte-lead-fde-frontier-genai.json",
+      "company": "Deloitte",
+      "title": "Lead Forward Deployed Engineer, Frontier GenAI",
+      "url": "https://apply.deloitte.com/en_US/careers/JobDetail/Lead-Forward-Deployed-Engineer-Frontier-GenAI/350566",
+      "expectedKeywords": [
+        "GenAI",
+        "LLM",
+        "RAG",
+        "prompt engineering",
+        "evaluation frameworks",
+        "Claude",
+        "Gemini",
+        "Vertex AI",
+        "Computer Science"
+      ],
+      "forbiddenKeywords": [
+        "Deloitte",
+        "350566",
+        "Equal Opportunity",
+        "Philadelphia",
+        "Position Summary",
+        "Work you'll do"
+      ],
+      "minKeywordPercent": 20,
+      "maxProxyScore": 500,
+      "note": "Weakest fit, kept on purpose. The 20% matches JPMC only because 5 of 25 keywords are generic words the resume does say (AI, cloud, Azure, API, agents). Every real requirement is missing: GenAI platform experience, RAG, LLM work, the computer science degree and 7+ years in engineering. Tailoring cannot lift it. The floor is today's result."
+    }
+  ]
+}

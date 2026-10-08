@@ -1,0 +1,29 @@
+David Voyles
+Philadelphia, PA | email-removed@example.com | DaveVoyles.com
+Senior Technical PM · Platform APIs · Entitlements · AI Agents
+SUMMARY
+Senior technical PM who takes platform capabilities from design to GA and retention: entitlements, publishing pipelines, and API contracts shared by 8 partner systems. Runs a personal fleet of AI agents with local and cloud models and live evals. Earlier career as a senior software engineer at Microsoft CSE and Comcast, and a technical evangelist teaching SDK and platform patterns.
+EXPERIENCE
+Agentic Platforms — Independent R&D 2025 - Present
+Authored a portable coding-agent playbook: versioned adapters any git repo can stamp, fail-closed receipted gates, and a machine layer that dispatches isolated agent sessions; personal infrastructure, not a customer product.
+Run an agentic workflow of personalized agents with A/B testing of local and cloud models (167 skills, 57 commands, live evals); operated, never authored.
+Gated routing and tool-call changes with live evals on every request plus CI replay, so the running stack fails closed before a bad change lands.
+Senior Technical Program Manager, Partner Center / Xbox — Microsoft 2020 - 2026
+Established bi-directional Multiplatform Entitlement sync between Xbox Live and Battle.net for the Activision Blizzard acquisition; Buy Once Play Anywhere licensing surfaced in systems publishers and players already used, not a new storefront.
+Automated publisher onboarding via Event Grid so entitlements showed up in Battle.net without a side process, cutting manual configuration latency by 90%.
+Designed Game Reparenting Validate / Execute Reparent APIs so 8 partner systems kept their existing tools through ownership transfers; Saga compensating transactions; 100% data fidelity, zero rollbacks.
+Senior Software Engineer — Microsoft (CSE) 2016 - 2020
+Co-designed streaming data pipelines and ML models with NBA, NASCAR, Johnson & Johnson, and financial partners.
+Delivered as a senior IC with stakeholders in the room, then shipped the APIs and pipelines those teams kept.
+Senior Software Engineer — Comcast 2013 - 2014
+Built and owned the Xfinity on Xbox One frontend as sole developer; shipped marquee OTT playback on console as a single-owner delivery.
+SKILLS
+Platform and APIs
+Atomic APIs, modular publishing, Entitlements and Event Grid integrations, 8 partner systems
+AI agents
+Local and cloud models, A/B testing, live evals on every request, CI replay
+Partner integration
+Saga compensating transactions, streaming data pipelines, Buy Once Play Anywhere without a parallel stack
+EDUCATION
+MBA — Management of Information Systems — New York Institute of Technology (NYIT) Graduate Coursework (Hiatus)
+BS — Communication Studies, Business Minor — SUNY College at Oneonta 2009

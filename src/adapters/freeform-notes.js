@@ -19,14 +19,23 @@ function ooxmlToText(xml, { tabTag, paragraphCloseTag }) {
     .replace(/&lt;/gu, "<")
     .replace(/&gt;/gu, ">")
     .replace(/&quot;/gu, "\"")
-    .replace(/&#39;/gu, "'")
+    .replace(/&#39;|&apos;/gu, "'")
     .replace(/[ \t]+/gu, " ")
     .replace(/\n\s+/gu, "\n")
     .trim();
 }
 
+// A Word list item (a paragraph with a real numbering id) has no bullet character
+// in the XML, so the text alone cannot tell a bullet from a paragraph. Mark each
+// one with "• " so the resume chunker keeps one evidence entry per bullet.
+const LIST_PARAGRAPH = /<w:p(?:\s[^>]*)?>(?:(?!<\/w:p>)[\s\S])*?<w:numPr>(?:(?!<\/w:numPr>)[\s\S])*?<w:numId w:val="(?!0")[^"]*"\s*\/>[\s\S]*?<\/w:p>/gu;
+
+function markListParagraphs(xml) {
+  return xml.replace(LIST_PARAGRAPH, (paragraph) => paragraph.replace(/^(<w:p(?:\s[^>]*)?>)/u, "$1• "));
+}
+
 function xmlToText(xml) {
-  return ooxmlToText(xml, { tabTag: "w:tab", paragraphCloseTag: "/w:p" });
+  return ooxmlToText(markListParagraphs(xml), { tabTag: "w:tab", paragraphCloseTag: "/w:p" });
 }
 
 function pptxXmlToText(xml) {

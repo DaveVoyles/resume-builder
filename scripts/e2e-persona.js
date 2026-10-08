@@ -8,7 +8,7 @@
  *   npm run e2e -- --persona jordan --keep   # keep the temp workspace
  *   UPDATE_GOLDEN=1 npm run e2e      # regenerate golden DOCX text
  *
- * For each fictional persona: temp workspace -> init -> copy inputs -> ingest
+ * For each persona (four fictional, plus the owner's real resume): temp workspace -> init -> copy inputs -> ingest
  * -> saveHomeAnswers(answers.json) -> add-role -> tailor (committed resume
  * config) -> render-resume -> build-tracker -> validate, then a per-stage
  * scorecard. Exits non-zero when any check fails.
@@ -61,16 +61,46 @@ function normalizeText(text) {
   return `${String(text).replace(/\r\n/gu, "\n").trim()}\n`;
 }
 
-function copyDir(from, to) {
-  if (!fs.existsSync(from)) return 0;
-  fs.mkdirSync(to, { recursive: true });
-  let count = 0;
-  for (const entry of fs.readdirSync(from, { withFileTypes: true })) {
-    if (!entry.isFile() || entry.name.startsWith(".")) continue;
-    fs.copyFileSync(path.join(from, entry.name), path.join(to, entry.name));
-    count += 1;
+/**
+ * Where a persona's input files come from (documented in docs/testing.md).
+ * By default: every file in <persona>/inputs/resumes and inputs/notes.
+ * With "inputs" in expected.json, the listed paths instead, resolved relative
+ * to the persona folder, so a persona can point at a file that already lives
+ * elsewhere in the repo (the owner persona uses examples/real-resume/owner/)
+ * rather than keeping a second copy:
+ *   "inputs": { "resumes": ["../../real-resume/owner/owner-resume.docx"], "notes": [] }
+ * Paths must stay inside the repo and must exist.
+ * @returns {{ resumes: string[], notes: string[] }} absolute file paths
+ */
+function personaInputFiles(personaDir, expected = {}) {
+  const listDir = (dir) =>
+    fs.existsSync(dir)
+      ? fs.readdirSync(dir, { withFileTypes: true }).filter((entry) => entry.isFile() && !entry.name.startsWith(".")).map((entry) => path.join(dir, entry.name))
+      : [];
+  if (!expected.inputs) {
+    return { resumes: listDir(path.join(personaDir, "inputs", "resumes")), notes: listDir(path.join(personaDir, "inputs", "notes")) };
   }
-  return count;
+  const resolve = (list) =>
+    (Array.isArray(list) ? list : []).map((relative) => {
+      const file = path.resolve(personaDir, relative);
+      if (!file.startsWith(repoRoot + path.sep)) throw new Error(`Persona input "${relative}" is outside the repo.`);
+      if (!fs.existsSync(file) || !fs.statSync(file).isFile()) throw new Error(`Persona input "${relative}" does not exist.`);
+      return file;
+    });
+  return { resumes: resolve(expected.inputs.resumes), notes: resolve(expected.inputs.notes) };
+}
+
+/** Copies absolute file paths into a folder; returns how many were copied. */
+function copyFiles(files, to) {
+  if (files.length === 0) return 0;
+  fs.mkdirSync(to, { recursive: true });
+  files.forEach((file) => fs.copyFileSync(file, path.join(to, path.basename(file))));
+  return files.length;
+}
+
+/** Page limit for a posting: 1 unless expected.json sets "maxPages" (with a "maxPagesReason"). */
+function maxPagesFor(posting) {
+  return Number.isInteger(posting.maxPages) && posting.maxPages > 0 ? posting.maxPages : 1;
 }
 
 async function runPersona(name, options = {}) {
@@ -119,9 +149,8 @@ async function runPersona(name, options = {}) {
     // copy inputs + ingest
     stage = "ingest";
     const paths = workspacePaths(workspace);
-    const copied =
-      copyDir(path.join(personaDir, "inputs", "resumes"), paths.resumes) +
-      copyDir(path.join(personaDir, "inputs", "notes"), paths.notes);
+    const inputFiles = personaInputFiles(personaDir, expected);
+    const copied = copyFiles(inputFiles.resumes, paths.resumes) + copyFiles(inputFiles.notes, paths.notes);
     runCli(["ingest", "--workspace", workspace]);
     const evidence = readJsonLines(paths.evidence);
     expect("ingest", "every input became evidence", evidence.length >= copied, `${evidence.length} evidence entries from ${copied} files`);
@@ -251,11 +280,12 @@ async function runPersona(name, options = {}) {
 
       if (withPages) {
         if (!soffice) {
-          add(stage, "page count <= 1", "skip", "LibreOffice (soffice) not found");
+          add(stage, `page count <= ${maxPagesFor(posting)}`, "skip", "LibreOffice (soffice) not found");
         } else {
           const result = checkPageCount(docxPath);
           const pages = result.pages || 0;
-          expect(stage, "page count <= 1", pages > 0 && pages <= 1, `${pages} page(s)`);
+          const limit = maxPagesFor(posting);
+          expect(stage, `page count <= ${limit}`, pages > 0 && pages <= limit, `${pages} page(s)${limit > 1 && posting.maxPagesReason ? `; ${posting.maxPagesReason}` : ""}`);
         }
       }
 
@@ -360,7 +390,7 @@ async function main() {
   const names = cli.personas.length > 0 ? cli.personas : listPersonas();
   const outDir = cli.out ? path.resolve(cli.out) : path.join(os.tmpdir(), "resume-builder-e2e");
   fs.mkdirSync(outDir, { recursive: true });
-  console.log("== Resume Builder persona e2e (fictional personas; nothing is submitted) ==");
+  console.log("== Resume Builder persona e2e (nothing is submitted) ==");
 
   let failed = 0;
   for (const name of names) {
@@ -382,7 +412,7 @@ async function main() {
   }
 }
 
-module.exports = { runPersona, listPersonas, assertSafeCommand, normalizeText, proxyScore, countPdfPages };
+module.exports = { runPersona, personaInputFiles, maxPagesFor, listPersonas, assertSafeCommand, normalizeText, proxyScore, countPdfPages };
 
 if (require.main === module) {
   main().catch((error) => {

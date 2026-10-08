@@ -1,0 +1,102 @@
+{
+  "schemaVersion": "1.0",
+  "company": "Bentley Systems",
+  "outputFileName": "david-voyles-bentley-systems.docx",
+  "candidate": {
+    "name": "David Voyles",
+    "headline": "Senior Technical PM · Platform APIs · Entitlements · AI Agents",
+    "contact": [
+      { "text": "Philadelphia, PA" },
+      { "text": "email-removed@example.com", "link": "mailto:email-removed@example.com" },
+      { "text": "DaveVoyles.com", "link": "https://DaveVoyles.com" }
+    ]
+  },
+  "summary": {
+    "text": "Senior technical PM who takes platform capabilities from design to GA and retention: entitlements, publishing pipelines, and API contracts shared by 8 partner systems. Runs a personal fleet of AI agents with local and cloud models and live evals. Earlier career as a senior software engineer at Microsoft CSE and Comcast, and a technical evangelist teaching SDK and platform patterns.",
+    "evidenceIds": [
+      "ev_resume-inputs-resumes-owner-resume-docx_04a0bd7346",
+      "ev_resume-inputs-resumes-owner-resume-docx_ea828f409d",
+      "ev_resume-inputs-resumes-owner-resume-docx_26f8f2f118"
+    ]
+  },
+  "experienceSections": [
+    {
+      "heading": "Experience",
+      "jobs": [
+        {
+          "title": "Agentic Platforms",
+          "company": "Independent R&D",
+          "dates": "2025 - Present",
+          "bullets": [
+            "Authored a portable coding-agent playbook: versioned adapters any git repo can stamp, fail-closed receipted gates, and a machine layer that dispatches isolated agent sessions; personal infrastructure, not a customer product.",
+            "Run an agentic workflow of personalized agents with A/B testing of local and cloud models (167 skills, 57 commands, live evals); operated, never authored.",
+            "Gated routing and tool-call changes with live evals on every request plus CI replay, so the running stack fails closed before a bad change lands."
+          ],
+          "bulletEvidenceIds": [
+            ["ev_resume-inputs-resumes-owner-resume-docx_55a4d407b2"],
+            ["ev_resume-inputs-resumes-owner-resume-docx_26f8f2f118"],
+            ["ev_resume-inputs-resumes-owner-resume-docx_47f7ac5bce"]
+          ]
+        },
+        {
+          "title": "Senior Technical Program Manager, Partner Center / Xbox",
+          "company": "Microsoft",
+          "dates": "2020 - 2026",
+          "bullets": [
+            "Established bi-directional Multiplatform Entitlement sync between Xbox Live and Battle.net for the Activision Blizzard acquisition; Buy Once Play Anywhere licensing surfaced in systems publishers and players already used, not a new storefront.",
+            "Automated publisher onboarding via Event Grid so entitlements showed up in Battle.net without a side process, cutting manual configuration latency by 90%.",
+            "Designed Game Reparenting Validate / Execute Reparent APIs so 8 partner systems kept their existing tools through ownership transfers; Saga compensating transactions; 100% data fidelity, zero rollbacks."
+          ],
+          "bulletEvidenceIds": [
+            ["ev_resume-inputs-resumes-owner-resume-docx_6e6a710c5d"],
+            ["ev_resume-inputs-resumes-owner-resume-docx_8bf473965c"],
+            ["ev_resume-inputs-resumes-owner-resume-docx_ea828f409d"]
+          ]
+        },
+        {
+          "title": "Senior Software Engineer",
+          "company": "Microsoft (CSE)",
+          "dates": "2016 - 2020",
+          "bullets": [
+            "Co-designed streaming data pipelines and ML models with NBA, NASCAR, Johnson & Johnson, and financial partners.",
+            "Delivered as a senior IC with stakeholders in the room, then shipped the APIs and pipelines those teams kept."
+          ],
+          "bulletEvidenceIds": [
+            ["ev_resume-inputs-resumes-owner-resume-docx_b926931a27"],
+            ["ev_resume-inputs-resumes-owner-resume-docx_ef1f45184e"]
+          ]
+        },
+        {
+          "title": "Senior Software Engineer",
+          "company": "Comcast",
+          "dates": "2013 - 2014",
+          "bullets": [
+            "Built and owned the Xfinity on Xbox One frontend as sole developer; shipped marquee OTT playback on console as a single-owner delivery."
+          ],
+          "bulletEvidenceIds": [
+            ["ev_resume-inputs-resumes-owner-resume-docx_d480694cb0"]
+          ]
+        }
+      ]
+    }
+  ],
+  "skills": [
+    ["Platform and APIs", "Atomic APIs, modular publishing, Entitlements and Event Grid integrations, 8 partner systems"],
+    ["AI agents", "Local and cloud models, A/B testing, live evals on every request, CI replay"],
+    ["Partner integration", "Saga compensating transactions, streaming data pipelines, Buy Once Play Anywhere without a parallel stack"]
+  ],
+  "education": [
+    {
+      "degree": "MBA — Management of Information Systems",
+      "institution": "New York Institute of Technology (NYIT)",
+      "dates": "Graduate Coursework (Hiatus)"
+    },
+    {
+      "degree": "BS — Communication Studies, Business Minor",
+      "institution": "SUNY College at Oneonta",
+      "dates": "2009"
+    }
+  ],
+  "includeEducation": true,
+  "includePublicationsSpeaking": false
+}

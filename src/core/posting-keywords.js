@@ -74,9 +74,49 @@ const KNOWN_TERMS = [
   "front-desk",
   "healthcare",
   "electronic records",
+  "release management",
+  "change management",
+  "dependency management",
+  "risk management",
+  "agile",
+  "API gateway",
+  "authentication",
+  "metering",
+  "event streaming",
+  "distributed systems",
+  "MCP",
+  "OAuth",
+  "OIDC",
+  "ServiceNow",
+  "MuleSoft",
+  "Apigee",
+  "Kong",
+  "Workato",
+  "Backstage",
+  "ERP",
+  "RAG",
+  "GenAI",
+  "prompt engineering",
+  "evaluation frameworks",
+  "Claude",
+  "Gemini",
+  "OpenAI",
+  "Open AI",
+  "Anthropic",
+  "Vertex AI",
+  "Spark",
+  "Airflow",
+  "dbt",
+  "MLOps",
+  "LLMOps",
 ];
 
-const REQUIRED_HEADING = /^(requirements?|required( qualifications| skills| experience)?|must[- ]haves?|minimum( qualifications| requirements)?|basic qualifications|qualifications|what you('| wi)?ll need|what you need|what you bring|you have|who you are|what we('| a)?re looking for|skills|responsibilities|you will|what you('| wi)?ll do|the role|about the role)\b/iu;
+const REQUIRED_HEADING = /^(requirements?|required( qualifications| skills| experience)?|must[- ]haves?|minimum( qualifications| requirements)?|basic qualifications|qualifications|what you('| wi)?ll need|what you need|what you bring|you have|who you are|what we('| a)?re looking for|skills|(job )?responsibilities|you will|what you('| wi)?ll do|work you('| wi)?ll do|the role|about the role|job description|position summary|overview)\b/iu;
+// Employer boilerplate: the section is skipped until the next requirement-style heading.
+const IGNORE_HEADING = /^(about (us|the team|the company|our company|our team)|who we are|what we offer|(the|our) team|benefits( and perks)?|perks|compensation( and benefits)?|total rewards|job information|equal opportunity|eeo)\b/iu;
+// Lines that are never a skill: pay, legal and process text, saved-page notes, requisition tags.
+const BOILERPLATE_LINE = /\b(wage|salary|pay) range\b|equal opportunity|reasonable accommodations?|immigration sponsorship|discretionary (annual )?incentive|recruiting (for this role )?ends|e-verify|background check/iu;
+const METADATA_LINE = /^(company|location|salary|compensation|team|department|source|retrieved|posted|requisition|url|link|saved|job (identification|category|schedule)|business unit|posting date|locations)\s*:/iu;
 const PREFERRED_HEADING = /^(nice[- ]to[- ]haves?|preferred( qualifications| skills| experience)?|bonus( points)?|pluses|plus|desired( skills| qualifications)?|good to have|ideal( candidate)?|extra credit)\b/iu;
 const PREFERRED_INLINE = /\b(nice[- ]to[- ]have|preferred|bonus|a plus|desired|ideally)\b/iu;
 const TRIGGER = /\b(?:experience (?:with|in|of)|knowledge of|familiarity with|proficien(?:t|cy) (?:in|with)|expertise in|background in|skilled in|understanding of|curiosity about|comfortable with|focus on|set|shape|coordinate|own)\s+([^.;:()\n]+)/giu;
@@ -90,6 +130,10 @@ const STOPWORDS = new Set([
   "senior", "junior", "lead", "manager", "i", "if", "not", "but", "so", "than", "then", "also", "both", "each", "every", "well", "own",
   "set", "shape", "build", "coordinate", "manage", "curiosity", "familiarity", "knowledge", "understanding", "proficiency", "expertise",
   "you'll", "we're", "you're", "it's", "must", "should", "nice", "preferred", "required", "equal", "opportunity", "employer",
+  "proven", "track", "record", "demonstrated", "deep", "advanced", "significant", "hands-on", "hands", "comprehensive", "complex", "consistent",
+  "innovative", "essential", "difficult", "successful", "productive", "effectively", "ensuring", "ensure", "while", "when", "where", "which",
+  "large", "addition", "able", "highest", "key", "major", "primary", "overall",
+  "principles", "practices", "theories", "direction", "directions", "high-performing", "similar", "influence", "down", "break",
 ]);
 
 // Words that describe the setting rather than a skill. Stripped from the edges
@@ -98,11 +142,11 @@ const FILLER = new Set([
   "setting", "settings", "environment", "environments", "industry", "industries", "organization", "organizations", "business", "businesses",
   "candidate", "candidates", "position", "positions", "opportunity", "opportunities", "day-to-day", "daily", "fast-paced", "dynamic",
   "mission", "culture", "needs", "need", "keep", "run", "improve", "train", "help", "ensure", "support", "provide", "make", "take", "get",
-  "neighborhood", "clinics", "clinic", "hires", "hire", "order", "things", "thing", "people", "folks", "someone", "everyone", "day", "time",
+  "processes", "process", "technologies", "neighborhood", "clinics", "clinic", "hires", "hire", "order", "things", "thing", "people", "folks", "someone", "everyone", "day", "time",
 ]);
 
 // Too broad to mean anything as a keyword on their own ("product", "developers").
-const GENERIC_ALONE = new Set(["product", "products", "engineering", "developer", "developers", "platform", "platforms", "tools", "tooling", "team", "teams", "customer", "customers", "user", "users", "data", "software", "technology", "technical", "operations"]);
+const GENERIC_ALONE = new Set(["product", "products", "engineering", "developer", "developers", "platform", "platforms", "tools", "tooling", "team", "teams", "customer", "customers", "user", "users", "data", "software", "technology", "technical", "operations", "practices", "principles", "theories", "solutions", "programs", "program", "aspects", "decisions", "direction", "delivery", "projects", "resources", "stakeholders", "requirements", "standards", "systems", "code", "quality", "adoption", "support", "plans", "timelines", "budgets", "risk", "risks", "business", "change", "changes", "functions", "functional", "partners", "clients", "client", "leaders", "workflow", "workflows", "decision-making", "develop", "stay", "design", "activities", "strategies", "strategy", "processes", "process", "architectural"]);
 
 // Location words that carry no skill.
 const LOCATION_WORDS = new Set([
@@ -174,16 +218,39 @@ function containsTerm(text, term) {
 }
 
 function stripLine(line) {
-  return line.replace(/^\s*(?:#{1,6}|[-*+•]|\d+[.)])\s*/u, "").replace(/\*\*|__/gu, "").trim();
+  return line
+    .replace(/^\s*(?:#{1,6}|[-*+•]|\d+[.)])\s*/u, "")
+    .replace(/\*\*|__/gu, "")
+    .replace(/[‘’]/gu, "'")
+    .trim();
 }
+
+const isBulletLine = (raw) => /^\s*(?:[-*+•]|\d+[.)])\s/u.test(raw);
 
 function isHeading(raw, stripped) {
   if (/^\s*#{1,6}\s/u.test(raw)) return true;
-  if (/^\s*(?:[-*+•]|\d+[.)])\s/u.test(raw)) return false;
+  if (isBulletLine(raw)) return false;
   if (!stripped) return false;
   if (/:\s*$/u.test(stripped)) return true;
-  const short = stripped.split(/\s+/u).length <= 5 && !/[.,]$/u.test(stripped);
-  return short && (REQUIRED_HEADING.test(stripped) || PREFERRED_HEADING.test(stripped));
+  const short = stripped.split(/\s+/u).length <= 6 && !/[.,]$/u.test(stripped);
+  return short && (REQUIRED_HEADING.test(stripped) || PREFERRED_HEADING.test(stripped) || IGNORE_HEADING.test(stripped));
+}
+
+/**
+ * A short, unpunctuated line that is not a bullet and not a recognised heading,
+ * such as "Client Engagement" or "Engineering & Data Foundations": a sub-heading
+ * inside a section. Its words name a topic, not a skill, so the line is skipped.
+ */
+function isSubHeading(raw, stripped, known) {
+  if (isBulletLine(raw) || /^\s*#/u.test(raw)) return false;
+  const words = stripped.split(/\s+/u);
+  if (words.length < 2 || words.length > 8 || /[.,;:!?]$/u.test(stripped)) return false;
+  const connectors = new Set(["&", "and", "of", "the", "for", "to", "in", "a"]);
+  const content = words.filter((w) => !connectors.has(w.toLowerCase()));
+  if (!content.every((w) => /^[A-Z]/u.test(w))) return false;
+  // "Python and SQL" on its own line is a skill list, not a sub-heading.
+  const skills = content.filter((w) => known.has(w.toLowerCase().replace(/[^a-z0-9.+#/-]/gu, "")));
+  return skills.length < content.length * 0.6;
 }
 
 function cleanPhrase(phrase) {
@@ -225,6 +292,8 @@ function capitalisedTerms(sentence) {
       found.push(word);
     } else if (title) {
       run.push(word);
+      // A comma, colon or semicolon ends a run: "Platforms: Anthropic, Google" is a list, not one name.
+      if (/[,;:]$/u.test(token)) flush();
     } else {
       flush();
     }
@@ -251,7 +320,11 @@ function dropRedundant(buckets, known) {
   });
   const redundant = (keyword) => {
     if (firstSeen.get(stemmed(keyword)) !== keyword) return true;
-    if (known.has(keyword.toLowerCase())) return false;
+    if (known.has(keyword.toLowerCase())) {
+      // "analytics" next to "data analytics": the longer known term says it. Acronyms stay.
+      if (/^[A-Z0-9/+.#-]+$/u.test(keyword)) return false;
+      return knownKept.some((term) => wordsOf(term).length > wordsOf(keyword).length && containsTerm(stemmed(term), stemmed(keyword)));
+    }
     return knownKept.some((term) => term.toLowerCase() !== keyword.toLowerCase() && wordsOf(keyword).length > wordsOf(term).length && containsTerm(stemmed(keyword), stemmed(term)));
   };
   buckets.required = buckets.required.filter((keyword) => !redundant(keyword));
@@ -273,12 +346,16 @@ function extractPostingKeywords(text, options = {}) {
   const skillList = [...SKILL_KEYWORDS, ...KNOWN_TERMS];
   const known = new Set(skillList.map((term) => term.toLowerCase()));
   const context = postingContext(text, options);
-  const add = (lineSection, value) => {
+  // How strong a keyword is when the cap forces a choice: 0 known skill or tool, 1 proper
+  // name or acronym from the text, 2 plain noun phrase after "experience with" and the like.
+  const rank = new Map();
+  const add = (lineSection, value, kind = 2) => {
     if (isNoiseKeyword(value, context, known)) return;
     const canonical = skillList.find((term) => term.toLowerCase() === value.toLowerCase()) || value;
     const key = canonical.toLowerCase();
     if (seen.has(key)) return;
     seen.add(key);
+    rank.set(canonical, known.has(key) ? 0 : kind);
     buckets[lineSection].push(canonical);
   };
 
@@ -292,13 +369,20 @@ function extractPostingKeywords(text, options = {}) {
       firstContentLine = false;
       if (/^\s*#/u.test(raw)) return;
     }
-    if (/^(company|location|salary|compensation|team|department)\s*:/iu.test(stripped)) return;
+    // Saved-page notes ("> Saved on ..."), metadata lines (Source:, Retrieved:, Requisition:),
+    // requisition hashtags (#LI-Hybrid), and pay, legal or process text are never skills.
+    if (/^\s*>/u.test(raw) || /^\s*#[A-Za-z]+-/u.test(raw)) return;
+    if (METADATA_LINE.test(stripped) || BOILERPLATE_LINE.test(stripped)) return;
 
     let body = stripped;
     let lineSection = section;
     if (isHeading(raw, stripped)) {
       const colon = stripped.indexOf(":");
       const headText = colon === -1 ? stripped : stripped.slice(0, colon);
+      if (IGNORE_HEADING.test(headText)) {
+        section = "ignore";
+        return;
+      }
       if (PREFERRED_HEADING.test(headText)) section = "preferred";
       else if (REQUIRED_HEADING.test(headText)) section = "required";
       lineSection = section;
@@ -306,37 +390,63 @@ function extractPostingKeywords(text, options = {}) {
       if (colon === -1 || colon === stripped.length - 1) return;
       body = stripped.slice(colon + 1).trim();
     }
+    // About-us, benefits and similar employer text, until the next requirement-style heading.
+    if (section === "ignore") return;
+    if (isSubHeading(raw, stripped, known)) return;
     if (lineSection === "required" && PREFERRED_INLINE.test(body)) lineSection = "preferred";
+
+    // Long prose paragraphs name teams and organisations in Title Case ("Enterprise
+    // Technology", "Specialty Services Group"); only bullets and short lines get that treatment.
+    const prose = !isBulletLine(raw) && body.split(/\s+/u).length > 30;
 
     const candidates = [];
     skillList.forEach((term) => {
-      if (containsTerm(body, term)) candidates.push({ pos: body.toLowerCase().indexOf(term.toLowerCase()), value: term });
+      if (containsTerm(body, term)) candidates.push({ pos: body.toLowerCase().indexOf(term.toLowerCase()), value: term, kind: 0 });
     });
     body.split(/(?<=[.!?])\s+/u).forEach((sentence) => {
       capitalisedTerms(sentence).forEach((term) => {
+        if (prose && /\s/u.test(term)) return;
         const cleaned = cleanPhrase(term);
-        if (cleaned && !STOPWORDS.has(cleaned.toLowerCase())) candidates.push({ pos: body.indexOf(term), value: cleaned });
+        if (cleaned && !STOPWORDS.has(cleaned.toLowerCase())) candidates.push({ pos: body.indexOf(term), value: cleaned, kind: 1 });
       });
     });
     let match;
     TRIGGER.lastIndex = 0;
     while ((match = TRIGGER.exec(body)) !== null) {
+      // "set", "shape", "coordinate" and "own" are ordinary verbs in running prose.
+      if (prose && /^(?:set|shape|coordinate|own)\b/iu.test(match[0])) continue;
       match[1]
-        .split(/,|\b(?:and|or|across|for|to|in|on|with|at|by|of)\b/iu)
+        // Split on list words, but never inside a hyphenated word ("end-to-end", "human-in-the-loop").
+        .split(/,|(?<![\w-])(?:and|or|across|for|to|in|on|with|at|by|of)(?![\w-])/iu)
         .forEach((piece) => {
           const cleaned = cleanPhrase(piece.replace(/\b(?:such as|e\.g\.|like)\b.*$/iu, ""));
-          if (cleaned) candidates.push({ pos: match.index, value: cleaned });
+          if (!cleaned || /^-|-$/u.test(cleaned)) return;
+          // "is essential", "are required": a clause, not a skill. "developing X": a verb phrase.
+          const cleanedWords = cleaned.toLowerCase().split(/\s+/u);
+          if (cleanedWords.some((w) => ["is", "are", "be", "was", "were", "will", "can", "may", "should", "must", "has", "have"].includes(w))) return;
+          if (cleanedWords.length > 1 && /ing$/u.test(cleanedWords[0]) && !known.has(cleaned.toLowerCase())) return;
+          candidates.push({ pos: match.index, value: cleaned });
         });
     }
 
-    candidates.sort((a, b) => a.pos - b.pos).forEach(({ value }) => add(lineSection, value));
+    candidates.sort((a, b) => a.pos - b.pos).forEach(({ value, kind }) => add(lineSection, value, kind));
   });
 
   dropRedundant(buckets, known);
 
+  // Over the cap, the weakest phrases go first, never the known skills and proper names.
+  const choose = (list, count) => {
+    if (list.length <= count) return list;
+    return list
+      .map((keyword, index) => ({ keyword, index }))
+      .sort((a, b) => rank.get(a.keyword) - rank.get(b.keyword) || a.index - b.index)
+      .slice(0, count)
+      .sort((a, b) => a.index - b.index)
+      .map((item) => item.keyword);
+  };
   // Required wins the cap: preferred only fills what is left.
-  const required = buckets.required.slice(0, max);
-  const preferred = buckets.preferred.slice(0, Math.max(0, max - required.length));
+  const required = choose(buckets.required, max);
+  const preferred = choose(buckets.preferred, Math.max(0, max - required.length));
   return { required, preferred };
 }
 

@@ -19,7 +19,6 @@ const { collectJobs } = require("./tailor-plan");
 
 const isText = (value) => typeof value === "string" && value.trim() !== "";
 const asArray = (value) => (Array.isArray(value) ? value : []);
-const norm = (value) => String(value || "").replace(/\s+/gu, " ").trim().toLowerCase();
 
 const SUMMARY_PATTERN = /\bSummary\s+(.+?)\s+(?:Work history|Work experience|Professional experience|Experience|Employment|Skills|Education)\b/iu;
 
@@ -39,6 +38,40 @@ function skillName(skill) {
   return skill && isText(skill.name) ? skill.name : "";
 }
 
+const wordsOf = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]+/gu, " ").trim();
+const longWords = (value) => new Set(wordsOf(value).split(" ").filter((word) => word.length > 2));
+
+/**
+ * Which tailored job each ingested job lines up with (Map of ingested index -> tailored job).
+ * A job matches when its header names the tailored employer; when one employer has several
+ * roles ("Microsoft", "Microsoft (CSE)"), the closest title and the longest employer name
+ * win, and each tailored job is used at most once.
+ */
+function alignJobs(found, tailoredJobs) {
+  const pairs = [];
+  found.forEach((job, jobIndex) => {
+    const label = wordsOf(`${job.title} ${job.organization}`);
+    const labelWords = longWords(label);
+    tailoredJobs.forEach((tailored, tailoredIndex) => {
+      const company = wordsOf(tailored && tailored.company);
+      if (!company || !` ${label} `.includes(` ${company} `)) return;
+      const shared = [...longWords(tailored.title)].filter((word) => labelWords.has(word)).length;
+      pairs.push({ jobIndex, tailoredIndex, score: company.length + 20 * shared });
+    });
+  });
+  pairs.sort((a, b) => b.score - a.score || a.jobIndex - b.jobIndex);
+  const usedJobs = new Set();
+  const usedTailored = new Set();
+  const aligned = new Map();
+  pairs.forEach(({ jobIndex, tailoredIndex }) => {
+    if (usedJobs.has(jobIndex) || usedTailored.has(tailoredIndex)) return;
+    usedJobs.add(jobIndex);
+    usedTailored.add(tailoredIndex);
+    aligned.set(jobIndex, tailoredJobs[tailoredIndex]);
+  });
+  return aligned;
+}
+
 /**
  * @param {{ profile?: object|null, evidence?: object[], config?: object }} input
  *   `config` (the tailored resume) only aligns job names: an ingested job
@@ -48,11 +81,11 @@ function skillName(skill) {
  */
 function buildGeneralResume({ profile, evidence, config } = {}) {
   const tailoredJobs = asArray(config && config.experienceSections).flatMap((section) => asArray(section && section.jobs));
-  const jobs = collectJobs(profile || null, asArray(evidence))
-    .filter((job) => job.bullets.length > 0)
-    .map((job) => {
-      const label = norm(`${job.title} ${job.organization}`);
-      const aligned = tailoredJobs.find((tailored) => isText(tailored.company) && label.includes(norm(tailored.company)));
+  const found = collectJobs(profile || null, asArray(evidence)).filter((job) => job.bullets.length > 0);
+  const alignment = alignJobs(found, tailoredJobs);
+  const jobs = found
+    .map((job, index) => {
+      const aligned = alignment.get(index);
       return {
         title: aligned ? aligned.title : job.title,
         company: aligned ? aligned.company : job.organization,
