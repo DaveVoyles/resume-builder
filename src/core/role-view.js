@@ -158,6 +158,8 @@ function normalizeRole(role) {
     jobUrl: role.urls?.job,
     applyUrl: role.urls?.apply,
     resume,
+    keywordScore: Number.isFinite(role.resume?.keywordCoverage?.score) ? role.resume.keywordCoverage.score : null,
+    keywordMissing: Array.isArray(role.resume?.keywordCoverage?.missing) ? role.resume.keywordCoverage.missing.length : null,
     reportPath: firstNonEmpty(role.resume?.reportPath),
     coverLetterStatus: role.coverLetter?.status || null,
     notes: formatNotes(role),

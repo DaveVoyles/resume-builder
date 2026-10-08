@@ -150,6 +150,15 @@ async function runPersona(name, options = {}) {
         "--jd-file", postingPath,
       ]);
 
+      // tailor-plan: ranks the persona's evidence against the stored posting keywords.
+      const planOutput = runCli(["tailor-plan", "--workspace", workspace, "--company", posting.company, "--title", posting.title]);
+      const planRole = readJson(paths.rolesTracked, []).find((role) => role.company === posting.company && role.title === posting.title);
+      const planFile = path.join(paths.outputs, "tailor-plans", `${planRole && planRole.id}.json`);
+      const plan = fs.existsSync(planFile) ? readJson(planFile) : null;
+      expect(stage, "tailor-plan lists at least one supported keyword", Boolean(plan) && plan.keywords.supported.length > 0, plan ? `${plan.keywords.supported.length} supported, ${plan.keywords.doNotClaim.length} not claimable` : "no plan written");
+      expect(stage, "tailor-plan keeps the do-not-claim list apart from supported keywords", Boolean(plan) && plan.keywords.doNotClaim.every((item) => !plan.keywords.supported.some((s) => s.keyword === item.keyword)));
+      expect(stage, "tailor-plan prints a relative plan path", /Plan saved: outputs\/tailor-plans\//u.test(planOutput) || !planOutput.includes(tmpRoot), "no absolute temp path");
+
       fs.mkdirSync(paths.resumeConfigs, { recursive: true });
       const configPath = path.join(paths.resumeConfigs, path.basename(posting.config));
       const configText = fs.readFileSync(configSource, "utf8");

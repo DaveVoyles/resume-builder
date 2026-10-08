@@ -1,0 +1,31 @@
+{
+  "_note": "Groups of terms treated as the same keyword in both directions. Matching is case-insensitive except two-letter all-caps terms (PM, ML, JS), which must match case exactly.",
+  "groups": [
+    ["Kubernetes", "K8s"],
+    ["JavaScript", "JS"],
+    ["TypeScript", "TS"],
+    ["PostgreSQL", "Postgres"],
+    ["MongoDB", "Mongo"],
+    ["CI/CD", "continuous integration", "continuous delivery", "continuous deployment"],
+    ["machine learning", "ML"],
+    ["artificial intelligence", "AI"],
+    ["product management", "product manager", "PM"],
+    ["program management", "program manager"],
+    ["project management", "project manager"],
+    ["Node.js", "NodeJS"],
+    ["React", "React.js", "ReactJS"],
+    ["Google Cloud", "GCP", "Google Cloud Platform"],
+    ["Amazon Web Services", "AWS"],
+    ["user experience", "UX"],
+    ["user interface", "UI"],
+    ["quality assurance", "QA"],
+    ["search engine optimization", "SEO"],
+    ["customer relationship management", "CRM"],
+    ["a/b testing", "A/B tests", "split testing"],
+    ["go-to-market", "GTM"],
+    ["developer experience", "DevEx"],
+    ["large language models", "LLM", "LLMs"],
+    ["Microsoft Excel", "Excel"],
+    ["Google Workspace", "G Suite"]
+  ]
+}

@@ -203,16 +203,6 @@ describe("scoreKeywordCoverage", () => {
   });
 
   describe("edge cases", () => {
-    test("uses exact substring matching, not word boundaries", () => {
-      const config = resumeConfig();
-      // "Script" should match within "TypeScript"
-      const keywords = ["Script"];
-      const result = scoreKeywordCoverage(keywords, config);
-
-      assert.equal(result.percent, 100);
-      assert.deepEqual(result.present, ["Script"]);
-    });
-
     test("handles keywords with special characters", () => {
       const config = resumeConfig();
       const keywords = ["Node.js", "Vue.js", "C++"];

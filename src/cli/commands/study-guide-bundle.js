@@ -2,6 +2,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const { loadResumeConfig } = require("../../core/resume-config");
 const { readStoredPostingText } = require("../../core/role-posting");
 const { readJson, readJsonLines, resolveWorkspace, workspacePaths, ensureDir, writeJson } = require("../../core/workspace");
 
@@ -115,7 +116,7 @@ async function run(options) {
 
   // Find and load the resume config
   const roleConfigPath = findRoleConfigPath(workspace, role);
-  const resumeConfig = readJson(roleConfigPath);
+  const resumeConfig = loadResumeConfig(roleConfigPath);
 
   // Create the bundle
   const bundle = {

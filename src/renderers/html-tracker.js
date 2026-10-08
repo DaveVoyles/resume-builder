@@ -149,6 +149,8 @@ function renderHtmlTracker(roles, options = {}) {
       jobUrl: role.jobUrl || "",
       applyUrl: role.applyUrl || "",
       resume: role.resume || "",
+      keywordScore: role.keywordScore,
+      keywordMissing: role.keywordMissing,
       reportPath: role.reportPath || "",
       coverLetterStatus: role.coverLetterStatus || "",
       notes: notesHtml(sortedSourceRoles[index]),
@@ -376,6 +378,7 @@ function renderHtmlTracker(roles, options = {}) {
   .loc-hybrid { background: #e0e7ff; color: #3730a3; }
   .loc-onsite { background: #fce7f3; color: #9d174d; }
   .loc-other { background: #f1f5f9; color: #475569; }
+  .kw-score { font-size: 0.75rem; color: #475569; }
   .stale-badge {
     display: inline-block;
     padding: 0.25rem 0.75rem;
@@ -610,9 +613,14 @@ function renderHtmlTracker(roles, options = {}) {
       const parts = role.resume.split("/");
       const filename = parts[parts.length - 1] || role.resume;
       const link = '<a href="' + esc(href) + '" target="_blank" rel="noopener">' + esc(filename) + "</a>";
-      if (!role.reportPath || /^([a-zA-Z]:)?[\\/]/.test(role.reportPath) || role.reportPath.split(/[\\/]/).indexOf("..") !== -1) return link;
+      let cell = link;
+      if (role.keywordScore !== null && role.keywordScore !== undefined) {
+        const missing = role.keywordMissing ? role.keywordMissing + " missing" : "none missing";
+        cell += '<br><span class="kw-score">Keywords ' + esc(String(role.keywordScore)) + "% (" + esc(missing) + ")</span>";
+      }
+      if (!role.reportPath || /^([a-zA-Z]:)?[\\/]/.test(role.reportPath) || role.reportPath.split(/[\\/]/).indexOf("..") !== -1) return cell;
       const reportHref = role.reportPath.replace(/^outputs\\//, "");
-      return link + ' · <a href="' + esc(reportHref) + '" target="_blank" rel="noopener">Report</a>';
+      return cell + ' · <a href="' + esc(reportHref) + '" target="_blank" rel="noopener">Report</a>';
     }
 
     function linkCell(role) {

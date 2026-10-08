@@ -13,6 +13,7 @@
  *   schemaVersion: "1.0",
  *   company: string,
  *   outputFileName?: string,
+ *   extends?: string,                        // relative path to a base config; see loadResumeConfig
  *   roleTitle?: string,                     // used in the default output file name
  *   pageLimit?: 1 | 2 | 3,                  // default 1; page-count check warns above it
  *   candidate: { name: string, contact: [{ text: string, link?: string }] },
@@ -29,6 +30,10 @@
  *   publicationsSpeakingLayout?: "combined" | "speaking-then-publications" | "combined-speaking-only" | "publications-only"
  * }
  */
+
+const fs = require("fs");
+const path = require("path");
+const { readJson } = require("./workspace");
 
 const MAX_HEADLINE_CHARS = 80;
 const MAX_SUMMARY_WORDS = 120;
@@ -209,6 +214,9 @@ function validateResumeConfig(config) {
   }
 
   if (!isNonEmptyString(config.company)) errors.push("company: required non-empty string");
+  if (config.extends !== undefined && !isNonEmptyString(config.extends)) {
+    errors.push("extends: must be a non-empty relative path to a base resume config when present");
+  }
   if (config.outputFileName !== undefined && !isNonEmptyString(config.outputFileName)) {
     errors.push("outputFileName: must be a non-empty string when present");
   }
@@ -256,4 +264,67 @@ function validateResumeConfig(config) {
   return { valid: errors.length === 0, errors };
 }
 
-module.exports = { validateResumeConfig, LAYOUTS };
+const MAX_EXTENDS_DEPTH = 5;
+
+function readConfigFile(file, label) {
+  let text;
+  try {
+    text = fs.readFileSync(file, "utf8");
+  } catch (error) {
+    throw new Error(`extends: base config not found: ${label}`);
+  }
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    throw new Error(`extends: base config is not valid JSON: ${label}`);
+  }
+}
+
+function resolveExtends(config, configPath, chain, label) {
+  if (!isObject(config) || config.extends === undefined) return config;
+  if (!isNonEmptyString(config.extends)) {
+    throw new Error(`${label}: extends must be a non-empty relative path to a base resume config`);
+  }
+  if (path.isAbsolute(config.extends)) {
+    throw new Error(`${label}: extends must be a relative path (got an absolute path)`);
+  }
+  const basePath = path.resolve(path.dirname(configPath), config.extends);
+  if (chain.includes(basePath)) {
+    throw new Error(`${label}: extends cycle: ${[...chain, basePath].map((file) => path.basename(file)).join(" -> ")}`);
+  }
+  if (chain.length >= MAX_EXTENDS_DEPTH) {
+    throw new Error(`${label}: extends chain is longer than ${MAX_EXTENDS_DEPTH} configs`);
+  }
+  const baseLabel = config.extends;
+  const base = resolveExtends(readConfigFile(basePath, baseLabel), basePath, [...chain, basePath], baseLabel);
+  if (!isObject(base)) throw new Error(`extends: base config must be a JSON object: ${baseLabel}`);
+  // Shallow merge: the child overrides whole top-level sections. The base's
+  // outputFileName is not inherited, so two roles never render to one file.
+  const { outputFileName: _baseOutputFileName, ...inherited } = base;
+  const { extends: _extends, ...own } = config;
+  return { ...inherited, ...own };
+}
+
+/**
+ * Reads a resume config and resolves `extends` (a relative path, from this
+ * file's folder, to a base config). The child's top-level sections replace the
+ * base's whole; sections the child leaves out come from the base. Throws on a
+ * missing or unreadable base, a cycle, or a chain longer than 5. The returned
+ * object has no `extends` key. This is the one load point: render, tailor,
+ * validate, and the study-guide bundle all go through it.
+ */
+function loadResumeConfig(configPath) {
+  const absolute = path.resolve(configPath);
+  const config = readJson(absolute);
+  return resolveExtends(config, absolute, [absolute], path.basename(absolute));
+}
+
+const LIMITS = {
+  maxHeadlineChars: MAX_HEADLINE_CHARS,
+  maxSummaryWords: MAX_SUMMARY_WORDS,
+  maxFirstJobBullets: MAX_FIRST_JOB_BULLETS,
+  maxLaterJobBullets: MAX_LATER_JOB_BULLETS,
+  maxProxyScore: MAX_PROXY_SCORE,
+};
+
+module.exports = { validateResumeConfig, loadResumeConfig, LAYOUTS, LIMITS };
