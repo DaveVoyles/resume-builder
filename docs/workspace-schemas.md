@@ -495,7 +495,7 @@ The validator flags feedback before output when:
 | Field | Type | Description |
 | --- | --- | --- |
 | `sourceSeedId` | string | Seed role ID that promoted this tracked role. |
-| `posting` | object | Captured title, location, compensation, and posting date. |
+| `posting` | object | Display fields (`location`, `compensation`) plus the saved job posting: `path` (workspace-relative, `postings/<role-id>.md`), `fetchedAt` (ISO time), `source` (`url`, `pasted`, or `file`), and `keywords` (`{ required: [], preferred: [] }`, at most about 25 in total). Written by `add-role` / `tailor` with `--jd-file <file>` or `--jd-text`, so tailoring, gap analysis, and study guides read the stored text instead of re-fetching the URL. `validate` rejects a `path` that is absolute or contains `..`, a bad `source` or `fetchedAt`, and non-string keywords. See [Saved job postings](#saved-job-postings). |
 | `application` | object | `status` (enum above, set by `set-status`), `appliedAt` (date the candidate applied — preserved across later status transitions unless explicitly overridden), referral contact label, and notes. |
 | `fit` | object | Fit level, rationale, matched evidence, and gaps. |
 | `resume` | object | `outputPath` (rendered DOCX path), `configPath` (the resume-config JSON this role was tailored from, set by `tailor` — see below), `status`, and tailored emphasis. |
@@ -1009,6 +1009,18 @@ npm run workspace:tailor -- --workspace <workspace> \
 6. Registers (or finds the existing) tracked role via `add-role`'s own command, then sets `resume.configPath` and `resume.outputPath` on it (relative to the workspace root) so the role carries an explicit link back to the exact config and DOCX it was tailored from — this is also what `study-guide-bundle` (D8) now prefers over its content-matching fallback, when the link is present.
 7. Sets `application.status` to `interested` — the D7 enum's not-yet-applied value (buckets to `not-applied` in the tracker) — via `set-status`, unless the role already has a real `application.status` (a re-run never reverts genuine progress), and rebuilds the tracker.
 
+### Saved job postings
+
+Save the posting with the role so nothing has to re-scrape the URL:
+
+```bash
+npm run workspace:add-role -- --workspace candidate --tracked --url "<posting-url>" --title "<Title>" --company "<Company>" --jd-file <posting.md>
+# or paste the text: --jd-text "<text>"  (bare --jd-text or "-" reads stdin)
+# optional override of the extracted keywords: --keywords "python,kubernetes"
+```
+
+`add-role`, `add-lead`, and `tailor` accept `--jd-file` / `--jd-text`. The text is written to `<workspace>/postings/<role-id>.md` (leads use `postings/lead_...md`) and `posting` is set on the role. Keywords come from `src/core/posting-keywords.js`, a deterministic extractor (no network, no LLM): it splits required from preferred using headings and phrases such as "requirements", "must have", "nice to have", "preferred", and "bonus", then collects known skills, capitalised terms, and phrases after "experience with", deduped and capped at 25. An existing stored posting is never overwritten by a later `add-role` or `tailor` run for the same role. `--keywords` takes a comma list (or a JSON array file) and replaces the stored keywords, as `required`. When `tailor` runs without `--keywords`, its keyword-coverage step scores the stored keywords. The `postings/` folder is private workspace data and is ignored by the workspace `.gitignore`.
+
 ## Study guide bundle (`study-guide-bundle`)
 
 `study-guide-bundle` gathers everything relevant to a tracked role into one context file so an agent can write an interview study guide from it, without re-reading four separate workspace files. See [`docs/playbooks/study-guide.md`](playbooks/study-guide.md) for the full agent workflow.
@@ -1026,7 +1038,7 @@ It writes `outputs/study-guide-bundles/<role-id>.json` (`src/cli/commands/study-
 | `profile` | object | The candidate's `profile.json`, verbatim. |
 | `evidence` | array | Every entry from `evidence.jsonl`, verbatim. |
 | `resumeConfig` | object | The resume render config tailored for this role — resolved via the role's `resume.configPath` link when `tailor` set one, falling back to a company-name content match against `resume-configs/` otherwise. |
-| `jobPosting` | object | `{ url, applyUrl }`, read from the role's `urls.job` / `urls.apply` (either may be `null`). |
+| `jobPosting` | object | `{ url, applyUrl, text, path, source, fetchedAt, keywords }`. `url` / `applyUrl` come from the role's `urls.job` / `urls.apply` (either may be `null`). `text`, `path`, `source`, `fetchedAt`, and `keywords` come from the role's saved posting (see [Saved job postings](#saved-job-postings)) and are all `null` when none was saved; in that case fall back to the URL. |
 | `generatedAt` | string | ISO 8601 timestamp of when the bundle was written. |
 
 The command fails loud rather than guessing: no matching tracked role, no resume config for that role's company, or more than one config matching the same company name are all hard errors naming the ambiguity, not a silent best-effort bundle.

@@ -197,8 +197,42 @@ function validateRoles(roles, label) {
     if (!role.urls || typeof role.urls !== "object" || Array.isArray(role.urls)) errors.push(`${roleLabel}: urls must be an object`);
     if (!Array.isArray(role.notes)) errors.push(`${roleLabel}: notes must be an array`);
     if (!Array.isArray(role.followUpQuestions)) errors.push(`${roleLabel}: followUpQuestions must be an array`);
+    validatePostingMetadata(role.posting, `${roleLabel}.posting`, errors);
   });
   return errors;
+}
+
+const POSTING_SOURCES = new Set(["url", "pasted", "file"]);
+
+// role.posting also carries optional display fields (location, compensation);
+// the capture fields below are validated only when any of them is present.
+function validatePostingMetadata(posting, label, errors) {
+  if (posting === undefined) return;
+  if (!posting || typeof posting !== "object" || Array.isArray(posting)) {
+    errors.push(`${label}: must be an object`);
+    return;
+  }
+  const captureKeys = ["path", "fetchedAt", "source", "keywords"];
+  if (!captureKeys.some((key) => posting[key] !== undefined)) return;
+  if (typeof posting.path !== "string" || posting.path.trim() === "") {
+    errors.push(`${label}.path: must be a non-empty string`);
+  } else if (/^([a-zA-Z]:)?[\\/]/u.test(posting.path) || posting.path.split(/[\\/]/u).includes("..")) {
+    errors.push(`${label}.path: must be a workspace-relative path without ".."`);
+  }
+  if (typeof posting.fetchedAt !== "string" || Number.isNaN(Date.parse(posting.fetchedAt))) {
+    errors.push(`${label}.fetchedAt: must be an ISO date-time string`);
+  }
+  if (!POSTING_SOURCES.has(posting.source)) errors.push(`${label}.source: must be url, pasted, or file`);
+  const keywords = posting.keywords;
+  if (!keywords || typeof keywords !== "object" || Array.isArray(keywords)) {
+    errors.push(`${label}.keywords: must be an object with required and preferred arrays`);
+    return;
+  }
+  ["required", "preferred"].forEach((key) => {
+    if (!Array.isArray(keywords[key]) || keywords[key].some((item) => typeof item !== "string" || item.trim() === "")) {
+      errors.push(`${label}.keywords.${key}: must be an array of non-empty strings`);
+    }
+  });
 }
 
 function validateFeedback(entries) {

@@ -11,6 +11,7 @@ const { validateResumeConfig } = require("../../core/resume-config");
 const { auditResumeConfig } = require("../../core/claim-audit");
 const { scoreKeywordCoverage } = require("../../core/keyword-coverage");
 const { lintConfig } = require("../../core/style-lint");
+const { allKeywords, hasPosting, parseKeywordsOption } = require("../../core/role-posting");
 const { updateOnboardingState } = require("../../core/onboarding-state");
 const { readJson, readJsonLines, relativeToWorkspace, resolveWorkspace, workspacePaths, writeJson } = require("../../core/workspace");
 
@@ -49,6 +50,15 @@ function findRegisteredRole(trackedRolesBefore, trackedRolesAfter, roleOptions) 
     if (byUrl) return byUrl;
   }
   return trackedRolesAfter.find((candidate) => candidate.id === expected.id);
+}
+
+function printKeywordCoverage(keywords, config, suffix) {
+  const result = scoreKeywordCoverage(keywords, config);
+  const presentList = result.present.length > 0 ? result.present.join(", ") : "(none)";
+  const missingList = result.missing.length > 0 ? result.missing.join(", ") : "(none)";
+  console.log(`Keyword coverage: ${result.percent}% (${result.present.length}/${result.present.length + result.missing.length})${suffix}`);
+  console.log(`Present: ${presentList}`);
+  console.log(`Missing: ${missingList}`);
 }
 
 /**
@@ -99,17 +109,9 @@ async function run(options) {
   // blocks or affects the exit code. This is purely advisory feedback.
   if (options.keywords) {
     try {
-      const keywordsPath = path.resolve(process.cwd(), options.keywords);
-      const keywords = readJson(keywordsPath);
-      if (!Array.isArray(keywords)) {
-        throw new Error(`Keywords file must contain a JSON array (got: ${typeof keywords})`);
-      }
-      const result = scoreKeywordCoverage(keywords, config);
-      const presentList = result.present.length > 0 ? result.present.join(", ") : "(none)";
-      const missingList = result.missing.length > 0 ? result.missing.join(", ") : "(none)";
-      console.log(`Keyword coverage: ${result.percent}% (${result.present.length}/${result.present.length + result.missing.length})`);
-      console.log(`Present: ${presentList}`);
-      console.log(`Missing: ${missingList}`);
+      const keywords = parseKeywordsOption(options.keywords);
+      if (!keywords) throw new Error("--keywords needs a JSON array file or a comma-separated list");
+      printKeywordCoverage(keywords, config, "");
     } catch (error) {
       // Advisory-only: print the error but never throw or block
       console.warn(`Warning: keyword coverage analysis failed: ${error.message}`);
@@ -150,6 +152,12 @@ async function run(options) {
   // to the resume config's own company so the caller doesn't have to repeat
   // it.
   const roleOptions = { ...options, tracked: true, company: options.company || config.company };
+  // A bad --keywords file only disables the advisory above; it must not block role registration.
+  try {
+    parseKeywordsOption(options.keywords);
+  } catch {
+    delete roleOptions.keywords;
+  }
   const trackedRolesBefore = readJson(paths.rolesTracked, []);
   const isFirstTrackedRole = trackedRolesBefore.length === 0;
   addRole.run(roleOptions);
@@ -160,6 +168,13 @@ async function run(options) {
     throw new Error("tailor could not find the tracked role it just registered.");
   }
   const roleId = role.id;
+
+  // Posting saved with the role (add-role --jd-file): when --keywords was not
+  // passed, score the stored keywords instead of asking for a list again.
+  if (!options.keywords && hasPosting(role)) {
+    const stored = allKeywords(role.posting.keywords);
+    if (stored.length > 0) printKeywordCoverage(stored, config, " (stored posting keywords)");
+  }
 
   // Onboarding's last step (design plan 0006 D1): the first tracked role ever
   // added completes the onboarding checklist. Piggybacks on this command's
