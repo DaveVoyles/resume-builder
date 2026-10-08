@@ -7,6 +7,7 @@
 // (no *.test.js name). Self-skips when Playwright or Chromium is unavailable.
 // Nothing here submits an application.
 
+process.env.RESUME_BUILDER_PAGE_CHECK = process.env.RESUME_BUILDER_PAGE_CHECK || "off";
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("fs");

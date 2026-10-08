@@ -73,7 +73,7 @@ function printKeywordCoverage(keywords, config, suffix) {
  * dedup, and the enum status write + tracker rebuild are each delegated to
  * their own module/command.
  */
-async function run(options) {
+async function run(options, deps = {}) {
   if (!options.config) {
     throw new Error("tailor requires --config <path-to-drafted-resume-config.json>");
   }
@@ -150,7 +150,10 @@ async function run(options) {
   // Step 3: render the DOCX (D2, render-resume) — delegate to the render
   // command itself so path sanitization, directory layout, and file writing
   // all stay in one place instead of a second, drifting copy here.
-  const outputPath = await renderResume.run({ workspace: options.workspace, config: options.config, includeApplied: options.includeApplied });
+  const { outputPath, pageCount } = await renderResume.runDetailed(
+    { workspace: options.workspace, config: options.config, includeApplied: options.includeApplied, title: options.title, noPageCheck: options.noPageCheck, pageCheck: options.pageCheck },
+    deps,
+  );
 
   // Step 4: register the tracked role (D6, add-role) — delegate to
   // add-role's own command (dedup by id or job URL, tracked-list
@@ -198,6 +201,7 @@ async function run(options) {
   role.resume.configPath = relativeToWorkspace(workspace, configPath);
   role.resume.outputPath = relativeToWorkspace(workspace, outputPath);
   role.resume.status = "review-needed";
+  if (pageCount) role.resume.pageCount = pageCount;
 
   // Persist the resume linkage now, before attempting the cover letter step
   // below. The cover letter's independent claim audit can throw and abort

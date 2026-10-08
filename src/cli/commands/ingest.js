@@ -189,11 +189,11 @@ function collectSources(options, workspace, paths) {
   return folderSources;
 }
 
-async function ingestLocalSources(sources, workspace, paths, profile) {
+async function ingestLocalSources(sources, workspace, paths, profile, deps = {}) {
   const entries = [];
   let nextProfile = profile;
   for (const source of sources) {
-    const read = readTextSource(source.file);
+    const read = readTextSource(source.file, deps);
     const relativePath = relativeToWorkspace(workspace, read.path);
     if (read.warning) {
       console.warn(`⚠ ${relativePath}: ${read.warning}`);
@@ -214,7 +214,7 @@ async function ingestLocalSources(sources, workspace, paths, profile) {
         metadata: read.metadata,
       }),
     );
-    if (path.extname(read.path).toLowerCase() === ".pdf") {
+    if (path.extname(read.path).toLowerCase() === ".pdf" && !read.text) {
       console.log(
         `I can't read the text inside ${path.basename(read.path)}. ` +
           "Please save a Word (.docx) or plain text copy of that resume in my-documents and tell me when it's there, " +
@@ -298,13 +298,13 @@ function noFilesFoundMessage(workspace, paths) {
   return `No files found in ${resumesDisplay} or ${notesDisplay}. Add files there or pass --resume/--notes.`;
 }
 
-async function run(options) {
+async function run(options, deps = {}) {
   const workspace = resolveWorkspace(options.workspace);
   const paths = workspacePaths(workspace);
   let profile = readJson(paths.profile);
   const sources = collectSources(options, workspace, paths);
 
-  const local = await ingestLocalSources(sources, workspace, paths, profile);
+  const local = await ingestLocalSources(sources, workspace, paths, profile, deps);
   profile = local.profile;
   const github = await ingestGithub(options, paths, profile);
   profile = github.profile;

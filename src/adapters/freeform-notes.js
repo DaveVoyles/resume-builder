@@ -2,7 +2,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { execFileSync } = require("child_process");
+const { execFileSync, spawnSync } = require("child_process");
 const { hash } = require("../core/ids");
 
 // Strips OOXML markup down to plain text. DOCX (WordprocessingML) and PPTX
@@ -153,7 +153,51 @@ function attemptOoxmlExtraction(readFn, file, { label, successMode, encryptedCod
   }
 }
 
-function readTextSource(file) {
+// Reads a PDF's text with poppler's `pdftotext -layout` when it is installed.
+// No npm dependency, no network. Always resolves to { text, extractionMode,
+// warning }; a PDF whose text can't be read stays metadata-only (confidence
+// "metadata-only"), so the claim audit never treats it as proof.
+function readPdf(file, deps = {}) {
+  const exec = deps.spawnSync || spawnSync;
+  const fallback = "Save a Word (.docx) or plain text copy of it in my-documents for full extraction.";
+  let result;
+  try {
+    result = exec("pdftotext", ["-layout", file, "-"], { encoding: "utf8", maxBuffer: 32 * 1024 * 1024 });
+  } catch (error) {
+    result = { error };
+  }
+  if (!result || result.error) {
+    return {
+      text: "",
+      extractionMode: "pdf-not-supported",
+      warning: `PDF text extraction needs pdftotext, which is not installed; recorded as metadata-only. ${fallback}`,
+    };
+  }
+  if (result.status !== 0) {
+    const detail = String(result.stderr || "").trim().split(/\r?\n/u)[0] || `exit ${result.status}`;
+    return {
+      text: "",
+      extractionMode: `pdf-metadata-only: ${detail}`,
+      warning: `could not read the text in this PDF (${detail}); recorded as metadata-only. ${fallback}`,
+    };
+  }
+  const text = String(result.stdout || "")
+    .replace(/\f/gu, "\n")
+    .split(/\r?\n/u)
+    .map((line) => line.replace(/[ \t]+$/u, ""))
+    .join("\n")
+    .trim();
+  if (!text) {
+    return {
+      text: "",
+      extractionMode: "pdf-empty",
+      warning: `no text found in this PDF (it may be a scan or image); recorded as metadata-only. ${fallback}`,
+    };
+  }
+  return { text, extractionMode: "pdf-pdftotext", warning: null };
+}
+
+function readTextSource(file, deps = {}) {
   const fullPath = path.resolve(file);
   if (!fs.existsSync(fullPath)) throw new Error(`Source file not found: ${file}`);
   const extension = path.extname(fullPath).toLowerCase();
@@ -178,15 +222,7 @@ function readTextSource(file) {
       noContentCode: "PPTX_NO_SLIDES",
     }));
   } else if (extension === ".pdf") {
-    // No PDF-parsing dependency exists in this project (and none is added
-    // here without a decision to do so) — always record PDFs as
-    // metadata-only rather than fabricating extraction via a raw-byte UTF-8
-    // sniff, which would misrepresent binary PDF bytes as "text".
-    text = "";
-    extractionMode = "pdf-not-supported";
-    warning =
-      "PDF text extraction is not supported yet; recorded as metadata-only. " +
-      "Convert the PDF to .docx/.txt, or paste its text into a .md note, for full extraction.";
+    ({ text, extractionMode, warning } = readPdf(fullPath, deps));
   } else if ([".md", ".markdown", ".txt", ".json", ".csv", ".tsv"].includes(extension)) {
     text = readUtf8IfText(fullPath);
   } else {
@@ -208,4 +244,4 @@ function readTextSource(file) {
   };
 }
 
-module.exports = { readTextSource, readDocx, readPptx, isCdfv2Compound };
+module.exports = { readTextSource, readPdf, readDocx, readPptx, isCdfv2Compound };

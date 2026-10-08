@@ -1,5 +1,6 @@
 "use strict";
 
+process.env.RESUME_BUILDER_PAGE_CHECK = process.env.RESUME_BUILDER_PAGE_CHECK || "off";
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("fs");
@@ -12,6 +13,7 @@ function fictionalConfig(overrides = {}) {
   return {
     schemaVersion: "1.0",
     company: "Acme Corp",
+    roleTitle: "Platform Engineer",
     candidate: {
       name: "Sample Candidate",
       headline: "Fictional engineer for tests",
@@ -56,7 +58,7 @@ test("render-resume command writes a docx to outputs/resumes/<Company>/<file>.do
   await withWorkspace(fictionalConfig(), async ({ workspace, configPath }) => {
     await command.run({ workspace, config: configPath });
 
-    const expectedPath = path.join(workspace, "outputs", "resumes", "Acme Corp", "sample-candidate-acme-corp.docx");
+    const expectedPath = path.join(workspace, "outputs", "resumes", "Acme Corp", "sample-candidate-acme-corp-platform-engineer.docx");
     assert.ok(fs.existsSync(expectedPath), `expected rendered file at ${expectedPath}`);
 
     const text = readDocxText(expectedPath);
@@ -134,7 +136,7 @@ test("render-resume command rejects a whitespace-padded \"..\" outputFileName va
 test("render-resume command strips null bytes from company/outputFileName instead of passing them to the filesystem", async () => {
   await withWorkspace(fictionalConfig({ company: "Acme\0Corp" }), async ({ workspace, configPath }) => {
     await command.run({ workspace, config: configPath });
-    const expectedPath = path.join(workspace, "outputs", "resumes", "AcmeCorp", "sample-candidate-acme-corp.docx");
+    const expectedPath = path.join(workspace, "outputs", "resumes", "AcmeCorp", "sample-candidate-acme-corp-platform-engineer.docx");
     assert.ok(fs.existsSync(expectedPath), `expected rendered file at ${expectedPath}`);
   });
 });
@@ -147,7 +149,7 @@ test("render-resume command rejects an excessively long company value with a cle
 
 test("render-resume does not overwrite a resume for an applied role unless includeApplied is set", async () => {
   await withWorkspace(fictionalConfig(), async ({ workspace, configPath }) => {
-    const outputPath = path.join(workspace, "outputs", "resumes", "Acme Corp", "sample-candidate-acme-corp.docx");
+    const outputPath = path.join(workspace, "outputs", "resumes", "Acme Corp", "sample-candidate-acme-corp-platform-engineer.docx");
     const trackedPath = path.join(workspace, "roles.tracked.json");
 
     await command.run({ workspace, config: configPath });

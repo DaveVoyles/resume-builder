@@ -241,7 +241,7 @@ Use these conventions across all workspace files:
 
 ### Optional fields for resume pieces
 
-`ingest` writes one entry per job header, bullet, or paragraph of each resume (`metadata.chunkKind` is `job-header`, `bullet`, or `paragraph`), in addition to the original whole-file entry. A resume that is a single piece gets only the whole-file entry. PDFs stay metadata-only; `ingest` asks for a Word or plain-text copy. Each piece is capped at 600 characters (longer text is split on sentence boundaries, never cut). Ids come from the piece's own text and file path, so re-running `ingest` adds no duplicates; an edited bullet gets a new id and the old entry stays.
+`ingest` writes one entry per job header, bullet, or paragraph of each resume (`metadata.chunkKind` is `job-header`, `bullet`, or `paragraph`), in addition to the original whole-file entry. A resume that is a single piece gets only the whole-file entry. PDFs are read with `pdftotext -layout` when it is installed (`metadata.extractionMode` is `pdf-pdftotext`) and chunked like any text resume; if it is missing, fails, or finds no text (`pdf-not-supported`, `pdf-metadata-only: ...`, `pdf-empty`), the PDF is `metadata-only` and cannot back a claim, and `ingest` asks for a Word or plain-text copy in `my-documents`. Each piece is capped at 600 characters (longer text is split on sentence boundaries, never cut). Ids come from the piece's own text and file path, so re-running `ingest` adds no duplicates; an edited bullet gets a new id and the old entry stays.
 
 | Field | Type | Description |
 | --- | --- | --- |
@@ -499,7 +499,7 @@ The validator flags feedback before output when:
 | `posting` | object | Display fields (`location`, `compensation`) plus the saved job posting: `path` (workspace-relative, `postings/<role-id>.md`), `fetchedAt` (ISO time), `source` (`url`, `pasted`, or `file`), and `keywords` (`{ required: [], preferred: [] }`, at most about 25 in total). Written by `add-role` / `tailor` with `--jd-file <file>` or `--jd-text`, so tailoring, gap analysis, and study guides read the stored text instead of re-fetching the URL. `validate` rejects a `path` that is absolute or contains `..`, a bad `source` or `fetchedAt`, and non-string keywords. See [Saved job postings](#saved-job-postings). |
 | `application` | object | `status` (enum above, set by `set-status`), `appliedAt` (date the candidate applied — preserved across later status transitions unless explicitly overridden), referral contact label, and notes. |
 | `fit` | object | Fit level, rationale, matched evidence, and gaps. |
-| `resume` | object | `outputPath` (rendered DOCX path), `configPath` (the resume-config JSON this role was tailored from, set by `tailor` — see below), `status`, and tailored emphasis. |
+| `resume` | object | `outputPath` (rendered DOCX path), `configPath` (the resume-config JSON this role was tailored from, set by `tailor` — see below), `status`, `pageCount` (`{ pages, checkedAt }` from the LibreOffice page-count check; absent when it was not run), and tailored emphasis. |
 | `coverLetter` | object | `configPath` (the cover-letter-config JSON, relative to the workspace), `outputPath` (rendered DOCX path), and `status` — set by `tailor --cover-letter` or standalone `render-cover-letter` (see [Cover letter render config](#cover-letter-render-config-render-cover-letter)). Absent when no cover letter has been generated for this role. |
 | `evidenceMap` | array | Role requirements mapped to evidence IDs. |
 | `nextAction` | object | Next action type, owner, and due date. |
@@ -873,7 +873,9 @@ Store per-role render configs under `<workspace>/resume-configs/<role-slug>.json
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `outputFileName` | string | File name written under `outputs/resumes/<Company>/`. Defaults to `<slug(candidate.name)>-<slug(company)>.docx`. |
+| `outputFileName` | string | File name written under `outputs/resumes/<Company>/`. Defaults to `<slug(candidate.name)>-<slug(company)>-<slug(role)>.docx`, where the role comes from `tailor`/`render-resume --title`, then `roleTitle`, then the config file's own name. Older renders used `<slug(candidate.name)>-<slug(company)>.docx`; role links (`resume.outputPath`) keep resolving. |
+| `roleTitle` | string | Role title used in the default output file name when `--title` is not passed. |
+| `pageLimit` | integer 1-3 | Pages allowed (default 1). The page-count check after rendering warns (never fails) when the DOCX runs longer. Needs LibreOffice (`soffice`); without it the check is skipped and says so. |
 | `summary.fitOverride` | string\|null | Replaces the summary's trailing "Strong/Exceptional fit for..." sentence with role-specific wording, or appends it if none is found. |
 | `experienceSections[].jobs[].evidenceIds` | string[] | Evidence ids from `evidence.jsonl` that back every bullet in the job. When present, numbers in those bullets must appear in these entries (blocking), not just anywhere in the ledger. |
 | `experienceSections[].jobs[].bulletEvidenceIds` | string[][] | One list of evidence ids per bullet, same order as `bullets`. A non-empty list overrides the job-level `evidenceIds` for that bullet; use `[]` to skip a bullet. Bullets stay plain strings. |
@@ -1007,7 +1009,7 @@ npm run workspace:tailor -- --workspace <workspace> \
 3. Runs the [de-AI style lint](style-lint.md) against the resume text — advisory only, never blocks.
 4. Renders the DOCX via `render-resume`'s own command.
 5. If `--cover-letter` was passed: validates and audits the cover-letter config the same way (blocking on an unsupported claim), lints its text, renders its DOCX, and sets `role.coverLetter.configPath`/`outputPath`/`status` (`review-needed`) on the tracked role.
-6. Registers (or finds the existing) tracked role via `add-role`'s own command, then sets `resume.configPath` and `resume.outputPath` on it (relative to the workspace root) so the role carries an explicit link back to the exact config and DOCX it was tailored from — this is also what `study-guide-bundle` (D8) now prefers over its content-matching fallback, when the link is present.
+6. Registers (or finds the existing) tracked role via `add-role`'s own command, then sets `resume.configPath` and `resume.outputPath` on it (relative to the workspace root) so the role carries an explicit link back to the exact config and DOCX it was tailored from — `study-guide-bundle` (D8) uses this link strictly: a role with no usable `resume.configPath` fails with a message to run `tailor`, and it never guesses a config by company name. After rendering, the page-count check runs and `resume.pageCount` is saved.
 7. Sets `application.status` to `interested` — the D7 enum's not-yet-applied value (buckets to `not-applied` in the tracker) — via `set-status`, unless the role already has a real `application.status` (a re-run never reverts genuine progress), and rebuilds the tracker.
 
 ### Saved job postings
