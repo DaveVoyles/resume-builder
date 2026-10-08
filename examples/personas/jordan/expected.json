@@ -1,0 +1,18 @@
+{
+  "persona": "jordan",
+  "setupSteps": 10,
+  "maxStyleWarnings": 0,
+  "postings": [
+    {
+      "id": "harborview-operations-manager",
+      "file": "postings/harborview-operations-manager.md",
+      "config": "resume-configs/harborview-operations-manager.json",
+      "company": "Harborview Family Health",
+      "title": "Operations manager",
+      "url": "https://jobs.example.invalid/harborview/operations-manager",
+      "keywords": ["operations", "scheduling", "billing", "front-desk", "train", "records", "checklist", "wait time"],
+      "minKeywordPercent": 85,
+      "maxProxyScore": 250
+    }
+  ]
+}

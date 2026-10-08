@@ -15,3 +15,12 @@ Rules:
 - Apply never sets a role to `applied`. Use `set-status` yourself after you really apply.
 - Tests use a fake form function, not a live job site.
 - `export-pdf` needs LibreOffice (`soffice` on PATH). It never launches Microsoft Word.
+
+## Tests and agents never submit
+
+Today nothing in `src/` can submit an application: `apply` only supports `--dry-run`, opens no browser, and sends nothing. `--confirm-submit` only changes what the dry run prints.
+
+- Never pass `--confirm-submit` in a test, script, or e2e run. `scripts/e2e-persona.js` refuses to run `apply` or `approve-apply`, and refuses any `--confirm-submit` flag.
+- `tests/cli/apply-flow.test.js` checks that `apply` throws without `--dry-run` and never writes an `applied` status.
+- `tests/cli/no-submit-guard.test.js` fails if a file in `src/` gains network, browser-automation, or child-process access outside a short allowlist. If you add a legitimate use, add the file to the allowlist in that test and say why in the PR.
+- See [`docs/testing.md`](../testing.md).

@@ -1,0 +1,18 @@
+{
+  "persona": "morgan",
+  "setupSteps": 10,
+  "maxStyleWarnings": 0,
+  "postings": [
+    {
+      "id": "lumen-customer-education",
+      "file": "postings/lumen-customer-education.md",
+      "config": "resume-configs/lumen-customer-education.json",
+      "company": "Lumen Cloud",
+      "title": "Customer education specialist",
+      "url": "https://jobs.example.invalid/lumen/customer-education-specialist",
+      "keywords": ["workshops", "training", "help guide", "handouts", "feedback", "technical writing", "documentation"],
+      "minKeywordPercent": 85,
+      "maxProxyScore": 250
+    }
+  ]
+}

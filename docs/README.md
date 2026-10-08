@@ -19,6 +19,7 @@ playbook and reference doc. This page is the flat index for browsing the folder 
 | [`style-lint.md`](style-lint.md) | The de-AI style lint: what it checks (buzzwords, sentence-uniformity, repetition), where the wordlist lives, and how `tailor`/`validate` surface its advisory warnings. |
 | [`agent-runbook.md`](agent-runbook.md) | Checklist an agent works through when drafting role content: required reads, duplicate detection, validation, handoff. |
 | [`e2e-showcase.md`](e2e-showcase.md) | Every playbook run end to end against the fictional sample candidate, with real captured command output — the regression pass over this page's own claims. |
+| [`testing.md`](testing.md) | Fictional personas, the per-stage scorecard, golden DOCX checks, the no-submit guard, and how agents run `npm run e2e`. |
 | [`modular-architecture.md`](modular-architecture.md) | The underlying architecture: reusable engine vs. candidate workspace vs. examples, the full CLI command surface table, data flow. |
 | [`role-intake-template.md`](role-intake-template.md) | Copy-paste template for capturing a new job target's basics. |
 | [`generator-refactor-plan.md`](generator-refactor-plan.md) | Historical design doc for the DOCX-generation architecture; mostly superseded by [design/0001](design/0001-feature-parity-agent-first.md), kept as the reference for its original `resumePlan` module table. |
