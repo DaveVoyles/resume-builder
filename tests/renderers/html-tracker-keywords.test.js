@@ -25,3 +25,9 @@ test("tracker row data has no keyword score for roles without saved coverage", (
   const html = renderHtmlTracker([role({ outputPath: "outputs/resumes/x.docx" })]);
   assert.match(html, /"keywordScore": null/u);
 });
+
+test("tracker shows the same keyword percent the report shows, not the weighted score", () => {
+  const html = renderHtmlTracker([role({ outputPath: "outputs/resumes/x.docx", keywordCoverage: { score: 82, percent: 80, missing: [{ keyword: "a" }] } })]);
+  assert.match(html, /"keywordScore": 80/u);
+  assert.doesNotMatch(html, /"keywordScore": 82/u);
+});
