@@ -219,12 +219,59 @@ function resumePayload(found, pdfDeps) {
   };
 }
 
+// A file named by a tracked role's record, only if it really sits inside dir.
+function fileInside(workspace, dir, relative) {
+  if (typeof relative !== "string" || !relative) return null;
+  const full = path.resolve(workspace, relative);
+  const inside = path.relative(dir, full);
+  if (!inside || inside.startsWith("..") || path.isAbsolute(inside)) return null;
+  return fs.existsSync(full) && fs.statSync(full).isFile() ? full : null;
+}
+
+function trackedRoleFiles(workspace, roleId) {
+  const paths = workspacePaths(workspace);
+  const roles = fs.existsSync(paths.rolesTracked) ? readJson(paths.rolesTracked, []) : [];
+  const role = Array.isArray(roles) ? roles.find((item) => item && item.id === roleId) : null;
+  if (!role || !role.resume) return null;
+  return {
+    resume: fileInside(workspace, paths.outputResumes, role.resume.outputPath),
+    report: fileInside(workspace, path.join(paths.outputs, "tailor-reports"), role.resume.reportPath),
+  };
+}
+
+// One entry per role that has a resume, closest keyword fit first.
+function resumeList(workspace, pdfDeps) {
+  const paths = workspacePaths(workspace);
+  const roles = fs.existsSync(paths.rolesTracked) ? readJson(paths.rolesTracked, []) : [];
+  if (!Array.isArray(roles)) return [];
+  return roles
+    .filter((role) => role && role.id && role.resume && fileInside(workspace, paths.outputResumes, role.resume.outputPath))
+    .map((role) => {
+      const files = trackedRoleFiles(workspace, role.id);
+      const docx = isDocx(files.resume);
+      const pdf = !docx || canMakePdf(files.resume, pdfDeps);
+      const coverage = role.resume.keywordCoverage || {};
+      const percent = Number.isFinite(coverage.percent) ? coverage.percent : Number.isFinite(coverage.score) ? coverage.score : null;
+      return {
+        company: role.company || "",
+        title: role.title || role.role || "",
+        percent,
+        openUrl: `/resume/role/${encodeURIComponent(role.id)}${docx && pdf ? ".pdf" : ""}`,
+        wordUrl: docx ? `/resume/role/${encodeURIComponent(role.id)}` : null,
+        openable: pdf,
+        reportUrl: files.report ? `/report/role/${encodeURIComponent(role.id)}` : null,
+      };
+    })
+    .sort((a, b) => (b.percent ?? -1) - (a.percent ?? -1));
+}
+
 function outputsPayload(workspace, pdfDeps) {
   const paths = workspacePaths(workspace);
   const resume = newestResume(workspace);
   const report = newestReport(path.join(paths.outputs, "tailor-reports"));
   return {
     resume: resumePayload(resume, pdfDeps),
+    resumes: resumeList(workspace, pdfDeps),
     report: report ? { name: path.basename(report.file), url: "/report/latest" } : null,
     pendingJobRequests: readJobRequests(workspace).length,
   };
@@ -368,6 +415,27 @@ async function run(options, { openFolder = defaultOpenFolder, openHome = openInB
 
     if (method === "GET" && requestedPath === "/resume/latest.pdf") {
       servePdf(newestResume(workspace), res, pdfDeps);
+      return;
+    }
+
+    const roleRoute = /^\/(resume|report)\/role\/([^/]+?)(\.pdf)?$/u.exec(requestedPath);
+    if (method === "GET" && roleRoute) {
+      let roleId;
+      try {
+        roleId = decodeURIComponent(roleRoute[2]);
+      } catch (error) {
+        sendText(res, 404, "Not found.");
+        return;
+      }
+      const files = trackedRoleFiles(workspace, roleId);
+      const kind = roleRoute[1];
+      const file = files && (kind === "report" ? files.report : files.resume);
+      if (!file) {
+        sendText(res, 404, `No ${kind} for that role.`);
+        return;
+      }
+      if (roleRoute[3]) servePdf({ file }, res, pdfDeps);
+      else serveNewest({ file }, res, kind);
       return;
     }
 

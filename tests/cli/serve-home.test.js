@@ -1440,6 +1440,47 @@ test("serve-home serves the newest resume and report, favicon without a 404, and
   }
 });
 
+test("serve-home lists every tailored resume, closest fit first, and serves each by role id only", async () => {
+  const tmpDir = createHomeRoot();
+  const workspace = path.join(tmpDir, "candidate");
+  const resumes = path.join(workspace, "outputs", "resumes");
+  const reports = path.join(workspace, "outputs", "tailor-reports");
+  fs.mkdirSync(path.join(resumes, "Acme"), { recursive: true });
+  fs.mkdirSync(path.join(resumes, "Zeta"), { recursive: true });
+  fs.mkdirSync(reports, { recursive: true });
+  fs.writeFileSync(path.join(workspace, "profile.json"), "{}\n");
+  fs.writeFileSync(path.join(resumes, "Acme", "acme.html"), "<p>ACME_RESUME</p>");
+  fs.writeFileSync(path.join(resumes, "Zeta", "zeta.html"), "<p>ZETA_RESUME</p>");
+  fs.writeFileSync(path.join(reports, "role_zeta.html"), "<p>ZETA_REPORT</p>");
+  fs.writeFileSync(path.join(workspace, "secret.txt"), "SECRET");
+  // Zeta is written last so it is the newest file, but Acme is the closer fit.
+  fs.utimesSync(path.join(resumes, "Acme", "acme.html"), new Date(Date.now() - 60000), new Date(Date.now() - 60000));
+  fs.writeFileSync(path.join(workspace, "roles.tracked.json"), JSON.stringify([
+    { id: "role_zeta", company: "Zeta", title: "Engineer", resume: { outputPath: "outputs/resumes/Zeta/zeta.html", reportPath: "outputs/tailor-reports/role_zeta.html", keywordCoverage: { percent: 20 } } },
+    { id: "role_acme", company: "Acme", title: "Lead", resume: { outputPath: "outputs/resumes/Acme/acme.html", keywordCoverage: { percent: 80 } } },
+    { id: "role_evil", company: "Evil", title: "Escape", resume: { outputPath: "secret.txt", reportPath: "../../etc/passwd", keywordCoverage: { percent: 99 } } },
+  ]));
+  const server = await run({ root: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    const outputs = JSON.parse((await get(port, "/api/onboarding-state")).body).outputs;
+    assert.deepEqual(outputs.resumes.map((item) => [item.company, item.percent]), [["Acme", 80], ["Zeta", 20]]);
+    assert.equal(outputs.resumes[0].reportUrl, null);
+    assert.equal(outputs.resumes[1].reportUrl, "/report/role/role_zeta");
+    assert.equal(outputs.resume.name, "zeta.html");
+
+    assert.match((await get(port, "/resume/role/role_acme")).body, /ACME_RESUME/);
+    assert.match((await get(port, "/report/role/role_zeta")).body, /ZETA_REPORT/);
+    assert.equal((await get(port, "/report/role/role_acme")).status, 404);
+    assert.equal((await get(port, "/resume/role/role_evil")).status, 404);
+    assert.equal((await get(port, "/report/role/role_evil")).status, 404);
+    assert.equal((await get(port, "/resume/role/unknown")).status, 404);
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
 test("serve-home /report/latest prefers the readable .html next to the newest .md", async () => {
   const tmpDir = createHomeRoot();
   const workspace = path.join(tmpDir, "candidate");
