@@ -7,6 +7,7 @@ const { validateEvidence, validateOnboardingState, validateProfile, validatePref
 const { loadResumeConfig, validateResumeConfig } = require("../../core/resume-config");
 const { auditResumeConfig } = require("../../core/claim-audit");
 const { auditFacts } = require("../../core/fact-audit");
+const { declinedClaimErrors } = require("../../core/declined-guard");
 const { lintConfig } = require("../../core/style-lint");
 const { readJson, readJsonLines, resolveWorkspace, workspacePaths } = require("../../core/workspace");
 const { displayPath, displayWorkspace } = require("../../core/role-lookup");
@@ -57,6 +58,8 @@ function auditResumeConfigs(paths, evidence, errors, warnings, profile) {
     const audit = auditResumeConfig(config, evidence);
     errors.push(...prefixed(label, audit.errors));
     warnings.push(...prefixed(label, audit.warnings));
+
+    errors.push(...prefixed(label, declinedClaimErrors(config, evidence)));
 
     const facts = auditFacts(config, profile, evidence);
     errors.push(...prefixed(label, facts.errors));

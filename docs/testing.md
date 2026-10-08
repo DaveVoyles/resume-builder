@@ -82,3 +82,5 @@ Submitting applications is out of scope for every test. See [`docs/playbooks/app
 4. Never point these runs at `candidate/`. They use a temp workspace and delete it afterward.
 
 See [`docs/showcase/README.md`](showcase/README.md) for a screenshot walkthrough of one run on the owner persona.
+
+A keyword the person declined (a `Not done` line in their notes) must never reach a resume: `tailor` and `validate` block it (`src/core/declined-guard.js`, tests in `tests/core/declined-guard.test.js` and `tests/cli/tailor-declined.test.js`).
