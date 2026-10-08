@@ -31,6 +31,32 @@ const WHERE_TO_WORK_MODES = {
   "Willing to move": ["flexible"],
 };
 
+function lastRecordedHomeWorkMode(answers) {
+  const recorded = trimmed(answers && answers.lastHomeWorkMode);
+  if (recorded) return recorded;
+  const mapped = WHERE_TO_WORK_MODES[trimmed(answers && answers.where)];
+  return mapped ? mapped[0] : "";
+}
+
+function applyHomeWorkMode(currentModes, previousHomeMode, nextHomeMode) {
+  // Home Save replaces only its own previous work mode. Remove lastHomeWorkMode
+  // if it is present, then append the new value if it is absent. Agent-written
+  // values stay. If flexible sits next to specific modes, keep them all:
+  // flexible means any mode is OK for matching, and the specific values remain
+  // as stated preferences.
+  const next = [];
+  const seen = new Set();
+  for (const mode of Array.isArray(currentModes) ? currentModes : []) {
+    if (!mode || mode === previousHomeMode || seen.has(mode)) continue;
+    seen.add(mode);
+    next.push(mode);
+  }
+  if (nextHomeMode && !seen.has(nextHomeMode)) {
+    next.push(nextHomeMode);
+  }
+  return next;
+}
+
 
 function applyDealBreakers(preferences, answers) {
   const text = trimmed(answers && answers.dealBreakers);
@@ -73,7 +99,11 @@ function saveHomeAnswers(workspace, answers) {
   const paths = workspacePaths(workspace);
   const savedAt = new Date().toISOString();
   const preferences = readJson(paths.preferences, emptyPreferences());
+  const answersPath = path.join(workspace, HOME_ANSWERS_FILENAME);
+  const previousAnswers = readJson(answersPath, {});
   const dealBreakersRecord = applyDealBreakers(preferences, answers);
+  const nextHomeModes = WHERE_TO_WORK_MODES[trimmed(answers && answers.where)];
+  const nextHomeWorkMode = nextHomeModes ? nextHomeModes[0] : "";
   const payload = {
     name: trimmed(answers.name),
     location: trimmed(answers.location),
@@ -86,8 +116,10 @@ function saveHomeAnswers(workspace, answers) {
     dealBreakersChoice: dealBreakersRecord.dealBreakersChoice,
     savedAt,
   };
+  if (nextHomeWorkMode) {
+    payload.lastHomeWorkMode = nextHomeWorkMode;
+  }
 
-  const answersPath = path.join(workspace, HOME_ANSWERS_FILENAME);
   writeJson(answersPath, payload);
 
   const profile = readJson(paths.profile, createDefaultProfile());
@@ -115,10 +147,13 @@ function saveHomeAnswers(workspace, answers) {
       },
     ];
   }
-  const workModes = WHERE_TO_WORK_MODES[payload.where];
-  if (workModes) {
+  if (nextHomeWorkMode) {
     preferences.locations = preferences.locations || emptyPreferences().locations;
-    preferences.locations.workModes = workModes.slice();
+    preferences.locations.workModes = applyHomeWorkMode(
+      preferences.locations.workModes,
+      lastRecordedHomeWorkMode(previousAnswers),
+      nextHomeWorkMode,
+    );
   }
   preferences.updatedAt = savedAt;
   writeJson(paths.preferences, preferences);

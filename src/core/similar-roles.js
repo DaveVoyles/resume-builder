@@ -71,6 +71,14 @@ function preferredWorkModes(preferences) {
   return unique(Array.isArray(locations.workModes) ? locations.workModes : [preferences.remotePreference].filter(Boolean));
 }
 
+function workModeFitsPreferences(preferredModes, jobWorkMode) {
+  if (preferredModes.length === 0) return true;
+  // "flexible" (home "Either is fine" / "Willing to move") matches any job
+  // work mode. Specific modes listed with flexible stay as stated preferences.
+  if (preferredModes.includes("flexible")) return true;
+  return preferredModes.includes(jobWorkMode);
+}
+
 function avoidedTerms(preferences) {
   return unique([
     ...tokens(preferences.industries?.filter((item) => item.priority === "avoid").map((item) => item.name || item)),
@@ -128,7 +136,7 @@ function scoreCandidate(role, context) {
     risks.push(`Employment type differs from preferences: ${role.employmentType}.`);
   }
 
-  if (context.workModes.length === 0 || context.workModes.includes(role.workMode)) {
+  if (workModeFitsPreferences(context.workModes, role.workMode)) {
     score += role.workMode ? 10 : 3;
   } else if (role.workMode) {
     risks.push(`Work mode differs from preferences: ${role.workMode}.`);
