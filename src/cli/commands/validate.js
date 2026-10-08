@@ -6,6 +6,7 @@ const { renderTracker } = require("../../renderers/markdown-tracker");
 const { validateEvidence, validateOnboardingState, validateProfile, validatePreferences, validateRoles, validateFeedback } = require("../../core/schemas");
 const { validateResumeConfig } = require("../../core/resume-config");
 const { auditResumeConfig } = require("../../core/claim-audit");
+const { auditFacts } = require("../../core/fact-audit");
 const { lintConfig } = require("../../core/style-lint");
 const { readJson, readJsonLines, resolveWorkspace, workspacePaths } = require("../../core/workspace");
 
@@ -34,7 +35,7 @@ function prefixed(label, messages) {
   return messages.map((message) => `${label}: ${message}`);
 }
 
-function auditResumeConfigs(paths, evidence, errors, warnings) {
+function auditResumeConfigs(paths, evidence, errors, warnings, profile) {
   listResumeConfigFiles(paths.resumeConfigs).forEach((file) => {
     const label = path.relative(paths.root, file);
 
@@ -55,6 +56,10 @@ function auditResumeConfigs(paths, evidence, errors, warnings) {
     const audit = auditResumeConfig(config, evidence);
     errors.push(...prefixed(label, audit.errors));
     warnings.push(...prefixed(label, audit.warnings));
+
+    const facts = auditFacts(config, profile, evidence);
+    errors.push(...prefixed(label, facts.errors));
+    warnings.push(...prefixed(label, facts.warnings));
 
     // De-AI style lint advisory (D7, src/core/style-lint.js) — detects
     // AI-generated writing patterns and adds them as warnings (never blocking).
@@ -113,7 +118,7 @@ function run(options) {
     errors.push("outputs/tracker.md is out of date with roles.tracked.json; run build-tracker");
   }
 
-  auditResumeConfigs(paths, evidence, errors, warnings);
+  auditResumeConfigs(paths, evidence, errors, warnings, profile);
 
   warnings.forEach((warning) => console.warn(`Warning: ${warning}`));
 

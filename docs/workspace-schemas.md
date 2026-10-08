@@ -54,6 +54,7 @@ Use these conventions across all workspace files:
 | `workAuthorization` | object | Countries and sponsorship requirements. |
 | `education` | array | Education entries. |
 | `educationSkip` | object | `{ "skipped": true }` when the person skipped education. Leave `education` as an array. Do not write this unless they said skip. |
+| `experience[].titleAliases` | string[] | Other titles the candidate actually held or was formally known by in that job (for example `["Senior Program Manager"]`). The fact audit accepts a resume job title that matches the profile title or any alias; a title that adds Senior, Lead, Head of, Director and similar words to the profile title is blocked unless the profile lists it here. |
 | `certifications` | array | Certification entries. |
 | `projects` | array | Portfolio or public-work entries. |
 | `languages` | array | Spoken or written languages. |

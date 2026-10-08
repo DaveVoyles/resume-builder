@@ -238,3 +238,9 @@ test("validateProfile and validatePreferences reject repeated ids", () => {
   const prefs = { dealBreakers: [{ id: "deal-001" }, { id: "deal-001" }] };
   assert.ok(validatePreferences(prefs).some((e) => /duplicate id deal-001/.test(e)));
 });
+
+test("validateProfile requires experience[].titleAliases to be an array of non-empty strings when present", () => {
+  const base = { candidate: { id: "c", links: [] }, skills: [], projects: [], education: [], sources: [] };
+  assert.deepEqual(validateProfile({ ...base, experience: [{ id: "e1", organization: "X", title: "Y", titleAliases: ["Senior Y"] }] }), []);
+  assert.match(validateProfile({ ...base, experience: [{ id: "e1", titleAliases: "Senior Y" }] }).join("\n"), /titleAliases must be an array/);
+});

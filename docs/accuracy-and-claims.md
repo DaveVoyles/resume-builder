@@ -34,6 +34,24 @@ Treat `metadata-only` evidence as a source inventory record, not as claim suppor
 
 This closes the loop described by the core claim-safety rules above: "tie every claim to source evidence" is enforced by `validate`, not just requested in prose.
 
+## Fact-consistency audit (employers, titles, dates, scope, tools)
+
+The numeric audit above does not look at words. `src/core/fact-audit.js` (`auditFacts(config, profile, evidence)`) compares the non-numeric facts in a resume config with `profile.json` and `evidence.jsonl`. `validate` runs it on every file under `resume-configs/`, and `tailor` runs it on the config being tailored. Errors block; warnings do not.
+
+Blocking:
+
+- **Employer.** Every job's `company` must match a `profile.experience` entry. Case, punctuation, "&" versus "and", and endings such as Inc, LLC, Corp, and Ltd are ignored. An employer that is in neither `profile.experience` nor any evidence entry is an error.
+- **Title.** The job title must equal the profile title, or one must contain the other. Adding a seniority word the profile does not have (Senior, Lead, Principal, Staff, Head of, Director, VP, Chief, Founder) is an error. If the candidate really held another title, record it in the profile entry's `titleAliases` array and the audit accepts it.
+- **Dates.** The start and end in `dates` may not fall outside the profile entry's `startDate` and `endDate` by more than one month. A year-only date is read as the whole year. "Present" requires the profile entry to have an empty `endDate`.
+- **Education.** Each `education` entry must match a `profile.education` institution (or appear in the evidence), and its degree must share a meaningful word with the profile degree when both are given.
+- **Scope verbs.** A summary or bullet that says "led", "owned", "managed a team", "founded", "director", "head of", "architected", "built from scratch" or "sole" needs support. If the bullet lists evidence ids (`bulletEvidenceIds`, `evidenceIds`, `summary.evidenceIds`), those entries must use the same verb stem. If it lists none, any evidence entry for the same organization or any highlight in the matching profile entry may support it. A summary may be supported by any evidence or profile text. The fix is in the message: ask the candidate whether they led this and record it in evidence, or soften to "contributed to" (the safer patterns below).
+
+Advisory (warning only):
+
+- **Tools and technologies.** A capitalized or tool-shaped name (such as Terraform, Jira, AWS, Node.js) in a bullet or skills row that appears nowhere in `profile.json` or the evidence is flagged: "not found in the candidate's profile or evidence — confirm with the candidate". Lowercase tool names and very common words are not detected.
+
+Known false-positive risks: "director" or "head of" in a sentence about someone else, "led" in a sentence about a team the candidate only supported, a school written as an abbreviation, a capitalized product or customer name that only appears on the resume, and a title that is a fair paraphrase but shares no words with the profile title. Fix by recording the fact in the profile or evidence, or by using the profile's own wording.
+
 ## Candidate confirmation rules
 
 Ask the candidate before you use:

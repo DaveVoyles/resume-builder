@@ -53,6 +53,15 @@ test("a broken claim makes the scorecard fail", async () => {
   assert.ok(result.checks.some((check) => check.status === "fail" && /stage completed|claim audit/.test(check.check)));
 });
 
+test("an invented employer makes the scorecard fail", async () => {
+  const result = await runPersona("jordan", {
+    pages: false,
+    mutateConfig: (text) => text.replace("Riverside Dental", "Globex Dynamics"),
+  });
+  assert.equal(result.ok, false);
+  assert.ok(result.checks.some((check) => check.status === "fail" && /Employer not found/.test(JSON.stringify(check))));
+});
+
 test("a missing keyword makes the scorecard fail", async () => {
   const result = await runPersona("jordan", {
     pages: false,
