@@ -932,6 +932,26 @@ test("renderHtmlTracker shows the checklist (and hides the dashboard) while onbo
   assert.doesNotMatch(html, /Onboarding complete/);
 });
 
+test("renderHtmlTracker with 8 of 10 onboarding and one tracked role shows jobs and the checklist", () => {
+  const state = defaultOnboardingState();
+  state.materialIngested = true;
+  state.sections.basicInfo = true;
+  state.sections.workHistory = true;
+  state.sections.targetRole = true;
+  state.sections.location = true;
+  state.sections.dealBreakers = true;
+  state.firstRoleAdded = true;
+  const roles = [{ id: "role-001", company: "Contoso Health", title: "Operations Manager" }];
+  const html = renderHtmlTracker(roles, { onboardingState: state });
+
+  assert.match(html, /Onboarding: 8 of 10 steps/);
+  assert.match(html, /class="onboarding-section" style="display:block"/);
+  assert.match(html, /class="dashboard-section" style="display:block"/);
+  assert.match(html, /Contoso Health/);
+  assert.doesNotMatch(html, /Onboarding complete/);
+});
+
+
 test("renderHtmlTracker shows the normal dashboard plus a completion pill once onboarding is done", () => {
   const state = defaultOnboardingState();
   state.materialIngested = true;

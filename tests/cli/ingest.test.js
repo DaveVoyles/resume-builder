@@ -360,3 +360,23 @@ test("ingest --links plus folders reads both", async () => {
     }
   });
 });
+
+test("ingest rebuilds tracker.html so its step count matches the state file", async () => {
+  const { onboardingSteps } = require("../../src/core/onboarding-state");
+  await withWorkspace(async ({ workspace, paths }) => {
+    writeJson(paths.onboardingState, defaultOnboardingState());
+    const linksFixture = fs.mkdtempSync(path.join(os.tmpdir(), "links-fixture-"));
+    const linksFile = path.join(linksFixture, "links.md");
+    fs.writeFileSync(linksFile, "https://github.com/sample-user");
+    try {
+      await command.run({ workspace, links: linksFile });
+      const state = readJson(paths.onboardingState);
+      const done = onboardingSteps(state).filter((step) => step.done).length;
+      const html = fs.readFileSync(paths.htmlTracker, "utf8");
+      assert.match(html, new RegExp(`Onboarding: ${done} of 10 steps`));
+    } finally {
+      fs.rmSync(linksFixture, { recursive: true, force: true });
+    }
+  });
+});
+

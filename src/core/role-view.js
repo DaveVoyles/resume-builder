@@ -164,8 +164,50 @@ function normalizeRole(role) {
   };
 }
 
+const EMPTY_STATUS_BUCKETS = {
+  applied: 0,
+  rejected: 0,
+  "not-applied": 0,
+  ghosted: 0,
+  other: 0,
+  interview: 0,
+  offer: 0,
+  withdrawn: 0,
+};
+
+// Single counting path for the HTML tracker funnel/stat cards and the home
+// Jobs tab. Always goes through normalizeRole → statusBucket so neither
+// caller can invent its own buckets.
+function countRoleStats(roles) {
+  const list = Array.isArray(roles) ? roles : [];
+  const normalized = list.map(normalizeRole);
+  const buckets = normalized.reduce(
+    (acc, role) => {
+      acc[role.statusBucket] = (acc[role.statusBucket] || 0) + 1;
+      return acc;
+    },
+    { ...EMPTY_STATUS_BUCKETS },
+  );
+  const total = normalized.length;
+  const readyToApply = normalized.filter((role) => role.readyToApply).length;
+  const notStarted = buckets["not-applied"] - readyToApply;
+  const appliedOrBeyond = total - buckets["not-applied"] - buckets.other;
+  return {
+    total,
+    buckets,
+    readyToApply,
+    notStarted,
+    appliedOrBeyond,
+    appliedFunnelPercent: total > 0 ? Math.round((appliedOrBeyond / total) * 100) : 0,
+    applied: buckets.applied,
+    interview: buckets.interview,
+  };
+}
+
+
 module.exports = {
   compensationRange,
+  countRoleStats,
   formatApplied,
   formatCompensation,
   formatCurrency,

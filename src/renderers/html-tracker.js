@@ -1,6 +1,6 @@
 "use strict";
 
-const { formatNextAction, normalizeRole } = require("../core/role-view");
+const { countRoleStats, formatNextAction, normalizeRole } = require("../core/role-view");
 const { computeStaleness, DEFAULT_THRESHOLDS } = require("../core/staleness");
 const { STATUS_ENDPOINT } = require("../core/server-config");
 const { isOnboardingComplete, onboardingSteps } = require("../core/onboarding-state");
@@ -111,48 +111,21 @@ function renderHtmlTracker(roles, options = {}) {
   const notice = options.notice;
 
   // The dashboard markup/data below (stats, funnel, role table + its
-  // embedded JSON) is always computed and rendered into the page, even when
-  // showChecklist hides it via display:none — deliberately, to keep the
-  // existing (tested) client script's DOM queries always resolving, rather
-  // than restructuring it to conditionally omit that markup. Cheap in the
-  // common case (onboarding-incomplete workspaces have few or no roles yet),
-  // and correctness > payload size for a single local candidate's own file.
-  //
-  // Pair each source role with its normalized view, then sort both in lockstep
-  // so `notesHtml(sortedSourceRoles[index])` below stays aligned with `normalized`.
+  // embedded JSON) is always computed and rendered into the page. Hide it
+  // only when onboarding is incomplete AND there are no tracked roles yet.
+  // Once a job exists, show the jobs list even if Education/Salary (and
+  // other grill steps home does not ask) are still pending. The checklist
+  // stays visible until every tracker onboarding step is done.
   const paired = roles.map((role) => ({ role, view: normalizeRole(role) })).sort((a, b) => a.view.sortKey.localeCompare(b.view.sortKey));
   const sortedSourceRoles = paired.map((entry) => entry.role);
   const normalized = paired.map((entry) => entry.view);
-
-  const total = normalized.length;
-  const counts = normalized.reduce(
-    (acc, role) => {
-      acc[role.statusBucket] = (acc[role.statusBucket] || 0) + 1;
-      return acc;
-    },
-    { applied: 0, rejected: 0, "not-applied": 0, ghosted: 0, other: 0, interview: 0, offer: 0, withdrawn: 0 },
-  );
-
-  // readyToApply (a "not-applied" role that already has a rendered resume)
-  // is computed once in role-view.js's normalizeRole and reused verbatim
-  // below in rowsData — see #121. Split out here as an additional,
-  // non-canonical dimension for the stat cards and filter chips only; the
-  // underlying statusBucket (used by staleness.js and the markdown
-  // renderer) and the funnel's stage breakdown are left untouched.
-  const readyToApplyCount = normalized.filter((role) => role.readyToApply).length;
-  const notStartedCount = counts["not-applied"] - readyToApplyCount;
-
-  // Every bucket other than "not-applied"/"other" presupposes an
-  // application was actually submitted at some point, regardless of how it
-  // was later resolved (interview, offer, rejected, withdrawn, ghosted all
-  // imply "applied" happened first) — so this is "% of roles that ever
-  // reached the applied stage," not "% currently in the applied bucket."
-  // Derived as "everything except not-applied/other" (rather than
-  // hand-listing the applied-or-beyond buckets) so a new bucket added to
-  // statusBucket() in role-view.js is automatically included here without
-  // this file needing a matching update.
-  const appliedOrBeyondCount = total - counts["not-applied"] - counts.other;
-  const appliedFunnelPercent = total > 0 ? Math.round((appliedOrBeyondCount / total) * 100) : 0;
+  const stats = countRoleStats(roles);
+  const total = stats.total;
+  const counts = stats.buckets;
+  const readyToApplyCount = stats.readyToApply;
+  const notStartedCount = stats.notStarted;
+  const appliedFunnelPercent = stats.appliedFunnelPercent;
+  const showDashboard = !showChecklist || total > 0;
 
   const rowsData = normalized.map((role, index) => {
     // Compute staleness for this role
@@ -526,7 +499,7 @@ function renderHtmlTracker(roles, options = {}) {
     ${renderOnboardingChecklist(onboardingState)}
   </div>
 
-  <div class="dashboard-section" style="display:${showChecklist ? "none" : "block"}">
+  <div class="dashboard-section" style="display:${showDashboard ? "block" : "none"}">
   <div class="stats">
     <div class="stat-card"><div class="stat-value">${total}</div><div class="stat-label">📋 Total roles</div></div>
     <div class="stat-card"><div class="stat-value">${counts.applied}</div><div class="stat-label">✅ Applied</div></div>

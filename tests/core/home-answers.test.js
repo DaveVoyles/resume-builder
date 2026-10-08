@@ -43,6 +43,27 @@ test("saveHomeAnswers writes home-answers.json and shared onboarding state", () 
   }
 });
 
+test("Hybrid where answer writes preferences.locations.workModes and counts for location", () => {
+  const workspace = tempWorkspace();
+  try {
+    saveHomeAnswers(workspace, {
+      name: "Jordan Sample",
+      goal: "Operations manager at a mid-size healthcare company",
+      where: "Hybrid",
+    });
+    const paths = workspacePaths(workspace);
+    const preferences = JSON.parse(fs.readFileSync(paths.preferences, "utf8"));
+    assert.deepEqual(preferences.locations.workModes, ["hybrid"]);
+    const { validatePreferences } = require("../../src/core/schemas");
+    assert.deepEqual(validatePreferences(preferences), []);
+    const { deriveOnboardingState } = require("../../src/core/onboarding-state");
+    assert.equal(deriveOnboardingState(workspace).sections.location, true);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+
 test("saveHomeAnswers rejects a missing or blank goal", () => {
   const workspace = tempWorkspace();
   try {

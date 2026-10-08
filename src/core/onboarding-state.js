@@ -198,6 +198,14 @@ function homeStepsFromOnboarding(onboardingState) {
   });
 }
 
+// Home "setup complete" for the Jobs tab: the Introduction "Answer a few
+// questions" step is done (basicInfo + targetRole). Education and salary are
+// tracker-only and do not block hiding "Go to setup".
+function isHomeSetupComplete(onboardingState) {
+  return homeStepsFromOnboarding(onboardingState).some((step) => step.key === "answerQuestions" && step.done);
+}
+
+
 // Merges a partial update into the existing (or default) state and writes
 // it back — the shape callers reach for whenever a step completes, so no
 // caller has to hand-roll a read-modify-write against the raw file. Backfills
@@ -355,6 +363,7 @@ module.exports = {
   HOME_ANSWERS_FILENAME,
   defaultOnboardingState,
   isOnboardingComplete,
+  isHomeSetupComplete,
   isFirstRoleAddedDone,
   onboardingSteps,
   homeStepsFromOnboarding,

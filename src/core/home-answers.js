@@ -23,6 +23,15 @@ function emptyPreferences() {
   };
 }
 
+const WHERE_TO_WORK_MODES = {
+  Hybrid: ["hybrid"],
+  "Remote (from home)": ["remote"],
+  "Near where I live": ["on-site"],
+  "Either is fine": ["flexible"],
+  "Willing to move": ["flexible"],
+};
+
+
 function applyDealBreakers(preferences, answers) {
   const text = trimmed(answers && answers.dealBreakers);
   const choice = trimmed(answers && answers.dealBreakersChoice).toLowerCase();
@@ -105,6 +114,11 @@ function saveHomeAnswers(workspace, answers) {
         priority: "should",
       },
     ];
+  }
+  const workModes = WHERE_TO_WORK_MODES[payload.where];
+  if (workModes) {
+    preferences.locations = preferences.locations || emptyPreferences().locations;
+    preferences.locations.workModes = workModes.slice();
   }
   preferences.updatedAt = savedAt;
   writeJson(paths.preferences, preferences);

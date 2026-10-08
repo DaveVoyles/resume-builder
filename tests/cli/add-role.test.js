@@ -70,3 +70,25 @@ test("firstRoleAdded stays done after tracked roles are emptied and sync runs ag
     assert.equal(state.firstRoleAdded.at, originalAt);
   });
 });
+
+test("add-role --tracked rebuilds tracker.html with the new role and no extra build-tracker call", async () => {
+  const init = require("../../src/cli/commands/init");
+  const workspace = fs.mkdtempSync(path.join(os.tmpdir(), "add-role-init-"));
+  try {
+    await init.run({ workspace, noServe: true });
+    const paths = workspacePaths(workspace);
+    assert.doesNotMatch(fs.readFileSync(paths.htmlTracker, "utf8"), /Contoso Health/);
+    command.run({
+      workspace,
+      tracked: true,
+      company: "Contoso Health",
+      title: "Operations Manager",
+    });
+    const html = fs.readFileSync(paths.htmlTracker, "utf8");
+    assert.match(html, /Contoso Health/);
+    assert.match(html, /Operations Manager/);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+

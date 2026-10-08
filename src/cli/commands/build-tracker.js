@@ -45,4 +45,18 @@ function run(options) {
   console.log(`Built tracker for ${roles.length} tracked role(s): ${output}`);
 }
 
-module.exports = { run };
+function rebuildTrackers(workspaceOption) {
+  run({ workspace: workspaceOption, format: "md" });
+  run({ workspace: workspaceOption, format: "html" });
+}
+
+function tryRebuildTrackers(workspaceOption) {
+  try {
+    rebuildTrackers(workspaceOption);
+  } catch (error) {
+    console.error(`Warning: tracker rebuild failed (${error && error.message ? error.message : error})`);
+  }
+}
+
+
+module.exports = { run, rebuildTrackers, tryRebuildTrackers };

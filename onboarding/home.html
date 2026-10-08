@@ -189,7 +189,7 @@
   <div class="card" id="setup" hidden style="margin-top:1.25rem">
     <h2>About you</h2>
     <p class="muted">Your agent can fill this from your files. Check every answer. Change anything that's wrong.</p>
-    <div class="progress" aria-label="Setup progress 40 percent"><span></span></div>
+    <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="40" aria-valuetext="Setup progress 40 percent" aria-label="Setup progress 40 percent"><span></span></div>
     <p class="reqnote"><span class="req" aria-hidden="true">*</span> = required. Only your goal is required. Everything else is optional.</p>
     <p class="form-error" id="formError" hidden></p>
     <form id="intakeForm">
@@ -224,6 +224,7 @@
             <option value="">Choose one</option>
             <option>Near where I live</option>
             <option>Remote (from home)</option>
+            <option>Hybrid</option>
             <option>Either is fine</option>
             <option>Willing to move</option>
           </select>
@@ -302,20 +303,23 @@
     <h2 style="margin:0;color:var(--navy)">Your job applications</h2>
   </div>
   <div class="grid g-4" style="margin-bottom:1.25rem">
-    <div class="card stat"><div class="n">0</div><div class="l">Total jobs</div></div>
-    <div class="card stat"><div class="n">0</div><div class="l">Resume ready</div></div>
-    <div class="card stat"><div class="n">0</div><div class="l">Applied</div></div>
-    <div class="card stat"><div class="n">0</div><div class="l">Interview</div></div>
+    <div class="card stat"><div class="n" data-role-count="total">0</div><div class="l">Total jobs</div></div>
+    <div class="card stat"><div class="n" data-role-count="readyToApply">0</div><div class="l">Resume ready</div></div>
+    <div class="card stat"><div class="n" data-role-count="applied">0</div><div class="l">Applied</div></div>
+    <div class="card stat"><div class="n" data-role-count="interview">0</div><div class="l">Interview</div></div>
   </div>
-  <div class="card empty">
+  <div class="card empty" id="jobsEmpty">
     <div class="icon" aria-hidden="true">•</div>
     <h2>No jobs yet — that's normal.</h2>
     <p class="muted">Finish setup on the Introduction tab first. Then tell your agent about a job you like, for example:<br><em>"Add this job to RB: [paste the job link]"</em></p>
     <p class="hint">This page does not add jobs. Your agent tracks them.</p>
     <div class="row" style="justify-content:center">
       <a class="btn ghost" href="/tracker.html">Open my tracker</a>
-      <button class="btn primary" type="button" data-goto="setup">Go to setup</button>
+      <button class="btn primary" type="button" id="jobsGoToSetup" data-goto="setup">Go to setup</button>
     </div>
+  </div>
+  <div class="card" id="jobsList" hidden>
+    <ul class="files" id="jobsItems" aria-label="Tracked jobs"></ul>
   </div>
 </section>
 
@@ -368,6 +372,18 @@
     });
   }
 
+  function updateSetupProgress(percent){
+    var bar=document.querySelector(".progress");
+    var fill=bar&&bar.querySelector("span");
+    var value=Math.max(0,Math.min(100,Math.round(Number(percent)||0)));
+    if(fill) fill.style.width=value+"%";
+    if(!bar) return;
+    bar.setAttribute("aria-valuenow",String(value));
+    var label="Setup progress "+value+" percent";
+    bar.setAttribute("aria-label",label);
+    bar.setAttribute("aria-valuetext",label);
+  }
+
   function applyHomeSteps(homeSteps){
     if(!homeSteps) return;
     homeSteps.forEach(function(step){
@@ -375,15 +391,43 @@
       if(li) li.classList.toggle("done", Boolean(step.done));
     });
     var done=homeSteps.filter(function(step){return step.done;}).length;
-    var bar=document.querySelector(".progress span");
-    if(bar && homeSteps.length){
-      bar.style.width=Math.round((done/homeSteps.length)*100)+"%";
+    if(homeSteps.length){
+      updateSetupProgress(Math.round((done/homeSteps.length)*100));
+    }
+  }
+
+  function applyRoles(data){
+    if(!data) return;
+    var counts=data.counts||{};
+    [["total",counts.total],["readyToApply",counts.readyToApply],["applied",counts.applied],["interview",counts.interview]].forEach(function(pair){
+      var el=document.querySelector('[data-role-count="'+pair[0]+'"]');
+      if(el) el.textContent=String(pair[1]||0);
+    });
+    var setupBtn=document.getElementById("jobsGoToSetup");
+    if(setupBtn) setupBtn.hidden=Boolean(data.setupComplete);
+    var roles=data.roles||[];
+    var empty=document.getElementById("jobsEmpty");
+    var list=document.getElementById("jobsList");
+    var items=document.getElementById("jobsItems");
+    if(roles.length){
+      if(empty) empty.hidden=true;
+      if(list) list.hidden=false;
+      if(items){
+        items.innerHTML=roles.map(function(role){
+          return "<li>"+escapeHtml(role.company||"")+" — "+escapeHtml(role.title||"")+"</li>";
+        }).join("");
+      }
+    }else{
+      if(empty) empty.hidden=false;
+      if(list) list.hidden=true;
     }
   }
 
   fetch("/api/onboarding-state").then(function(r){return r.json();}).then(function(data){
     applyHomeSteps(data.homeSteps);
   }).catch(function(){});
+
+  fetch("/api/roles").then(function(r){return r.json();}).then(applyRoles).catch(function(){});
 
 
   fetch("/api/documents").then(function(r){return r.json();}).then(function(data){
