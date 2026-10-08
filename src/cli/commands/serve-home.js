@@ -6,7 +6,7 @@ const path = require("path");
 const { execFile } = require("child_process");
 const { openInBrowser, resolvePort, trackerStatus, DEFAULT_PORT, CONTENT_TYPES } = require("./serve");
 const { identityHeaders, STATUS_ENDPOINT } = require("../../core/server-config");
-const { saveHomeAnswers, readHomeFormPrefill } = require("../../core/home-answers");
+const { saveHomeAnswers, readHomeFormPrefill, emptyHomeFormValues } = require("../../core/home-answers");
 const { readJson, workspacePaths } = require("../../core/workspace");
 const { countRoleStats } = require("../../core/role-view");
 const { tryRebuildTrackers } = require("./build-tracker");
@@ -163,9 +163,7 @@ function onboardingPayload(workspace) {
     mapping: HOME_STEP_TO_TRACKER_STEPS,
     setupComplete: isHomeSetupComplete(state),
     nextStep: nextHomeStep(state),
-    form: hasWorkspace
-      ? readHomeFormPrefill(workspace)
-      : { education: "", educationChoice: "", salary: "", salaryChoice: "" },
+    form: hasWorkspace ? readHomeFormPrefill(workspace) : emptyHomeFormValues(),
   };
 }
 

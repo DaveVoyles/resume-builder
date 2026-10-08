@@ -1,5 +1,6 @@
 "use strict";
 
+const fs = require("fs");
 const path = require("path");
 const { createDefaultProfile } = require("./candidate-profile");
 const { HOME_ANSWERS_FILENAME, syncOnboardingState } = require("./onboarding-state");
@@ -246,11 +247,116 @@ function salaryPrefill(preferences) {
   return { salary: "", salaryChoice: "" };
 }
 
+function emptyHomeFormValues() {
+  return {
+    name: "",
+    location: "",
+    history: "",
+    goal: "",
+    where: "",
+    when: "",
+    extra: "",
+    dealBreakers: "",
+    dealBreakersChoice: "",
+    education: "",
+    educationChoice: "",
+    salary: "",
+    salaryChoice: "",
+  };
+}
+
+function firstRoleTargetTitle(preferences) {
+  const targets = Array.isArray(preferences && preferences.roleTargets) ? preferences.roleTargets : [];
+  for (const row of targets) {
+    if (!Array.isArray(row && row.titles)) continue;
+    const title = row.titles.map(trimmed).find(Boolean);
+    if (title) return title;
+  }
+  return "";
+}
+
+function dealBreakersPrefill(preferences, answers) {
+  if (Array.isArray(preferences && preferences.dealBreakers)) {
+    const row = preferences.dealBreakers.find(
+      (item) => nonempty(item && item.text) || (typeof item === "string" && nonempty(item)),
+    );
+    if (row) {
+      const text = typeof row === "string" ? trimmed(row) : trimmed(row.text);
+      if (text) return { dealBreakers: text, dealBreakersChoice: "" };
+    }
+  }
+  if (isExclusiveTrueKey(preferences && preferences.dealBreakersSkip, "skipped")) {
+    return { dealBreakers: "", dealBreakersChoice: "skip" };
+  }
+  if (isExclusiveTrueKey(preferences && preferences.dealBreakersSkip, "none")) {
+    return { dealBreakers: "", dealBreakersChoice: "none" };
+  }
+  return {
+    dealBreakers: trimmed(answers && answers.dealBreakers),
+    dealBreakersChoice: trimmed(answers && answers.dealBreakersChoice),
+  };
+}
+
+function stripTimestampFields(value) {
+  if (Array.isArray(value)) return value.map(stripTimestampFields);
+  if (!isRecord(value)) return value;
+  const next = {};
+  for (const key of Object.keys(value).sort()) {
+    if (key === "savedAt" || key === "updatedAt") continue;
+    next[key] = stripTimestampFields(value[key]);
+  }
+  return next;
+}
+
+function writeJsonIfMeaningfulChange(filePath, next) {
+  if (fs.existsSync(filePath)) {
+    const previous = readJson(filePath, {});
+    if (JSON.stringify(stripTimestampFields(previous)) === JSON.stringify(stripTimestampFields(next))) {
+      return false;
+    }
+  }
+  writeJson(filePath, next);
+  return true;
+}
+
+function keepPreviousHomeField(submitted, previous) {
+  return nonempty(submitted) ? trimmed(submitted) : trimmed(previous);
+}
+
 function readHomeFormPrefill(workspace) {
   const paths = workspacePaths(workspace);
   const profile = readJson(paths.profile, createDefaultProfile());
   const preferences = readJson(paths.preferences, emptyPreferences());
-  return { ...educationPrefill(profile), ...salaryPrefill(preferences) };
+  const answers = readJson(path.join(workspace, HOME_ANSWERS_FILENAME), {});
+  const candidate = isRecord(profile.candidate) ? profile.candidate : {};
+  const education = educationPrefill(profile);
+  const salary = salaryPrefill(preferences);
+  const deal = dealBreakersPrefill(preferences, answers);
+  // Prefill sources (profile/preferences first; home-answers.json only when the
+  // field lives there or the main file has nothing):
+  // name <- profile.candidate.preferredName || profile.candidate.name, else home-answers.name
+  // location <- profile.candidate.location, else home-answers.location
+  // goal <- first nonempty preferences.roleTargets[].titles[], else home-answers.goal
+  // dealBreakers / dealBreakersChoice <- preferences.dealBreakers or dealBreakersSkip, else home-answers
+  // education / educationChoice <- profile.education or educationSkip (#178)
+  // salary / salaryChoice <- preferences.compensation (#178)
+  // history, where, when, extra <- home-answers.json only
+  // where is the exact option text from home-answers.where, never workModes
+  return {
+    name: trimmed(candidate.preferredName) || trimmed(candidate.name) || trimmed(answers.name),
+    location: trimmed(candidate.location) || trimmed(answers.location),
+    history: trimmed(answers.history),
+    goal: firstRoleTargetTitle(preferences) || trimmed(answers.goal),
+    where: trimmed(answers.where),
+    when: trimmed(answers.when),
+    extra: trimmed(answers.extra),
+    dealBreakers: deal.dealBreakers,
+    dealBreakersChoice: deal.dealBreakersChoice,
+    education: education.education,
+    educationChoice: education.educationChoice,
+    salary: salary.salary,
+    salaryChoice: salary.salaryChoice,
+  };
 }
 
 function saveHomeAnswers(workspace, answers) {
@@ -278,16 +384,19 @@ function saveHomeAnswers(workspace, answers) {
   const previousAnswers = readJson(answersPath, {});
   const dealBreakersRecord = applyDealBreakers(preferences, answers);
   const compensationRecord = applyCompensation(preferences, answers);
-  const nextHomeModes = WHERE_TO_WORK_MODES[trimmed(answers && answers.where)];
+  const submittedName = trimmed(answers && answers.name);
+  const submittedLocation = trimmed(answers && answers.location);
+  const submittedWhere = trimmed(answers && answers.where);
+  const nextHomeModes = WHERE_TO_WORK_MODES[submittedWhere];
   const nextHomeWorkMode = nextHomeModes ? nextHomeModes[0] : "";
   const payload = {
-    name: trimmed(answers.name),
-    location: trimmed(answers.location),
-    history: trimmed(answers.history),
+    name: keepPreviousHomeField(submittedName, previousAnswers.name),
+    location: keepPreviousHomeField(submittedLocation, previousAnswers.location),
+    history: keepPreviousHomeField(answers && answers.history, previousAnswers.history),
     goal,
-    where: trimmed(answers.where),
-    when: trimmed(answers.when),
-    extra: trimmed(answers.extra),
+    where: keepPreviousHomeField(submittedWhere, previousAnswers.where),
+    when: keepPreviousHomeField(answers && answers.when, previousAnswers.when),
+    extra: keepPreviousHomeField(answers && answers.extra, previousAnswers.extra),
     dealBreakers: dealBreakersRecord.dealBreakers,
     dealBreakersChoice: dealBreakersRecord.dealBreakersChoice,
     education: "",
@@ -307,12 +416,15 @@ function saveHomeAnswers(workspace, answers) {
 
   const profile = readJson(paths.profile, createDefaultProfile());
   profile.candidate = profile.candidate || createDefaultProfile().candidate;
-  if (payload.name) {
-    profile.candidate.preferredName = payload.name;
-    profile.candidate.name = payload.name;
+  if (submittedName) {
+    const currentName = trimmed(profile.candidate.preferredName) || trimmed(profile.candidate.name);
+    if (submittedName !== currentName) {
+      profile.candidate.preferredName = submittedName;
+      profile.candidate.name = submittedName;
+    }
   }
-  if (payload.location) {
-    profile.candidate.location = payload.location;
+  if (submittedLocation && submittedLocation !== trimmed(profile.candidate.location)) {
+    profile.candidate.location = submittedLocation;
   }
   const educationRecord = applyEducation(profile, answers, previousAnswers);
   payload.education = educationRecord.education;
@@ -321,8 +433,8 @@ function saveHomeAnswers(workspace, answers) {
     payload.lastHomeEducationId = educationRecord.lastHomeEducationId;
   }
   profile.updatedAt = savedAt;
-  writeJson(answersPath, payload);
-  writeJson(paths.profile, profile);
+  writeJsonIfMeaningfulChange(answersPath, payload);
+  writeJsonIfMeaningfulChange(paths.profile, profile);
 
   const hasTitles =
     Array.isArray(preferences.roleTargets) &&
@@ -346,7 +458,7 @@ function saveHomeAnswers(workspace, answers) {
     );
   }
   preferences.updatedAt = savedAt;
-  writeJson(paths.preferences, preferences);
+  writeJsonIfMeaningfulChange(paths.preferences, preferences);
 
   const state = syncOnboardingState(workspace);
   return {
@@ -360,6 +472,7 @@ function saveHomeAnswers(workspace, answers) {
 
 module.exports = {
   HOME_ANSWERS_FILENAME,
+  emptyHomeFormValues,
   saveHomeAnswers,
   parseSalaryInput,
   readHomeFormPrefill,

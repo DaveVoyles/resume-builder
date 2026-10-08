@@ -13,6 +13,7 @@
     --radius:12px;
   }
   *{box-sizing:border-box}
+  [hidden]{display:none !important}
   html,body{margin:0}
   body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
        background:var(--bg);color:#0f172a;line-height:1.55;font-size:16px}
@@ -191,7 +192,7 @@
     <p class="muted">Your agent can fill this from your files. Check every answer. Change anything that's wrong.</p>
     <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="40" aria-valuetext="Setup progress 40 percent" aria-label="Setup progress 40 percent"><span></span></div>
     <p class="reqnote"><span class="req" aria-hidden="true">*</span> = required. Only your goal is required. Everything else is optional.</p>
-    <p class="form-error" id="formError" hidden></p>
+    <p class="form-error" id="formError" hidden role="alert" tabindex="-1"></p>
     <form id="intakeForm">
       <!-- Agent pre-fill: add class="filled" on the input/textarea, unhide the .agentnote sibling, set its text (example: ✓ Filled by agent from sample-resume.txt). -->
       <div class="grid g-2" style="grid-template-columns:1fr 1fr">
@@ -435,14 +436,17 @@
 
   function applyFormPrefill(formValues){
     if(!formValues) return;
-    var education=document.getElementById("education");
-    var educationChoice=document.getElementById("educationChoice");
-    var salary=document.getElementById("salary");
-    var salaryChoice=document.getElementById("salaryChoice");
-    if(education && formValues.education) education.value=formValues.education;
-    if(educationChoice) educationChoice.value=formValues.educationChoice||"";
-    if(salary && formValues.salary) salary.value=formValues.salary;
-    if(salaryChoice) salaryChoice.value=formValues.salaryChoice||"";
+    var fields=[
+      ["name","name"],["loc","location"],["hist","history"],["goal","goal"],
+      ["where","where"],["when","when"],["extra","extra"],
+      ["dealBreakers","dealBreakers"],["dealBreakersChoice","dealBreakersChoice"],
+      ["education","education"],["educationChoice","educationChoice"],
+      ["salary","salary"],["salaryChoice","salaryChoice"]
+    ];
+    fields.forEach(function(pair){
+      var el=document.getElementById(pair[0]);
+      if(el) el.value=formValues[pair[1]]==null?"":String(formValues[pair[1]]);
+    });
   }
 
   function applyRoles(data){
@@ -543,6 +547,8 @@
       if(!result.ok){
         formError.hidden=false;
         formError.textContent=result.body.error || "Could not save. Add a goal and try again.";
+        formError.scrollIntoView();
+        formError.focus({preventScroll:true});
         return;
       }
       setup.hidden=true;
@@ -557,6 +563,8 @@
     }).catch(function(){
       formError.hidden=false;
       formError.textContent="Could not save. Is RB still running?";
+      formError.scrollIntoView();
+      formError.focus({preventScroll:true});
     });
   });
   document.getElementById("editAnswers").addEventListener("click",function(){
