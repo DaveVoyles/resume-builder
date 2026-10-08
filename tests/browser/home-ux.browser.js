@@ -385,6 +385,27 @@ test("home-ux: a tailored resume shows the ready card with working links; Answer
     const response = await page.request.get(new URL("/resume/latest", url).href);
     assert.match(await response.text(), /JORDAN_RESUME/);
     assert.equal(await page.locator("#openReport").isVisible(), true);
+    assert.equal(await page.locator("#resumeList").isVisible(), false);
+
+    // Two tailored resumes: list both, closest fit first, and hide the single "newest" buttons.
+    fs.mkdirSync(path.join(workspace, "outputs", "resumes", "Acme"), { recursive: true });
+    fs.writeFileSync(path.join(workspace, "outputs", "resumes", "Acme", "acme.html"), "<h1>ACME_RESUME</h1>");
+    fs.writeFileSync(path.join(workspace, "outputs", "tailor-reports", "role_acme.html"), "<p>ACME_REPORT</p>");
+    fs.writeFileSync(path.join(workspace, "roles.tracked.json"), JSON.stringify([
+      { id: "role_jordan", company: "Jordan Co", title: "Ops", resume: { outputPath: "outputs/resumes/jordan.html", keywordCoverage: { percent: 30 } } },
+      { id: "role_acme", company: "Acme", title: "Lead", resume: { outputPath: "outputs/resumes/Acme/acme.html", reportPath: "outputs/tailor-reports/role_acme.html", keywordCoverage: { percent: 80 } } },
+    ]));
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+    await page.locator("#resumeList").waitFor({ state: "visible" });
+    const rows = await page.locator("#resumeListItems li strong").allTextContents();
+    assert.deepEqual(rows, ["Acme - Lead", "Jordan Co - Ops"]);
+    assert.match(await page.textContent("#resumeListItems li"), /80% of keywords/);
+    assert.equal(await page.locator("#openResume").isVisible(), false);
+    assert.equal(await page.locator("#readyName").isVisible(), false);
+    const reportHref = await page.locator("#resumeListItems li a", { hasText: "Open report" }).first().getAttribute("href");
+    assert.equal(reportHref, "/report/role/role_acme");
+    assert.match(await (await page.request.get(new URL(reportHref, url).href)).text(), /ACME_REPORT/);
   } finally {
     await page.close();
   }

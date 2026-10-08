@@ -109,6 +109,11 @@
   .ready h2{color:var(--ok);font-size:1.6rem}
   .ready .btn.primary{background:var(--ok)}
   .ready .btn.primary:hover{background:#14532d}
+  .resume-list{list-style:none;margin:.5rem 0;padding:0}
+  .resume-list li{padding:.75rem 0;border-top:1px solid #bbf7d0}
+  .resume-list li:first-child{border-top:0}
+  .resume-list .row{margin-top:.4rem}
+  .resume-list-title{margin:1.5rem 0 .25rem;font-size:1.1rem}
   .form-error{color:var(--bad);font-weight:600;margin:0 0 1rem}
   .field-error{color:var(--bad);font-weight:600;font-size:.92rem;margin:.35rem 0 0}
   input[aria-invalid="true"]{border-color:var(--bad);border-width:2px}
@@ -167,6 +172,11 @@
       <a class="btn ghost" id="downloadWord" href="/resume/latest" download hidden>Download Word file</a>
       <a class="btn ghost" id="openReport" href="/report/latest" target="_blank" rel="noopener" hidden>Open the report</a>
       <a class="btn ghost" href="/tracker.html">Open my tracker</a>
+    </div>
+    <div id="resumeList" hidden>
+      <h3 class="resume-list-title">Your resumes, closest fit first</h3>
+      <ul class="resume-list" id="resumeListItems"></ul>
+      <p class="hint">Fit is the share of the job posting's keywords the resume uses. It is a rough guide to wording, not to how good a match you are.</p>
     </div>
     <p class="hint" id="readyName" hidden></p>
     <p class="hint" id="wordNote" hidden>Word file; opens in Word.</p>
@@ -502,6 +512,44 @@
     var name=document.getElementById("readyName");
     var word=document.getElementById("downloadWord"),wordNote=document.getElementById("wordNote");
     var isWord=Boolean(resume&&resume.word),openable=Boolean(resume&&resume.openable);
+    var list=(lastOutputs&&lastOutputs.resumes)||[];
+    var many=list.length>=2;
+    var listBox=document.getElementById("resumeList"),listItems=document.getElementById("resumeListItems");
+    if(listBox&&listItems){
+      listBox.hidden=!many;
+      listItems.innerHTML="";
+      list.forEach(function(item){
+        var li=document.createElement("li");
+        var title=document.createElement("strong");
+        title.textContent=item.company+(item.title?" - "+item.title:"");
+        li.appendChild(title);
+        var fit=document.createElement("span");
+        fit.className="muted";
+        fit.textContent=item.percent===null||item.percent===undefined?"":" "+item.percent+"% of keywords";
+        li.appendChild(fit);
+        var links=document.createElement("div");
+        links.className="row";
+        [[item.openable?item.openUrl:item.wordUrl,item.openable?"Open resume":"Download Word file",true],[item.openable&&item.wordUrl?item.wordUrl:null,"Download Word file",false],[item.reportUrl,"Open report",true]].forEach(function(l){
+          if(!l[0]) return;
+          var a=document.createElement("a");
+          a.className="btn ghost";a.href=l[0];a.textContent=l[1];
+          if(l[2]){a.target="_blank";a.rel="noopener";}else{a.setAttribute("download","");}
+          links.appendChild(a);
+        });
+        li.appendChild(links);
+        listItems.appendChild(li);
+      });
+    }
+    if(many){
+      // The list replaces the single "newest" buttons, which could open the weakest match.
+      if(openResume) openResume.hidden=true;
+      if(word) word.hidden=true;
+      if(wordNote) wordNote.hidden=true;
+      if(openReport) openReport.hidden=true;
+      if(name) name.hidden=true;
+      card.hidden=false;
+      return;
+    }
     if(openResume){
       openResume.hidden=!resume;
       if(resume) openResume.setAttribute("href",resume.openUrl||resume.url||"/resume/latest");
