@@ -26,7 +26,8 @@
             "Ran day-to-day office operations for a 12-person clinic.",
             "Set the weekly staff schedule and handled patient billing questions.",
             "Introduced a simple checklist that cut front-desk wait time by 20%."
-          ]
+          ],
+          "bulletEvidenceIds": [[], [], ["ev_notes-inputs-notes-checklist-notes-md_60a608d90f"]]
         },
         {
           "title": "Front Desk Lead",

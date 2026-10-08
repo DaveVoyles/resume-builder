@@ -216,22 +216,32 @@ function buildEvidenceClaimIndex(evidenceEntries) {
   return index;
 }
 
+/** A non-empty list of evidence id strings, or undefined (meaning "not bound"). */
+function idList(value) {
+  if (!Array.isArray(value)) return undefined;
+  const ids = value.filter(isNonBlankString);
+  return ids.length > 0 ? ids : undefined;
+}
+
 /** Locates every claim-bearing text field in a resume config, with a human-readable location and context. */
 function collectConfigClaimSites(config) {
   const sites = [];
 
   if (config.summary && isNonBlankString(config.summary.text)) {
-    sites.push({ path: "summary.text", text: config.summary.text });
+    sites.push({ path: "summary.text", text: config.summary.text, evidenceIds: idList(config.summary.evidenceIds) });
   }
 
   (config.experienceSections || []).forEach((section, sIndex) => {
     (section.jobs || []).forEach((job, jIndex) => {
       const context = [job.title, job.company].filter(Boolean).join(" — ");
       (job.bullets || []).forEach((bullet, bIndex) => {
+        // A bullet's own list wins; otherwise the job-level list applies.
+        const bulletIds = Array.isArray(job.bulletEvidenceIds) ? idList(job.bulletEvidenceIds[bIndex]) : undefined;
         sites.push({
           path: `experienceSections[${sIndex}].jobs[${jIndex}].bullets[${bIndex}]`,
           text: bullet,
           context,
+          evidenceIds: bulletIds || idList(job.evidenceIds),
         });
       });
     });
@@ -284,26 +294,66 @@ function assessLedgerStrength(evidenceEntries, threshold = THIN_LEDGER_THRESHOLD
  * `warnings` covers ledger-strength messaging, which is informational and
  * never blocks.
  */
-function auditClaims(claimSites, evidenceEntries) {
+function auditClaims(claimSites, evidenceEntries, options = {}) {
   const evidenceIndex = buildEvidenceClaimIndex(evidenceEntries);
+  const entriesById = new Map((evidenceEntries || []).map((entry) => [entry.id, entry]));
   const errors = [];
+  const warnings = [];
   const claimsFound = [];
 
   (claimSites || []).forEach((site) => {
-    for (const claim of extractClaims(site.text)) {
+    const locationLabel = site.context ? `${site.path} (${site.context})` : site.path;
+    const claims = extractClaims(site.text);
+    const boundIds = site.evidenceIds && site.evidenceIds.length > 0 ? site.evidenceIds : null;
+    let boundIndex = null;
+
+    if (boundIds) {
+      const unknown = boundIds.filter((id) => !entriesById.has(id));
+      if (unknown.length > 0) {
+        errors.push(
+          `Unknown evidence id at ${locationLabel}: ${unknown.join(", ")} is not in evidence.jsonl. ` +
+            "Copy the id from the evidence entry that backs this line, or remove it from evidenceIds.",
+        );
+      }
+      boundIndex = buildEvidenceClaimIndex(boundIds.map((id) => entriesById.get(id)).filter(Boolean));
+    }
+
+    const unboundSupported = [];
+    for (const claim of claims) {
       claimsFound.push({ ...claim, path: site.path });
-      if (!evidenceIndex.has(claimKey(claim))) {
-        const locationLabel = site.context ? `${site.path} (${site.context})` : site.path;
+      const key = claimKey(claim);
+      if (boundIds) {
+        if (boundIndex.has(key)) continue;
+        const elsewhere = (evidenceEntries || []).filter(
+          (entry) => !boundIds.includes(entry.id) && buildEvidenceClaimIndex([entry]).has(key),
+        );
+        const hint = elsewhere.length > 0
+          ? ` A different entry (${elsewhere.slice(0, 3).map((entry) => entry.id).join(", ")}) does state this figure; if it is the right proof, add its id to evidenceIds.`
+          : " No entry in evidence.jsonl states this figure; ask the candidate to confirm it, or remove the number.";
+        errors.push(
+          `Claim not backed by its listed evidence at ${locationLabel}: "${claim.text}" in "${claim.snippet}" is not stated in ` +
+            `${boundIds.join(", ")}.${hint}`,
+        );
+      } else if (!evidenceIndex.has(key)) {
         errors.push(
           `Unsupported claim at ${locationLabel}: "${claim.text}" in "${claim.snippet}" — no evidence.jsonl entry ` +
             `(fact/snippet/quote, excluding metadata-only entries) supports this ${claim.label}. Add a source-backed ` +
             "evidence entry confirming this figure, or rephrase the claim without an unverified number.",
         );
+      } else {
+        unboundSupported.push(claim);
       }
+    }
+
+    if (options.warnUnbound && unboundSupported.length > 0) {
+      warnings.push(
+        `Not tied to specific evidence at ${locationLabel}: ${unboundSupported.map((claim) => `"${claim.text}"`).join(", ")} ` +
+          "matches something in evidence.jsonl, but this line does not say which entry. " +
+          "Add the entry id to evidenceIds (on the job, or in bulletEvidenceIds for one bullet) so the number is checked against that entry only.",
+      );
     }
   });
 
-  const warnings = [];
   const ledger = assessLedgerStrength(evidenceEntries);
   if (ledger.thin) warnings.push(ledger.message);
 
@@ -322,7 +372,7 @@ function auditClaims(claimSites, evidenceEntries) {
  */
 function auditResumeConfig(config, evidenceEntries) {
   const claimSites = collectConfigClaimSites(config || {});
-  return auditClaims(claimSites, evidenceEntries);
+  return auditClaims(claimSites, evidenceEntries, { warnUnbound: true });
 }
 
 /** Locates every claim-bearing text field in a cover letter config, with a human-readable location and context. */
