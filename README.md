@@ -13,6 +13,39 @@ candidate ("Troy McClure"). Not Dave's real job search.
 resume, three saved job postings, and a step-by-step walk with screenshots. It shows the
 before and after, and what the tool refuses to claim. Nothing is applied for.
 
+## What you get
+
+Give it your old resume and a few job postings. For each job you get a one-page resume reworded for that posting, a plain-language report that proves what changed, and a tracker that holds every role. Everything it says about you traces back to your own words, and it never applies for you.
+
+<p align="center">
+  <img src="docs/images/tour.gif" alt="Animated tour: the home page lists three tailored resumes closest fit first, the report shows 7% to 80% keyword coverage and a before and after for every edit, the one-page resume, and the tracker" width="820">
+</p>
+
+*The tour above is a real run with the repo owner's own resume and three real job postings. Full walk with screenshots: [the showcase](docs/showcase/README.md).*
+
+| You give it | You get back |
+| --- | --- |
+| Your old resumes, notes and a short About-you form | A private workspace and an **evidence ledger**: one entry per resume bullet or note, each with an id. Nothing gets said about you without one. |
+| A job posting (saved text or a link) | The posting's keywords, a **one-page DOCX resume** for that job, and an optional evidence-audited cover letter |
+| (nothing extra) | A **tailor report** (HTML for you, Markdown for your agent): your general resume next to the tailored one, a "why" and a source for every edit, what was left out, and the keyword coverage before and after |
+| Yes or no answers | **Possible matches**: keywords your resume says in other words. The tool shows the closest lines and asks. It never adds one on its own. |
+| Keywords you have not done | A **declined list**. Those words stay off every resume and a check fails if one appears. |
+| Several jobs | A home page that lists every resume **closest fit first**, plus a searchable tracker with a pipeline funnel and stale-application badges |
+| An interview coming up | A [study-guide bundle](docs/playbooks/study-guide.md) for that role and a [Q&A debrief](docs/playbooks/debrief.md) afterwards |
+
+<p align="center">
+  <img src="docs/images/home-all-resumes.jpg" alt="The home page after three resumes are tailored: JPMorgan Chase 80% of keywords, Deloitte 28%, Bentley 20%, each with Open resume, Download Word file and Open report links" width="760">
+</p>
+
+### Guardrails you can count on
+
+- **Evidence first.** Every number is checked against your own record. An unsupported claim blocks the render. Employers, titles and dates are checked against your profile too.
+- **Honest by design.** Declined keywords, a "needs your confirmation" list, and a "left out" list show what the tool would not say.
+- **One page.** The page count is checked after rendering when LibreOffice is installed.
+- **Private by default.** Real files, answers and outputs live in a gitignored workspace. `npm run check:privacy` guards every push.
+- **No submit path.** Nothing in this project can send an application. `apply` only supports `--dry-run`, and tests fail if a submit path appears.
+- **No AI key.** The CLI never calls a model. Your assistant does the drafting; the CLI validates and renders.
+
 ## Start here if you are a person
 
 You do not need to code. You need a chat assistant that can work on your computer for you. Claude, Grok, or Gemini (Google Antigravity counts) all work. Copilot or ChatGPT also work.
@@ -134,6 +167,12 @@ details):
 | Find roles | Search, vet, and track prospective roles as leads before promoting them. | [`find-roles.md`](docs/playbooks/find-roles.md) | [Workspace schemas](docs/workspace-schemas.md#leadsjson) |
 | Tailor | Draft a resume config, then validate, audit claims, render DOCX, and track — in one pass. | [`tailor.md`](docs/playbooks/tailor.md) | [Accuracy and claims](docs/accuracy-and-claims.md#evidence-backed-claim-audit-blocking) |
 | Cover letter | Draft an evidence-audited cover letter alongside a resume (`tailor --cover-letter`) or standalone (`render-cover-letter`). | [`cover-letter.md`](docs/playbooks/cover-letter.md) | [Workspace schemas](docs/workspace-schemas.md#cover-letter-render-config-render-cover-letter) |
+| Tailor report | HTML and Markdown report: before and after for every edit, why, what backs it, what was left out, and coverage against your general resume. | `npm run workspace:tailor-report` · [`tailor.md`](docs/playbooks/tailor.md) | [Workspace schemas](docs/workspace-schemas.md) |
+| Possible matches and confirmations | Keywords your resume says in other words. You answer yes or no; answers are saved as a note in your words and re-used on every later resume. | [`tailor.md`](docs/playbooks/tailor.md#step-32c-record-the-persons-yesno-answers-then-re-ingest-and-re-tailor) | [Accuracy and claims](docs/accuracy-and-claims.md) |
+| Declined keywords | Keywords you have not done stay off every resume; the render is blocked if one appears. | [`tailor.md`](docs/playbooks/tailor.md) | [Accuracy and claims](docs/accuracy-and-claims.md) |
+| Tailor plan | Rank your evidence against a posting's keywords before drafting. | `npm run workspace:tailor-plan` · [`tailor.md`](docs/playbooks/tailor.md) | [Workspace schemas](docs/workspace-schemas.md) |
+| Home page and job requests | Three-tab page with your answers, every resume closest fit first, and an "Add a job" box that saves a request for your agent. | `npm run home` · `npm run workspace:job-requests` | [Getting started](docs/getting-started.md) |
+| Persona tests | Scorecard, golden text and browser tests on four personas, including a real resume with real job snapshots. | `npm run e2e` | [Testing with personas](docs/testing.md) |
 | Keyword scoring | Score how much of an agent-extracted keyword list a resume config covers. Advisory only. | [`tailor.md`](docs/playbooks/tailor.md#step-31a-keyword-coverage-advisory---keywords) · `npm run workspace:score-keywords` | [Workspace schemas](docs/workspace-schemas.md#keyword-list-input-score-keywords) |
 | Gap analysis | Score keyword coverage, then classify gaps (presentation, weak evidence, adjacent skill, true gap) into actionable feedback. | [`gap-analysis.md`](docs/playbooks/gap-analysis.md) · `npm run workspace:score-keywords` · `npm run workspace:gap-report` | [Workspace schemas](docs/workspace-schemas.md#gap-classification-input-gap-report) |
 | Status updates | Record an application status change — including `ghosted` — and auto-propose the next follow-up. | Recipe in [`AGENTS.md`](AGENTS.md#-status-update-recipe) | [Workspace schemas](docs/workspace-schemas.md#auto-generating-nextaction-on-status-transitions) |
@@ -143,6 +182,18 @@ details):
 | Tracker | Markdown + interactive HTML tracker — pipeline funnel, stale badges, `ghosted` status. | — | [Workspace schemas](docs/workspace-schemas.md#staleness-computation) |
 | Style check | Advisory de-AI lint over resume/cover-letter text (buzzwords, sentence-uniformity, repetition) — never blocks. | Rewrite step in [`tailor.md`](docs/playbooks/tailor.md) | [`style-lint.md`](docs/style-lint.md) |
 | Privacy & validation | Schema validation, evidence-backed claim audit, and privacy checks. | — | [Candidate workspace](docs/candidate-workspace.md) |
+
+## 🧪 How we know it works
+
+Every change is measured on the same people, so the experience is checked end to end each time:
+
+- **Four test personas** (three fictional, one real: the repo owner, with permission) go from an empty folder to tailored resumes with `npm run e2e -- --persona owner`. It prints a scorecard: setup reaches done, claim audit passes, keyword coverage meets a per-job threshold, one page, no absolute paths in output, and no application submitted.
+- **Golden resume text** per persona and job fails the build if a resume changes without review.
+- **Real job snapshots.** The owner persona uses three saved job postings (text and screenshot), so the demo still works after the pages come down.
+- **Browser tests** drive the home page with Playwright (`npm run test:browser`, Node 20+). `npm test` runs 1,000+ unit and CLI tests.
+- **No-submit guard.** Tests fail if anything in `src/` can submit an application.
+
+Details: [Testing with personas](docs/testing.md). A walk with screenshots: [the showcase](docs/showcase/README.md).
 
 ## 🤔 Why use this
 
@@ -188,6 +239,8 @@ And a real generated DOCX resume, evidence-backed and rendered from the sample w
 - A private candidate workspace.
 - An evidence ledger that ties resume claims back to source material.
 - Evidence-backed, schema-validated **DOCX resumes** tailored per job posting.
+- A **tailor report** per job that shows, line by line, what changed, why, and what backs it.
+- A home page that lists every tailored resume, closest fit first, with its report.
 - A markdown application tracker **and** an interactive HTML tracker.
 - A `leads.json` of vetted, link-verified prospective roles.
 - [Interview study-guide](docs/playbooks/study-guide.md) context bundles for tracked roles.
@@ -198,7 +251,9 @@ And a real generated DOCX resume, evidence-backed and rendered from the sample w
 ## 🔒 Privacy promise
 
 Real candidate inputs and generated outputs are ignored by default. The included sample
-candidate is fictional and safe to inspect.
+candidate is fictional and safe to inspect. The one real resume in this repo is the owner's own,
+shared on purpose with the email and phone scrubbed (`examples/real-resume/owner/`); it is the
+only exception.
 
 Before sharing or pushing changes, run:
 
