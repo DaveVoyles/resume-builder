@@ -610,3 +610,163 @@ test("blank Education Save keeps lastHomeEducationId", () => {
     fs.rmSync(workspace, { recursive: true, force: true });
   }
 });
+
+test("blank name and location Save keeps previous home-answers and profile values", () => {
+  const workspace = tempWorkspace();
+  try {
+    saveHomeAnswers(workspace, {
+      name: "Jordan Sample",
+      location: "Philadelphia, PA",
+      goal: "Operations manager at a mid-size healthcare company",
+    });
+    saveHomeAnswers(workspace, {
+      name: "",
+      location: "  ",
+      goal: "Operations manager at a mid-size healthcare company",
+    });
+    const answers = JSON.parse(fs.readFileSync(path.join(workspace, HOME_ANSWERS_FILENAME), "utf8"));
+    assert.equal(answers.name, "Jordan Sample");
+    assert.equal(answers.location, "Philadelphia, PA");
+    const profile = JSON.parse(fs.readFileSync(workspacePaths(workspace).profile, "utf8"));
+    assert.equal(profile.candidate.preferredName, "Jordan Sample");
+    assert.equal(profile.candidate.location, "Philadelphia, PA");
+    const prefill = readHomeFormPrefill(workspace);
+    assert.equal(prefill.name, "Jordan Sample");
+    assert.equal(prefill.location, "Philadelphia, PA");
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("Either is fine and Willing to move round-trip as the exact where option", () => {
+  const workspace = tempWorkspace();
+  try {
+    saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+      where: "Either is fine",
+    });
+    let preferences = JSON.parse(fs.readFileSync(workspacePaths(workspace).preferences, "utf8"));
+    assert.deepEqual(preferences.locations.workModes, ["flexible"]);
+    assert.equal(readHomeFormPrefill(workspace).where, "Either is fine");
+
+    saveHomeAnswers(workspace, {
+      goal: "Operations manager at a mid-size healthcare company",
+      where: "Willing to move",
+    });
+    preferences = JSON.parse(fs.readFileSync(workspacePaths(workspace).preferences, "utf8"));
+    assert.deepEqual(preferences.locations.workModes, ["flexible"]);
+    assert.equal(readHomeFormPrefill(workspace).where, "Willing to move");
+    assert.notEqual(readHomeFormPrefill(workspace).where, "Either is fine");
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("readHomeFormPrefill fills agent profile fields when home-answers is missing", () => {
+  const workspace = tempWorkspace();
+  try {
+    const { createDefaultProfile } = require("../../src/core/candidate-profile");
+    const profile = createDefaultProfile();
+    profile.candidate.preferredName = "Jordan Sample";
+    profile.candidate.location = "Philadelphia, PA";
+    profile.education = [{ id: "edu-001", institution: "Example University", degree: "B.S. Computer Science" }];
+    writeJson(workspacePaths(workspace).profile, profile);
+    writeAgentPreferences(workspace, {
+      roleTargets: [{ titles: ["Operations manager"], seniority: "flexible", employmentTypes: [], priority: "should" }],
+      dealBreakers: [{ id: "deal-001", text: "No unpaid overtime", priority: "must" }],
+      compensation: { currency: "USD", baseMinimum: 120000 },
+    });
+    assert.equal(fs.existsSync(path.join(workspace, HOME_ANSWERS_FILENAME)), false);
+    const prefill = readHomeFormPrefill(workspace);
+    assert.equal(prefill.name, "Jordan Sample");
+    assert.equal(prefill.location, "Philadelphia, PA");
+    assert.equal(prefill.goal, "Operations manager");
+    assert.equal(prefill.dealBreakers, "No unpaid overtime");
+    assert.equal(prefill.education, "B.S. Computer Science, Example University");
+    assert.equal(prefill.salary, "120000");
+    assert.equal(prefill.history, "");
+    assert.equal(prefill.where, "");
+    assert.equal(prefill.when, "");
+    assert.equal(prefill.extra, "");
+    const beforeProfile = fs.readFileSync(workspacePaths(workspace).profile);
+    const beforePreferences = fs.readFileSync(workspacePaths(workspace).preferences);
+    saveHomeAnswers(workspace, prefill);
+    assert.equal(Buffer.compare(beforeProfile, fs.readFileSync(workspacePaths(workspace).profile)), 0);
+    assert.equal(Buffer.compare(beforePreferences, fs.readFileSync(workspacePaths(workspace).preferences)), 0);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("second Save with a new goal replaces the first roleTargets title", () => {
+  const workspace = tempWorkspace();
+  try {
+    saveHomeAnswers(workspace, { goal: "Product Manager" });
+    saveHomeAnswers(workspace, { goal: "Staff Engineer" });
+    const preferences = JSON.parse(fs.readFileSync(workspacePaths(workspace).preferences, "utf8"));
+    assert.equal(preferences.roleTargets.length, 1);
+    assert.deepEqual(preferences.roleTargets[0].titles, ["Staff Engineer"]);
+    assert.equal(readHomeFormPrefill(workspace).goal, "Staff Engineer");
+    const answers = JSON.parse(fs.readFileSync(path.join(workspace, HOME_ANSWERS_FILENAME), "utf8"));
+    assert.equal(answers.goal, "Staff Engineer");
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("Save goal replaces only the first nonempty title in the first roleTargets row", () => {
+  const workspace = tempWorkspace();
+  try {
+    const row1 = {
+      titles: ["Product Manager", "Program Manager"],
+      seniority: "senior",
+      employmentTypes: ["full-time"],
+      priority: "must",
+    };
+    const row2 = {
+      titles: ["Operations Manager"],
+      seniority: "mid",
+      employmentTypes: ["contract"],
+      priority: "should",
+    };
+    writeAgentPreferences(workspace, {
+      roleTargets: [JSON.parse(JSON.stringify(row1)), JSON.parse(JSON.stringify(row2))],
+    });
+    const prefill = readHomeFormPrefill(workspace);
+    assert.equal(prefill.goal, "Product Manager");
+    saveHomeAnswers(workspace, { ...prefill, goal: "Staff Engineer" });
+    const preferences = JSON.parse(fs.readFileSync(workspacePaths(workspace).preferences, "utf8"));
+    assert.equal(preferences.roleTargets.length, 2);
+    assert.deepEqual(preferences.roleTargets[0].titles, ["Staff Engineer", "Program Manager"]);
+    const row1After = preferences.roleTargets[0];
+    assert.equal(JSON.stringify({ ...row1After, titles: row1.titles }), JSON.stringify(row1));
+    assert.equal(JSON.stringify(preferences.roleTargets[1]), JSON.stringify(row2));
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("blank extra and history Save stores empty strings", () => {
+  const workspace = tempWorkspace();
+  try {
+    saveHomeAnswers(workspace, {
+      goal: "Product Manager",
+      history: "Office Manager, Riverside Dental — 2019 to now",
+      extra: "Open to healthcare operations",
+    });
+    saveHomeAnswers(workspace, {
+      goal: "Product Manager",
+      history: "",
+      extra: "",
+    });
+    const answers = JSON.parse(fs.readFileSync(path.join(workspace, HOME_ANSWERS_FILENAME), "utf8"));
+    assert.equal(answers.history, "");
+    assert.equal(answers.extra, "");
+    const prefill = readHomeFormPrefill(workspace);
+    assert.equal(prefill.history, "");
+    assert.equal(prefill.extra, "");
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+

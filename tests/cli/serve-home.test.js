@@ -667,7 +667,7 @@ test("home.html Jobs tab fetches /api/roles and has no copied bucket logic", () 
   assert.match(homePage, /data-role-count="applied"/);
   assert.match(homePage, /applyRoles/);
   assert.match(homePage, /function applySetupComplete\(/);
-  assert.match(homePage, /setupBtn\.hidden=hidden/);
+  assert.match(homePage, /Edit my answers/);
   assert.doesNotMatch(homePage, /statusBucket/);
   assert.doesNotMatch(homePage, /not-applied/);
 });
@@ -688,8 +688,10 @@ test("GET /api/roles setupComplete is true after answering home questions and ho
     assert.match(homePage, /jobsGoToSetup/);
     assert.match(homePage, /function applySetupComplete\(/);
     assert.match(homePage, /getElementById\("continueBtn"\)/);
-    assert.match(homePage, /cb\.hidden=hidden/);
-    assert.match(homePage, /setupBtn\.hidden=hidden/);
+    const applyFn = homePage.match(/function applySetupComplete\(complete\)\{[\s\S]*?\n  \}/);
+    assert.ok(applyFn, "applySetupComplete must exist");
+    assert.match(applyFn[0], /Edit my answers/);
+    assert.doesNotMatch(applyFn[0], /\.hidden\s*=/);
   } finally {
     server.close();
     cleanup(tmpDir);
@@ -953,7 +955,7 @@ test("home Save nextStep is Setup complete when every step is done", async () =>
   }
 });
 
-test("home.html renders server nextStep and hides Continue setup when complete", () => {
+test("home.html renders server nextStep and relabels Continue setup when complete", () => {
   const homePage = fs.readFileSync(path.join(__dirname, "../../onboarding/home.html"), "utf8");
   assert.match(homePage, /id="savedNextStep"/);
   assert.match(homePage, /function renderNextStep\(/);
@@ -961,7 +963,6 @@ test("home.html renders server nextStep and hides Continue setup when complete",
   assert.doesNotMatch(homePage, /Add a job you want/);
   assert.match(homePage, /id="continueBtn"/);
   assert.match(homePage, /function applySetupComplete\(/);
-  assert.match(homePage, /cb\.hidden=hidden/);
   assert.match(homePage, /id="education"/);
   assert.match(homePage, /id="salary"/);
   assert.match(homePage, /id="educationChoice"/);
@@ -1015,4 +1016,317 @@ test("full home flow reaches 10 of 10 on the built tracker", async () => {
     cleanup(tmpDir);
   }
 });
+
+const HOME_FORM_KEYS = [
+  "name",
+  "location",
+  "history",
+  "goal",
+  "where",
+  "when",
+  "extra",
+  "dealBreakers",
+  "dealBreakersChoice",
+  "education",
+  "educationChoice",
+  "salary",
+  "salaryChoice",
+];
+
+function snapshotHomeFiles(workspace) {
+  const names = ["profile.json", "preferences.json", "home-answers.json", "roles.tracked.json"];
+  const snapshot = {};
+  for (const name of names) {
+    const filePath = path.join(workspace, name);
+    snapshot[name] = fs.existsSync(filePath) ? fs.readFileSync(filePath) : null;
+  }
+  return snapshot;
+}
+
+function assertSnapshotsEqual(before, after, files) {
+  for (const name of files) {
+    if (before[name] === null && after[name] === null) continue;
+    assert.ok(before[name], `${name} existed before`);
+    assert.ok(after[name], `${name} exists after`);
+    assert.equal(Buffer.compare(before[name], after[name]), 0, `${name} must be unchanged`);
+  }
+}
+
+test("home.html [hidden] forces display none even on .btn", () => {
+  const homePage = fs.readFileSync(path.join(__dirname, "../../onboarding/home.html"), "utf8");
+  const styleMatch = homePage.match(/<style>([\s\S]*?)<\/style>/);
+  assert.ok(styleMatch, "home.html must have a style block");
+  const style = styleMatch[1];
+  assert.match(style, /\[hidden\]\s*\{[^}]*display\s*:\s*none\s*!important/);
+  assert.match(style, /\.btn\{[^}]*display\s*:\s*inline-block/);
+});
+
+test("home.html applySetupComplete relabels to Edit my answers and does not hide buttons", () => {
+  const homePage = fs.readFileSync(path.join(__dirname, "../../onboarding/home.html"), "utf8");
+  const applyFn = homePage.match(/function applySetupComplete\(complete\)\{[\s\S]*?\n  \}/);
+  assert.ok(applyFn, "applySetupComplete must exist");
+  assert.match(applyFn[0], /textContent=complete\?editLabel:"Continue setup →"/);
+  assert.match(applyFn[0], /textContent=complete\?editLabel:"Go to setup"/);
+  assert.match(applyFn[0], /var editLabel="Edit my answers"/);
+  assert.doesNotMatch(applyFn[0], /\.hidden\s*=/);
+  assert.match(homePage, /cb\.addEventListener\("click",openSetup\)/);
+  assert.match(homePage, /id="jobsGoToSetup"[^>]*data-goto="setup"/);
+});
+
+test("home.html formError is an alert and Save failure focuses it", () => {
+  const homePage = fs.readFileSync(path.join(__dirname, "../../onboarding/home.html"), "utf8");
+  const errorTag = homePage.match(/<p[^>]*id="formError"[^>]*>/);
+  assert.ok(errorTag, "formError element must exist");
+  assert.match(errorTag[0], /role="alert"/);
+  assert.match(errorTag[0], /tabindex="-1"/);
+  const failBlock = homePage.match(/if\(!result\.ok\)\{[\s\S]*?return;/);
+  assert.ok(failBlock, "Save non-2xx path must exist");
+  assert.match(failBlock[0], /formError\.scrollIntoView/);
+  assert.match(failBlock[0], /formError\.focus/);
+});
+
+test("home.html applyFormPrefill renders every server form field", () => {
+  const homePage = fs.readFileSync(path.join(__dirname, "../../onboarding/home.html"), "utf8");
+  const fn = homePage.match(/function applyFormPrefill\(formValues\)\{[\s\S]*?\n  \}/);
+  assert.ok(fn, "applyFormPrefill must exist");
+  assert.match(fn[0], /"name"/);
+  assert.match(fn[0], /"location"/);
+  assert.match(fn[0], /"history"/);
+  assert.match(fn[0], /"goal"/);
+  assert.match(fn[0], /"where"/);
+  assert.match(fn[0], /"when"/);
+  assert.match(fn[0], /"extra"/);
+  assert.match(fn[0], /"dealBreakers"/);
+  assert.match(fn[0], /"dealBreakersChoice"/);
+  assert.match(fn[0], /"education"/);
+  assert.match(fn[0], /"salary"/);
+  assert.doesNotMatch(fn[0], /workModes/);
+});
+
+test("GET /api/onboarding-state form is empty strings when no workspace exists", async () => {
+  const tmpDir = createHomeRoot();
+  const server = await run({ root: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    const response = await get(port, "/api/onboarding-state");
+    assert.equal(response.status, 200);
+    const body = JSON.parse(response.body);
+    assert.equal(body.form === null, false);
+    for (const key of HOME_FORM_KEYS) {
+      assert.equal(body.form[key], "");
+    }
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
+test("GET /api/onboarding-state returns all saved form fields after Save", async () => {
+  const tmpDir = createHomeRoot();
+  const server = await run({ root: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    const saved = await post(port, "/api/save-intake", {
+      name: "Jordan Sample",
+      location: "Philadelphia, PA",
+      history: "Office Manager, Riverside Dental — 2019 to now",
+      goal: "Operations manager at a mid-size healthcare company",
+      where: "Either is fine",
+      when: "As soon as possible",
+      extra: "Open to healthcare operations",
+      dealBreakers: "No unpaid overtime",
+      education: "Example University",
+      salary: "120000",
+    });
+    assert.equal(saved.status, 200);
+    const savedForm = JSON.parse(saved.body).form;
+    const response = await get(port, "/api/onboarding-state");
+    assert.equal(response.status, 200);
+    const form = JSON.parse(response.body).form;
+    assert.equal(form.name, "Jordan Sample");
+    assert.equal(form.location, "Philadelphia, PA");
+    assert.equal(form.history, "Office Manager, Riverside Dental — 2019 to now");
+    assert.equal(form.goal, "Operations manager at a mid-size healthcare company");
+    assert.equal(form.where, "Either is fine");
+    assert.equal(form.when, "As soon as possible");
+    assert.equal(form.extra, "Open to healthcare operations");
+    assert.equal(form.dealBreakers, "No unpaid overtime");
+    assert.equal(form.education, "Example University");
+    assert.equal(form.salary, "120000");
+    assert.deepEqual(form, savedForm);
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
+test("unchanged Save of GET form values does not change profile preferences home-answers or roles", async () => {
+  const tmpDir = createHomeRoot();
+  const workspace = path.join(tmpDir, "candidate");
+  const server = await run({ root: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    const first = await post(port, "/api/save-intake", {
+      name: "Jordan Sample",
+      location: "Philadelphia, PA",
+      history: "Office Manager, Riverside Dental — 2019 to now",
+      goal: "Operations manager at a mid-size healthcare company",
+      where: "Willing to move",
+      when: "In 1–3 months",
+      extra: "Open to healthcare operations",
+      dealBreakers: "No unpaid overtime",
+      education: "Example University",
+      salary: "120000",
+    });
+    assert.equal(first.status, 200);
+    const form = JSON.parse((await get(port, "/api/onboarding-state")).body).form;
+    const before = snapshotHomeFiles(workspace);
+    const second = await post(port, "/api/save-intake", form);
+    assert.equal(second.status, 200);
+    const after = snapshotHomeFiles(workspace);
+    assertSnapshotsEqual(before, after, [
+      "profile.json",
+      "preferences.json",
+      "home-answers.json",
+      "roles.tracked.json",
+    ]);
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
+test("GET form from agent profile without home-answers POSTs back without changing profile or preferences", async () => {
+  const { createDefaultProfile } = require("../../src/core/candidate-profile");
+  const { writeJson } = require("../../src/core/workspace");
+  const tmpDir = createHomeRoot();
+  const workspace = path.join(tmpDir, "candidate");
+  fs.mkdirSync(workspace, { recursive: true });
+  const profile = createDefaultProfile();
+  profile.candidate.preferredName = "Jordan Sample";
+  profile.candidate.location = "Philadelphia, PA";
+  profile.education = [{ id: "edu-001", institution: "Example University", degree: "B.S." }];
+  writeJson(path.join(workspace, "profile.json"), profile);
+  writeJson(path.join(workspace, "preferences.json"), {
+    schemaVersion: "1.0",
+    roleTargets: [{ titles: ["Operations manager"], seniority: "flexible", employmentTypes: [], priority: "should" }],
+    locations: { workModes: ["hybrid"], preferredRegions: [], excludedRegions: [], priority: "should" },
+    dealBreakers: [{ id: "deal-001", text: "No unpaid overtime", priority: "must" }],
+    compensation: { currency: "USD", baseMinimum: 120000 },
+  });
+  writeJson(path.join(workspace, "roles.tracked.json"), []);
+  assert.equal(fs.existsSync(path.join(workspace, HOME_ANSWERS_FILENAME)), false);
+
+  const server = await run({ root: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    const got = await get(port, "/api/onboarding-state");
+    assert.equal(got.status, 200);
+    const form = JSON.parse(got.body).form;
+    assert.equal(form.name, "Jordan Sample");
+    assert.equal(form.location, "Philadelphia, PA");
+    assert.equal(form.goal, "Operations manager");
+    assert.equal(form.dealBreakers, "No unpaid overtime");
+    assert.equal(form.education, "B.S., Example University");
+    assert.equal(form.salary, "120000");
+    assert.equal(form.where, "");
+    const before = snapshotHomeFiles(workspace);
+    const saved = await post(port, "/api/save-intake", form);
+    assert.equal(saved.status, 200);
+    assert.doesNotMatch(saved.body, /Goal is required/);
+    const after = snapshotHomeFiles(workspace);
+    assertSnapshotsEqual(before, after, ["profile.json", "preferences.json", "roles.tracked.json"]);
+    assert.equal(fs.existsSync(path.join(workspace, HOME_ANSWERS_FILENAME)), false);
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
+test("Save with blank name and location keeps saved values in profile and home-answers", async () => {
+  const tmpDir = createHomeRoot();
+  const workspace = path.join(tmpDir, "candidate");
+  const server = await run({ root: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    const first = await post(port, "/api/save-intake", {
+      name: "Jordan Sample",
+      location: "Philadelphia, PA",
+      goal: "Operations manager at a mid-size healthcare company",
+    });
+    assert.equal(first.status, 200);
+    const blank = await post(port, "/api/save-intake", {
+      name: "",
+      location: "",
+      goal: "Operations manager at a mid-size healthcare company",
+    });
+    assert.equal(blank.status, 200);
+    const profile = JSON.parse(fs.readFileSync(path.join(workspace, "profile.json"), "utf8"));
+    assert.equal(profile.candidate.preferredName, "Jordan Sample");
+    assert.equal(profile.candidate.location, "Philadelphia, PA");
+    const answers = JSON.parse(fs.readFileSync(path.join(workspace, HOME_ANSWERS_FILENAME), "utf8"));
+    assert.equal(answers.name, "Jordan Sample");
+    assert.equal(answers.location, "Philadelphia, PA");
+    const form = JSON.parse((await get(port, "/api/onboarding-state")).body).form;
+    assert.equal(form.name, "Jordan Sample");
+    assert.equal(form.location, "Philadelphia, PA");
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
+test("second Save with a new goal replaces the first roleTargets title", async () => {
+  const tmpDir = createHomeRoot();
+  const workspace = path.join(tmpDir, "candidate");
+  const server = await run({ root: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    const first = await post(port, "/api/save-intake", { goal: "Product Manager" });
+    assert.equal(first.status, 200);
+    const form = JSON.parse((await get(port, "/api/onboarding-state")).body).form;
+    form.goal = "Staff Engineer";
+    const second = await post(port, "/api/save-intake", form);
+    assert.equal(second.status, 200);
+    const preferences = JSON.parse(fs.readFileSync(path.join(workspace, "preferences.json"), "utf8"));
+    assert.equal(preferences.roleTargets.length, 1);
+    assert.equal(preferences.roleTargets[0].titles[0], "Staff Engineer");
+    assert.deepEqual(preferences.roleTargets[0].titles, ["Staff Engineer"]);
+    const after = JSON.parse((await get(port, "/api/onboarding-state")).body).form;
+    assert.equal(after.goal, "Staff Engineer");
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
+test("blank extra and history Save clears home-answers and GET form", async () => {
+  const tmpDir = createHomeRoot();
+  const workspace = path.join(tmpDir, "candidate");
+  const server = await run({ root: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    const first = await post(port, "/api/save-intake", {
+      goal: "Product Manager",
+      history: "Office Manager, Riverside Dental — 2019 to now",
+      extra: "Open to healthcare operations",
+    });
+    assert.equal(first.status, 200);
+    const form = JSON.parse((await get(port, "/api/onboarding-state")).body).form;
+    form.history = "";
+    form.extra = "";
+    const second = await post(port, "/api/save-intake", form);
+    assert.equal(second.status, 200);
+    const answers = JSON.parse(fs.readFileSync(path.join(workspace, HOME_ANSWERS_FILENAME), "utf8"));
+    assert.equal(answers.history, "");
+    assert.equal(answers.extra, "");
+    const after = JSON.parse((await get(port, "/api/onboarding-state")).body).form;
+    assert.equal(after.history, "");
+    assert.equal(after.extra, "");
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
 
