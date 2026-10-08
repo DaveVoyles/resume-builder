@@ -10,6 +10,7 @@ const { saveHomeAnswers, readHomeFormPrefill, emptyHomeFormValues } = require(".
 const { readJson, workspacePaths } = require("../../core/workspace");
 const { countRoleStats } = require("../../core/role-view");
 const { tryRebuildTrackers } = require("./build-tracker");
+const { addJobRequest, readJobRequests } = require("../../core/job-requests");
 
 const {
   HOME_STEP_TO_TRACKER_STEPS,
@@ -25,6 +26,8 @@ const REPO_ROOT = path.resolve(__dirname, "../../..");
 const HOME_PAGE = path.join(REPO_ROOT, "onboarding", "home.html");
 const BODY_LIMIT = 65536;
 const OPEN_FOLDER_TIMEOUT_MS = 5000;
+const PLACEHOLDER_FILES = new Set(["readme", "readme.md", "readme.txt", "gitkeep"]);
+const RESUME_DOWNLOAD_TYPES = { ".pdf": "application/pdf" };
 const OPEN_FOLDER_TIMEOUT_ERROR = "Could not confirm the folder opened.";
 
 function escapeHtml(value) {
@@ -150,6 +153,69 @@ function resolveHomeWorkspace(root, options) {
   return path.resolve(root, options.workspace || "candidate");
 }
 
+// Newest real file under dir (recursive), optionally limited to some extensions.
+// Placeholder and dot files never count. Returns { file, mtimeMs } or null.
+function newestFile(dir, extensions) {
+  if (!dir || !fs.existsSync(dir)) return null;
+  let best = null;
+  const stack = [dir];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    let entries;
+    try {
+      entries = fs.readdirSync(current, { withFileTypes: true });
+    } catch (error) {
+      continue;
+    }
+    for (const entry of entries) {
+      if (entry.name.startsWith(".")) continue;
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(full);
+        continue;
+      }
+      if (!entry.isFile() || PLACEHOLDER_FILES.has(entry.name.toLowerCase())) continue;
+      if (extensions && !extensions.includes(path.extname(entry.name).toLowerCase())) continue;
+      const { mtimeMs } = fs.statSync(full);
+      if (!best || mtimeMs > best.mtimeMs) best = { file: full, mtimeMs };
+    }
+  }
+  return best;
+}
+
+function outputsPayload(workspace) {
+  const paths = workspacePaths(workspace);
+  const resume = newestFile(paths.outputResumes);
+  const report = newestFile(path.join(paths.outputs, "tailor-reports"), [".md", ".html"]);
+  return {
+    resume: resume ? { name: path.basename(resume.file), url: "/resume/latest" } : null,
+    report: report ? { name: path.basename(report.file), url: "/report/latest" } : null,
+    pendingJobRequests: readJobRequests(workspace).length,
+  };
+}
+
+function serveNewest(found, res, label) {
+  if (!found) {
+    sendText(res, 404, `No ${label} yet.`);
+    return;
+  }
+  // The file was found by walking a fixed directory, never from request input.
+  fs.readFile(found.file, (error, data) => {
+    if (error) {
+      sendText(res, 404, `No ${label} yet.`);
+      return;
+    }
+    const ext = path.extname(found.file).toLowerCase();
+    const contentType = CONTENT_TYPES[ext] || RESUME_DOWNLOAD_TYPES[ext] || "application/octet-stream";
+    res.writeHead(200, identityHeaders({
+      "Content-Type": contentType,
+      "Content-Disposition": `inline; filename="${path.basename(found.file).replace(/[^\w.\- ]/gu, "_")}"`,
+    }));
+    res.end(data);
+  });
+}
+
+
 function onboardingPayload(workspace) {
   const hasWorkspace =
     fs.existsSync(workspace) &&
@@ -164,6 +230,7 @@ function onboardingPayload(workspace) {
     setupComplete: isHomeSetupComplete(state),
     nextStep: nextHomeStep(state),
     form: hasWorkspace ? readHomeFormPrefill(workspace) : emptyHomeFormValues(),
+    outputs: outputsPayload(workspace),
   };
 }
 
@@ -234,6 +301,53 @@ async function run(options, { openFolder = defaultOpenFolder, openHome = openInB
     }
 
 
+    if (method === "GET" && requestedPath === "/favicon.ico") {
+      res.writeHead(204, identityHeaders({}));
+      res.end();
+      return;
+    }
+
+    if (method === "GET" && requestedPath === "/resume/latest") {
+      serveNewest(newestFile(workspacePaths(workspace).outputResumes), res, "resume");
+      return;
+    }
+
+    if (method === "GET" && requestedPath === "/report/latest") {
+      serveNewest(newestFile(path.join(workspacePaths(workspace).outputs, "tailor-reports"), [".md", ".html"]), res, "report");
+      return;
+    }
+
+    if (method === "POST" && requestedPath === "/api/job-request") {
+      readBody(req)
+        .then((raw) => {
+          let body;
+          try {
+            body = raw ? JSON.parse(raw) : {};
+          } catch (error) {
+            sendJson(res, 400, { error: "Invalid JSON." });
+            return;
+          }
+          try {
+            const saved = addJobRequest(workspace, body);
+            sendJson(res, 200, { saved: true, sentence: saved.sentence, pending: saved.pending });
+          } catch (error) {
+            if (error.code === "JOB_REQUEST_INVALID") {
+              sendJson(res, 400, { error: error.message });
+              return;
+            }
+            throw error;
+          }
+        })
+        .catch((error) => {
+          if (error.code === "PAYLOAD_TOO_LARGE") {
+            sendJson(res, 413, { error: "Payload too large." });
+            return;
+          }
+          sendText(res, 500, "Could not save the job request.");
+        });
+      return;
+    }
+
     if (method === "GET" && requestedPath === "/api/documents") {
       sendJson(res, 200, { files: listFiles(documentsDir) });
       return;
@@ -285,7 +399,7 @@ async function run(options, { openFolder = defaultOpenFolder, openHome = openInB
             .then(() => openFolder(folder))
             .then(() => {
               clearTimeout(timer);
-              respond(200, { opened: true });
+              respond(200, { opened: true, path: folder });
             })
             .catch((error) => {
               clearTimeout(timer);

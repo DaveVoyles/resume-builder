@@ -23,6 +23,8 @@ candidate/outputs/
 candidate/leads.json
 candidate/apply-approvals.json
 candidate/apply-profile.json
+candidate/job-requests.json
+candidate/home-answers.json
 
 # Modular workflow generated outputs
 outputs/

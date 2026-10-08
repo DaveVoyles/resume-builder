@@ -69,7 +69,7 @@ const INGEST_STEP = {
 const FINAL_STEP = {
   key: "firstRoleAdded",
   label: "First role added",
-  howTo: "Tell your agent about a job you want. Paste the posting link in chat. This page does not add jobs from a form.",
+  howTo: "Paste the posting link in the Add a job box on the Jobs tab, then give the sentence it makes to your agent. The agent adds the job and tailors your resume.",
 };
 
 // Single mapping used by the home server, home page (via GET /api/onboarding-state),
@@ -100,7 +100,7 @@ const HOME_STEPS = [
   {
     key: "addJobs",
     label: "Add jobs you want",
-    howTo: "Tell your agent about a job. Paste the posting link in chat. This Jobs tab does not add jobs from the page.",
+    howTo: "Paste the posting link in the Add a job box on the Jobs tab. It makes a sentence for your agent, who adds the job.",
   },
 ];
 

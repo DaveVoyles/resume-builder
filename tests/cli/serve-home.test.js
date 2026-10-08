@@ -130,8 +130,9 @@ test("serve-home serves the three-tab dashboard at / with Introduction selected"
     assert.match(response.body, /Required/);
     assert.match(response.body, /What is an AI agent\?/);
     assert.match(response.body, /No jobs yet/);
-    assert.match(response.body, /This Jobs tab does not add jobs from the page/);
-    assert.match(response.body, /This page does not add jobs/);
+    assert.match(response.body, /id="jobForm"/);
+    assert.match(response.body, /Add a job/);
+    assert.doesNotMatch(response.body, /does not add jobs/);
     assert.match(response.body, /candidate\/inputs\/resumes/);
     assert.match(response.body, /candidate\/inputs\/notes/);
     assert.match(response.body, /data-home-checklist/);
@@ -386,7 +387,7 @@ test("serve-home open-folder only accepts my-documents or output", async () => {
   try {
     const ok = await post(port, "/api/open-folder", { folder: "my-documents" });
     assert.equal(ok.status, 200);
-    assert.deepEqual(JSON.parse(ok.body), { opened: true });
+    assert.deepEqual(JSON.parse(ok.body), { opened: true, path: path.join(tmpDir, "my-documents") });
     assert.equal(opened.length, 1);
     assert.equal(opened[0], path.join(tmpDir, "my-documents"));
 
@@ -562,7 +563,7 @@ test("serve-home open-folder returns 200 when Windows explorer exits 1", async (
   try {
     const ok = await post(port, "/api/open-folder", { folder: "my-documents" });
     assert.equal(ok.status, 200);
-    assert.deepEqual(JSON.parse(ok.body), { opened: true });
+    assert.deepEqual(JSON.parse(ok.body), { opened: true, path: path.join(tmpDir, "my-documents") });
   } finally {
     server.close();
     cleanup(tmpDir);
@@ -984,8 +985,10 @@ test("home.html renders server nextStep and relabels Continue setup when complet
   assert.match(homePage, /function applySetupComplete\(/);
   assert.match(homePage, /id="education"/);
   assert.match(homePage, /id="salary"/);
-  assert.match(homePage, /id="educationChoice"/);
-  assert.match(homePage, /id="salaryChoice"/);
+  assert.match(homePage, /id="educationSkip"/);
+  assert.match(homePage, /id="salarySkip"/);
+  assert.match(homePage, /id="dealBreakersSkip"/);
+  assert.doesNotMatch(homePage, /<select id="(education|salary|dealBreakers)Choice"/);
 });
 
 test("full home flow reaches 10 of 10 on the built tracker", async () => {
@@ -1349,3 +1352,90 @@ test("blank extra and history Save clears home-answers and GET form", async () =
 });
 
 
+
+test("POST /api/job-request validates, saves to candidate/job-requests.json, and returns the sentence", async () => {
+  const tmpDir = createHomeRoot();
+  const server = await run({ root: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    const link = "https://jobs.example.com/ops-manager?id=7";
+    const ok = await post(port, "/api/job-request", { link, text: "  Ops manager at Example Health  " });
+    assert.equal(ok.status, 200);
+    const body = JSON.parse(ok.body);
+    assert.equal(body.saved, true);
+    assert.equal(body.pending, 1);
+    assert.match(body.sentence, /^Please add this job and tailor my resume: https:\/\/jobs\.example\.com\/ops-manager\?id=7/);
+    assert.match(body.sentence, /Ops manager at Example Health/);
+
+    const file = path.join(tmpDir, "candidate", "job-requests.json");
+    const saved = JSON.parse(fs.readFileSync(file, "utf8"));
+    assert.equal(saved.length, 1);
+    assert.equal(saved[0].link, link);
+    assert.equal(saved[0].text, "Ops manager at Example Health");
+    assert.match(saved[0].createdAt, /^\d{4}-\d{2}-\d{2}T/);
+
+    const second = await post(port, "/api/job-request", { link: "http://example.com/j/2" });
+    assert.equal(JSON.parse(second.body).pending, 2);
+
+    const state = JSON.parse((await get(port, "/api/onboarding-state")).body);
+    assert.equal(state.outputs.pendingJobRequests, 2);
+
+    for (const bad of [
+      {},
+      { link: "   " },
+      { link: "javascript:alert(1)" },
+      { link: "ftp://example.com/job" },
+      { link: "not a link" },
+      { link: `https://example.com/${"a".repeat(2100)}` },
+      { link: "https://example.com/j", text: "x".repeat(20001) },
+    ]) {
+      const response = await post(port, "/api/job-request", bad);
+      assert.equal(response.status, 400, JSON.stringify(bad).slice(0, 60));
+      assert.ok(JSON.parse(response.body).error);
+    }
+    assert.equal(JSON.parse(fs.readFileSync(file, "utf8")).length, 2);
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
+test("serve-home serves the newest resume and report, favicon without a 404, and refuses traversal", async () => {
+  const tmpDir = createHomeRoot();
+  const workspace = path.join(tmpDir, "candidate");
+  const resumes = path.join(workspace, "outputs", "resumes");
+  const reports = path.join(workspace, "outputs", "tailor-reports");
+  fs.mkdirSync(resumes, { recursive: true });
+  fs.mkdirSync(reports, { recursive: true });
+  fs.writeFileSync(path.join(workspace, "profile.json"), "{}\n");
+  fs.writeFileSync(path.join(resumes, "README.md"), "placeholder\n");
+  const server = await run({ root: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    assert.equal((await get(port, "/resume/latest")).status, 404);
+    assert.equal(JSON.parse((await get(port, "/api/onboarding-state")).body).outputs.resume, null);
+
+    const older = path.join(resumes, "old.html");
+    const newer = path.join(resumes, "new.html");
+    fs.writeFileSync(older, "<p>OLD_RESUME</p>");
+    fs.writeFileSync(newer, "<p>NEW_RESUME</p>");
+    fs.utimesSync(older, new Date(Date.now() - 60000), new Date(Date.now() - 60000));
+    fs.writeFileSync(path.join(reports, "role-1.md"), "REPORT_TEXT\n");
+
+    const resume = await get(port, "/resume/latest");
+    assert.equal(resume.status, 200);
+    assert.match(resume.body, /NEW_RESUME/);
+    assert.match((await get(port, "/report/latest")).body, /REPORT_TEXT/);
+
+    const outputs = JSON.parse((await get(port, "/api/onboarding-state")).body).outputs;
+    assert.deepEqual(outputs.resume, { name: "new.html", url: "/resume/latest" });
+    assert.deepEqual(outputs.report, { name: "role-1.md", url: "/report/latest" });
+
+    assert.equal((await get(port, "/favicon.ico")).status, 204);
+    assert.equal((await getRaw(port, "/resume/../profile.json")).status, 404);
+    assert.equal((await getRaw(port, "/resume/latest/../../profile.json")).status, 404);
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
