@@ -13,6 +13,7 @@ const {
   isOnboardingComplete,
   isHomeSetupComplete,
   isFirstRoleAddedDone,
+  nextHomeStep,
   onboardingSteps,
   homeStepsFromOnboarding,
   readOnboardingState,
@@ -235,6 +236,66 @@ describe("isHomeSetupComplete", () => {
     assert.equal(isHomeSetupComplete(state), false);
     state.sections.targetRole = true;
     assert.equal(isHomeSetupComplete(state), true);
+  });
+});
+
+describe("nextHomeStep", () => {
+  function completeHomeState() {
+    const state = defaultOnboardingState();
+    state.materialIngested = true;
+    state.sections.basicInfo = true;
+    state.sections.targetRole = true;
+    state.firstDraftReady = true;
+    state.firstRoleAdded = { done: true, at: "2026-07-19T12:00:00.000Z" };
+    return state;
+  }
+
+  test("without a tracked job returns the first home step that is not done", () => {
+    const state = defaultOnboardingState();
+    state.sections.basicInfo = true;
+    state.sections.targetRole = true;
+    const next = nextHomeStep(state);
+    assert.equal(next.key, "addFiles");
+    assert.equal(next.label, "Add your files to my-documents");
+    assert.doesNotMatch(next.label, /Add a job you want/);
+  });
+
+  test("with a tracked job never returns Add a job you want", () => {
+    const state = defaultOnboardingState();
+    state.materialIngested = true;
+    state.sections.basicInfo = true;
+    state.sections.targetRole = true;
+    state.firstDraftReady = true;
+    state.firstRoleAdded = { done: true, at: "2026-07-19T12:00:00.000Z" };
+    const next = nextHomeStep(state);
+    assert.notEqual(next.key, "addJobs");
+    assert.doesNotMatch(next.label, /Add a job you want/);
+    assert.doesNotMatch(next.label, /Add jobs you want/);
+  });
+
+  test("all home steps done with education still open points at education", () => {
+    const state = completeHomeState();
+    const next = nextHomeStep(state);
+    assert.equal(next.key, "education");
+    assert.equal(next.label, "Add your education or skip it");
+  });
+
+  test("all home steps and education done with salary open points at salary", () => {
+    const state = completeHomeState();
+    state.sections.education = true;
+    const next = nextHomeStep(state);
+    assert.equal(next.key, "compensation");
+    assert.equal(next.label, "Add your salary or skip it");
+  });
+
+  test("all done returns Setup complete", () => {
+    const state = completeHomeState();
+    for (const section of SECTIONS) {
+      state.sections[section.key] = true;
+    }
+    const next = nextHomeStep(state);
+    assert.equal(next.key, "complete");
+    assert.equal(next.label, "Setup complete");
   });
 });
 

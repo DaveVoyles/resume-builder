@@ -267,9 +267,9 @@ async function ingestGithub(options, paths, profile) {
   return { profile: nextProfile, appended };
 }
 
-function noFilesFoundMessage(paths) {
-  const resumesDisplay = path.relative(process.cwd(), paths.resumes) || paths.resumes;
-  const notesDisplay = path.relative(process.cwd(), paths.notes) || paths.notes;
+function noFilesFoundMessage(workspace, paths) {
+  const resumesDisplay = displayPath(workspace, paths.resumes);
+  const notesDisplay = displayPath(workspace, paths.notes);
   return `No files found in ${resumesDisplay} or ${notesDisplay}. Add files there or pass --resume/--notes.`;
 }
 
@@ -289,7 +289,7 @@ async function run(options) {
   syncOnboardingState(workspace);
   tryRebuildTrackers(workspace);
   console.log(`Ingested ${sourceCount} source(s); appended ${local.appended + github.appended} evidence entr${local.appended + github.appended === 1 ? "y" : "ies"}.`);
-  if (sourceCount === 0) console.log(noFilesFoundMessage(paths));
+  if (sourceCount === 0) console.log(noFilesFoundMessage(workspace, paths));
   if (profile.sources?.length) console.log(`Profile now references ${profile.sources.length} source(s). Latest snippet: ${snippet(profile.sources.at(-1).path || profile.sources.at(-1).url || "", 80)}`);
 }
 

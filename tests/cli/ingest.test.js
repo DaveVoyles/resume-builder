@@ -272,6 +272,25 @@ test("ingest with empty or missing input folders prints a clear message and exit
   });
 });
 
+test("ingest No files found paths are workspace-relative when cwd is elsewhere", async () => {
+  await withWorkspace(async ({ workspace, paths }) => {
+    writeJson(paths.onboardingState, defaultOnboardingState());
+    const previousCwd = process.cwd();
+    const otherDir = fs.mkdtempSync(path.join(os.tmpdir(), "ingest-cwd-"));
+    try {
+      process.chdir(otherDir);
+      const logs = await captureLogs(() => command.run({ workspace }));
+      const noFiles = logs.find((line) => line.startsWith("No files found"));
+      assert.ok(noFiles, logs.join("\n"));
+      assert.match(noFiles, /No files found in inputs\/resumes or inputs\/notes/);
+      assert.doesNotMatch(noFiles, /\.\.\//);
+    } finally {
+      process.chdir(previousCwd);
+      fs.rmSync(otherDir, { recursive: true, force: true });
+    }
+  });
+});
+
 test("ingest default scan after a successful read updates onboarding state", async () => {
   await withWorkspace(async ({ workspace, paths }) => {
     writeJson(paths.onboardingState, defaultOnboardingState());

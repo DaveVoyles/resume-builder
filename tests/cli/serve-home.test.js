@@ -216,6 +216,8 @@ test("GET /api/onboarding-state exposes the shared mapping and default steps", a
     assert.equal(answers.done, false);
     assert.equal(draft.done, false);
     assert.deepEqual(draft.trackerKeys, ["firstDraftReady"]);
+    assert.equal(body.nextStep.key, "addFiles");
+    assert.equal(body.setupComplete, false);
   } finally {
     server.close();
     cleanup(tmpDir);
@@ -664,7 +666,8 @@ test("home.html Jobs tab fetches /api/roles and has no copied bucket logic", () 
   assert.match(homePage, /data-role-count="total"/);
   assert.match(homePage, /data-role-count="applied"/);
   assert.match(homePage, /applyRoles/);
-  assert.match(homePage, /setupBtn\.hidden=Boolean\(data\.setupComplete\)/);
+  assert.match(homePage, /function applySetupComplete\(/);
+  assert.match(homePage, /setupBtn\.hidden=hidden/);
   assert.doesNotMatch(homePage, /statusBucket/);
   assert.doesNotMatch(homePage, /not-applied/);
 });
@@ -683,7 +686,10 @@ test("GET /api/roles setupComplete is true after answering home questions and ho
     assert.equal(JSON.parse(response.body).setupComplete, true);
     const homePage = fs.readFileSync(path.join(__dirname, "../../onboarding/home.html"), "utf8");
     assert.match(homePage, /jobsGoToSetup/);
-    assert.match(homePage, /setupBtn\.hidden=Boolean\(data\.setupComplete\)/);
+    assert.match(homePage, /function applySetupComplete\(/);
+    assert.match(homePage, /getElementById\("continueBtn"\)/);
+    assert.match(homePage, /cb\.hidden=hidden/);
+    assert.match(homePage, /setupBtn\.hidden=hidden/);
   } finally {
     server.close();
     cleanup(tmpDir);
@@ -844,6 +850,166 @@ test("home Save with Hybrid writes hybrid work mode into preferences", async () 
     const preferences = JSON.parse(fs.readFileSync(path.join(tmpDir, "candidate", "preferences.json"), "utf8"));
     assert.deepEqual(preferences.locations.workModes, ["hybrid"]);
     assert.deepEqual(validatePreferences(preferences), []);
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
+test("home Save nextStep is the first home step that is not done", async () => {
+  const tmpDir = createHomeRoot();
+  const server = await run({ root: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    const response = await post(port, "/api/save-intake", {
+      name: "Jordan Sample",
+      goal: "Operations manager at a mid-size healthcare company",
+    });
+    assert.equal(response.status, 200);
+    const body = JSON.parse(response.body);
+    assert.equal(body.nextStep.key, "addFiles");
+    assert.equal(body.nextStep.label, "Add your files to my-documents");
+    assert.doesNotMatch(body.nextStep.label, /Add a job you want/);
+    assert.equal(body.setupComplete, true);
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
+test("home Save with a tracked job never returns Add a job you want", async () => {
+  const addRole = require("../../src/cli/commands/add-role");
+  const init = require("../../src/cli/commands/init");
+  const tmpDir = createHomeRoot();
+  const workspace = path.join(tmpDir, "candidate");
+  await init.run({ workspace, noServe: true });
+  addRole.run({
+    workspace,
+    tracked: true,
+    company: "Contoso Health",
+    title: "Operations Manager",
+  });
+  const server = await run({ root: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    const response = await post(port, "/api/save-intake", {
+      name: "Jordan Sample",
+      goal: "Operations manager at a mid-size healthcare company",
+    });
+    assert.equal(response.status, 200);
+    const body = JSON.parse(response.body);
+    assert.notEqual(body.nextStep.key, "addJobs");
+    assert.doesNotMatch(JSON.stringify(body.nextStep), /Add a job you want/);
+    assert.doesNotMatch(JSON.stringify(body.nextStep), /Add jobs you want/);
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
+test("home Save nextStep is Setup complete when every step is done", async () => {
+  const { createDefaultProfile } = require("../../src/core/candidate-profile");
+  const { writeJson } = require("../../src/core/workspace");
+  const tmpDir = createHomeRoot();
+  const workspace = path.join(tmpDir, "candidate");
+  fs.mkdirSync(path.join(workspace, "outputs", "resumes"), { recursive: true });
+  fs.mkdirSync(path.join(workspace, "inputs", "resumes"), { recursive: true });
+  const profile = createDefaultProfile();
+  profile.candidate.preferredName = "Jordan Sample";
+  profile.education = [{ id: "edu-001", institution: "Example University", degree: "B.S." }];
+  profile.experience = [{ organization: "Riverside Dental", title: "Office Manager" }];
+  profile.sources = [{ id: "src-001", kind: "notes", path: "inputs/notes/sample.md" }];
+  writeJson(path.join(workspace, "profile.json"), profile);
+  writeJson(path.join(workspace, "preferences.json"), {
+    schemaVersion: "1.0",
+    roleTargets: [{ titles: ["Operations manager"], seniority: "flexible", employmentTypes: [], priority: "should" }],
+    locations: { workModes: ["hybrid"], preferredRegions: [], excludedRegions: [], priority: "should" },
+    dealBreakers: [{ id: "deal-001", text: "No unpaid overtime", priority: "must" }],
+    compensation: { currency: "USD", baseMinimum: 120000 },
+  });
+  writeJson(path.join(workspace, "roles.tracked.json"), [
+    { id: "role-001", company: "Contoso Health", title: "Operations Manager" },
+  ]);
+  fs.writeFileSync(path.join(workspace, "outputs", "resumes", "jordan-sample.docx"), "docx");
+  const server = await run({ root: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    const response = await post(port, "/api/save-intake", {
+      name: "Jordan Sample",
+      goal: "Operations manager at a mid-size healthcare company",
+      history: "Office Manager, Riverside Dental",
+      where: "Hybrid",
+      dealBreakers: "No unpaid overtime",
+      education: "Example University",
+      salary: "120000",
+    });
+    assert.equal(response.status, 200);
+    const body = JSON.parse(response.body);
+    assert.equal(body.nextStep.key, "complete");
+    assert.equal(body.nextStep.label, "Setup complete");
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
+test("home.html renders server nextStep and hides Continue setup when complete", () => {
+  const homePage = fs.readFileSync(path.join(__dirname, "../../onboarding/home.html"), "utf8");
+  assert.match(homePage, /id="savedNextStep"/);
+  assert.match(homePage, /function renderNextStep\(/);
+  assert.match(homePage, /result\.body\.nextStep/);
+  assert.doesNotMatch(homePage, /Add a job you want/);
+  assert.match(homePage, /id="continueBtn"/);
+  assert.match(homePage, /function applySetupComplete\(/);
+  assert.match(homePage, /cb\.hidden=hidden/);
+  assert.match(homePage, /id="education"/);
+  assert.match(homePage, /id="salary"/);
+  assert.match(homePage, /id="educationChoice"/);
+  assert.match(homePage, /id="salaryChoice"/);
+});
+
+test("full home flow reaches 10 of 10 on the built tracker", async () => {
+  const init = require("../../src/cli/commands/init");
+  const ingest = require("../../src/cli/commands/ingest");
+  const addRole = require("../../src/cli/commands/add-role");
+  const { onboardingSteps, isOnboardingComplete } = require("../../src/core/onboarding-state");
+  const tmpDir = createHomeRoot();
+  const workspace = path.join(tmpDir, "candidate");
+  await init.run({ workspace, noServe: true });
+  const resumesDir = path.join(workspace, "inputs", "resumes");
+  fs.mkdirSync(resumesDir, { recursive: true });
+  fs.writeFileSync(path.join(resumesDir, "sample-resume.txt"), "Jordan Sample\nOffice Manager at Riverside Dental.\n");
+  const origLog = console.log;
+  console.log = () => {};
+  try {
+    await ingest.run({ workspace });
+    addRole.run({
+      workspace,
+      tracked: true,
+      company: "Contoso Health",
+      title: "Operations Manager",
+    });
+  } finally {
+    console.log = origLog;
+  }
+  const server = await run({ root: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    const response = await post(port, "/api/save-intake", {
+      name: "Jordan Sample",
+      goal: "Operations manager at a mid-size healthcare company",
+      history: "Office Manager, Riverside Dental — 2019 to now",
+      where: "Hybrid",
+      dealBreakersChoice: "none",
+      educationChoice: "skip",
+      salaryChoice: "skip",
+    });
+    assert.equal(response.status, 200);
+    const state = JSON.parse(fs.readFileSync(path.join(workspace, ".onboarding-state.json"), "utf8"));
+    assert.equal(isOnboardingComplete(state), true);
+    assert.equal(onboardingSteps(state).filter((step) => step.done).length, 10);
+    const html = fs.readFileSync(path.join(workspace, "outputs", "tracker.html"), "utf8");
+    assert.match(html, /Onboarding: 10 of 10 steps/);
   } finally {
     server.close();
     cleanup(tmpDir);

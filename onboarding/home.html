@@ -254,6 +254,26 @@
           <option value="skip">Skip</option>
         </select>
       </div>
+      <div class="field">
+        <label for="education">Education</label>
+        <p class="hint">School and degree, if you want them on a resume. Or skip.</p>
+        <textarea id="education" name="education" placeholder="B.S. Computer Science, Example University"></textarea>
+        <label for="educationChoice" class="hint" style="margin-top:.5rem">If you want to skip this:</label>
+        <select id="educationChoice" name="educationChoice">
+          <option value="">Leave unanswered</option>
+          <option value="skip">Skip</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="salary">Salary</label>
+        <p class="hint">A number like 120000, 120,000, or $120k. Or skip.</p>
+        <input id="salary" name="salary" inputmode="decimal" placeholder="120000">
+        <label for="salaryChoice" class="hint" style="margin-top:.5rem">If you want to skip this:</label>
+        <select id="salaryChoice" name="salaryChoice">
+          <option value="">Leave unanswered</option>
+          <option value="skip">Skip</option>
+        </select>
+      </div>
       <div class="row">
         <button class="btn primary" type="submit">Save answers</button>
       </div>
@@ -266,7 +286,7 @@
     <p class="hint">This is not a resume draft. A draft comes later, after files in my-documents are read in.</p>
     <ol class="steps" style="margin:1rem 0">
       <li class="done"><div><strong>Answers saved</strong></div></li>
-      <li><div><strong>Add a job you want</strong> <span class="who you">You</span><br><span class="muted">Tell your agent the posting link in chat. The agent tracks it. This Jobs tab does not add jobs from the page.</span></div></li>
+      <li id="savedNextStep"><div><strong>Next step</strong></div></li>
     </ol>
     <div class="row">
       <button class="btn ghost" type="button" data-goto="jobs">Go to Jobs →</button>
@@ -396,6 +416,35 @@
     }
   }
 
+  function applySetupComplete(complete){
+    var hidden=Boolean(complete);
+    var cb=document.getElementById("continueBtn");
+    if(cb) cb.hidden=hidden;
+    var setupBtn=document.getElementById("jobsGoToSetup");
+    if(setupBtn) setupBtn.hidden=hidden;
+  }
+
+  function renderNextStep(nextStep){
+    var li=document.getElementById("savedNextStep");
+    if(!li) return;
+    var step=nextStep||{key:"complete",label:"Setup complete",howTo:""};
+    var how=step.howTo?'<br><span class="muted">'+escapeHtml(step.howTo)+"</span>":"";
+    li.className=step.key==="complete"?"done":"";
+    li.innerHTML="<div><strong>"+escapeHtml(step.label||"Setup complete")+"</strong>"+how+"</div>";
+  }
+
+  function applyFormPrefill(formValues){
+    if(!formValues) return;
+    var education=document.getElementById("education");
+    var educationChoice=document.getElementById("educationChoice");
+    var salary=document.getElementById("salary");
+    var salaryChoice=document.getElementById("salaryChoice");
+    if(education && formValues.education) education.value=formValues.education;
+    if(educationChoice) educationChoice.value=formValues.educationChoice||"";
+    if(salary && formValues.salary) salary.value=formValues.salary;
+    if(salaryChoice) salaryChoice.value=formValues.salaryChoice||"";
+  }
+
   function applyRoles(data){
     if(!data) return;
     var counts=data.counts||{};
@@ -403,8 +452,7 @@
       var el=document.querySelector('[data-role-count="'+pair[0]+'"]');
       if(el) el.textContent=String(pair[1]||0);
     });
-    var setupBtn=document.getElementById("jobsGoToSetup");
-    if(setupBtn) setupBtn.hidden=Boolean(data.setupComplete);
+    applySetupComplete(data.setupComplete);
     var roles=data.roles||[];
     var empty=document.getElementById("jobsEmpty");
     var list=document.getElementById("jobsList");
@@ -425,6 +473,9 @@
 
   fetch("/api/onboarding-state").then(function(r){return r.json();}).then(function(data){
     applyHomeSteps(data.homeSteps);
+    applySetupComplete(data.setupComplete);
+    applyFormPrefill(data.form);
+    renderNextStep(data.nextStep);
   }).catch(function(){});
 
   fetch("/api/roles").then(function(r){return r.json();}).then(applyRoles).catch(function(){});
@@ -476,7 +527,11 @@
       when:document.getElementById("when").value,
       extra:document.getElementById("extra").value,
       dealBreakers:document.getElementById("dealBreakers").value,
-      dealBreakersChoice:document.getElementById("dealBreakersChoice").value
+      dealBreakersChoice:document.getElementById("dealBreakersChoice").value,
+      education:document.getElementById("education").value,
+      educationChoice:document.getElementById("educationChoice").value,
+      salary:document.getElementById("salary").value,
+      salaryChoice:document.getElementById("salaryChoice").value
     };
     fetch("/api/save-intake",{
       method:"POST",
@@ -494,6 +549,9 @@
       saved.hidden=false;
       document.getElementById("savedHeading").textContent=result.body.message || "Answers saved.";
       applyHomeSteps(result.body.homeSteps);
+      applySetupComplete(result.body.setupComplete);
+      renderNextStep(result.body.nextStep);
+      applyFormPrefill(result.body.form);
       saved.scrollIntoView({behavior:"smooth"});
       saved.focus({preventScroll:true});
     }).catch(function(){
