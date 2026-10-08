@@ -80,3 +80,5 @@ Submitting applications is out of scope for every test. See [`docs/playbooks/app
 2. Read the scorecard. A `FAIL` names the stage and the check. A `WARN` is information.
 3. Add a persona when you find a kind of candidate the others do not cover: copy a folder, change the fiction, run with `UPDATE_GOLDEN=1`, and review the new golden text. Keep everything fictional (`example.invalid` or `example.com` addresses). `owner` is the one exception and is not a template: do not add anyone else's real resume.
 4. Never point these runs at `candidate/`. They use a temp workspace and delete it afterward.
+
+See [`docs/showcase/README.md`](showcase/README.md) for a screenshot walkthrough of one run on the owner persona.
