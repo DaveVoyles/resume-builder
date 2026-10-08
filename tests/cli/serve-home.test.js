@@ -1428,7 +1428,7 @@ test("serve-home serves the newest resume and report, favicon without a 404, and
     assert.match((await get(port, "/report/latest")).body, /REPORT_TEXT/);
 
     const outputs = JSON.parse((await get(port, "/api/onboarding-state")).body).outputs;
-    assert.deepEqual(outputs.resume, { name: "new.html", url: "/resume/latest" });
+    assert.deepEqual(outputs.resume, { name: "new.html", url: "/resume/latest", openUrl: "/resume/latest", word: false, openable: true });
     assert.deepEqual(outputs.report, { name: "role-1.md", url: "/report/latest" });
 
     assert.equal((await get(port, "/favicon.ico")).status, 204);

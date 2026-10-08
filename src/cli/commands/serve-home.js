@@ -11,6 +11,7 @@ const { readJson, workspacePaths } = require("../../core/workspace");
 const { countRoleStats } = require("../../core/role-view");
 const { tryRebuildTrackers } = require("./build-tracker");
 const { addJobRequest, readJobRequests } = require("../../core/job-requests");
+const { canMakePdf, ensureResumePdf } = require("../../core/resume-pdf");
 
 const {
   HOME_STEP_TO_TRACKER_STEPS,
@@ -155,7 +156,7 @@ function resolveHomeWorkspace(root, options) {
 
 // Newest real file under dir (recursive), optionally limited to some extensions.
 // Placeholder and dot files never count. Returns { file, mtimeMs } or null.
-function newestFile(dir, extensions) {
+function newestFile(dir, extensions, skip) {
   if (!dir || !fs.existsSync(dir)) return null;
   let best = null;
   const stack = [dir];
@@ -176,6 +177,7 @@ function newestFile(dir, extensions) {
       }
       if (!entry.isFile() || PLACEHOLDER_FILES.has(entry.name.toLowerCase())) continue;
       if (extensions && !extensions.includes(path.extname(entry.name).toLowerCase())) continue;
+      if (skip && skip(full)) continue;
       const { mtimeMs } = fs.statSync(full);
       if (!best || mtimeMs > best.mtimeMs) best = { file: full, mtimeMs };
     }
@@ -192,12 +194,37 @@ function newestReport(dir) {
   return fs.existsSync(sibling) ? { file: sibling, mtimeMs: found.mtimeMs } : found;
 }
 
-function outputsPayload(workspace) {
+// Newest resume file. A .pdf that sits next to a .docx of the same name is the
+// copy RB made for viewing, so it never counts as its own resume.
+function newestResume(workspace) {
+  return newestFile(workspacePaths(workspace).outputResumes, null, (full) =>
+    path.extname(full).toLowerCase() === ".pdf" && fs.existsSync(full.replace(/\.pdf$/iu, ".docx")));
+}
+
+function isDocx(file) {
+  return path.extname(file).toLowerCase() === ".docx";
+}
+
+function resumePayload(found, pdfDeps) {
+  if (!found) return null;
+  const docx = isDocx(found.file);
+  const pdf = path.extname(found.file).toLowerCase() === ".pdf" || (docx && canMakePdf(found.file, pdfDeps));
+  return {
+    name: path.basename(found.file),
+    url: "/resume/latest",
+    // Browsers download a .docx, so "Open my resume" uses the PDF copy when one can be made.
+    openUrl: docx && pdf ? "/resume/latest.pdf" : "/resume/latest",
+    word: docx,
+    openable: !docx || pdf,
+  };
+}
+
+function outputsPayload(workspace, pdfDeps) {
   const paths = workspacePaths(workspace);
-  const resume = newestFile(paths.outputResumes);
+  const resume = newestResume(workspace);
   const report = newestReport(path.join(paths.outputs, "tailor-reports"));
   return {
-    resume: resume ? { name: path.basename(resume.file), url: "/resume/latest" } : null,
+    resume: resumePayload(resume, pdfDeps),
     report: report ? { name: path.basename(report.file), url: "/report/latest" } : null,
     pendingJobRequests: readJobRequests(workspace).length,
   };
@@ -225,7 +252,25 @@ function serveNewest(found, res, label) {
 }
 
 
-function onboardingPayload(workspace) {
+// PDF of the newest resume. The path comes from walking the outputs folder,
+// never from the request. Falls back to a plain note plus the Word file.
+async function servePdf(found, res, pdfDeps) {
+  if (!found) {
+    sendText(res, 404, "No resume yet.");
+    return;
+  }
+  const pdf = path.extname(found.file).toLowerCase() === ".pdf"
+    ? found.file
+    : await ensureResumePdf(found.file, pdfDeps);
+  if (!pdf) {
+    res.writeHead(200, identityHeaders({ "Content-Type": "text/html; charset=utf-8" }));
+    res.end(`<!DOCTYPE html><meta charset="utf-8"><title>Resume</title><body style="font-family:system-ui;max-width:36rem;margin:3rem auto;padding:0 1rem"><h1>Word file; opens in Word</h1><p>RB could not make a PDF on this computer, so your resume is a Word file.</p><p><a href="/resume/latest">Download the Word file</a></p></body>`);
+    return;
+  }
+  serveNewest({ file: pdf }, res, "resume");
+}
+
+function onboardingPayload(workspace, pdfDeps) {
   const hasWorkspace =
     fs.existsSync(workspace) &&
     (fs.existsSync(path.join(workspace, "profile.json")) ||
@@ -239,7 +284,7 @@ function onboardingPayload(workspace) {
     setupComplete: isHomeSetupComplete(state),
     nextStep: nextHomeStep(state),
     form: hasWorkspace ? readHomeFormPrefill(workspace) : emptyHomeFormValues(),
-    outputs: outputsPayload(workspace),
+    outputs: outputsPayload(workspace, pdfDeps),
   };
 }
 
@@ -271,7 +316,7 @@ function rolesPayload(workspace) {
 }
 
 
-async function run(options, { openFolder = defaultOpenFolder, openHome = openInBrowser, openFolderTimeoutMs = OPEN_FOLDER_TIMEOUT_MS, rebuildTrackers = tryRebuildTrackers } = {}) {
+async function run(options, { openFolder = defaultOpenFolder, openHome = openInBrowser, openFolderTimeoutMs = OPEN_FOLDER_TIMEOUT_MS, rebuildTrackers = tryRebuildTrackers, pdfDeps = {} } = {}) {
   if (!fs.existsSync(HOME_PAGE)) {
     throw new Error(`Onboarding home page not found at ${HOME_PAGE}`);
   }
@@ -317,7 +362,12 @@ async function run(options, { openFolder = defaultOpenFolder, openHome = openInB
     }
 
     if (method === "GET" && requestedPath === "/resume/latest") {
-      serveNewest(newestFile(workspacePaths(workspace).outputResumes), res, "resume");
+      serveNewest(newestResume(workspace), res, "resume");
+      return;
+    }
+
+    if (method === "GET" && requestedPath === "/resume/latest.pdf") {
+      servePdf(newestResume(workspace), res, pdfDeps);
       return;
     }
 
@@ -363,7 +413,7 @@ async function run(options, { openFolder = defaultOpenFolder, openHome = openInB
     }
 
     if (method === "GET" && requestedPath === "/api/onboarding-state") {
-      sendJson(res, 200, onboardingPayload(workspace));
+      sendJson(res, 200, onboardingPayload(workspace, pdfDeps));
       return;
     }
 

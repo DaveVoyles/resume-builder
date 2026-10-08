@@ -3,6 +3,7 @@
 const { createRole } = require("../../adapters/job-posting");
 const { readJson, resolveWorkspace, workspacePaths, writeJson } = require("../../core/workspace");
 const { syncOnboardingState } = require("../../core/onboarding-state");
+const { markJobRequestDone } = require("../../core/job-requests");
 const { tryRebuildTrackers } = require("./build-tracker");
 const { hasPosting, parseKeywordsOption, readPostingInput, savePosting, setKeywords } = require("../../core/role-posting");
 
@@ -36,6 +37,12 @@ function applyPosting(workspace, role, options, { keepExisting }) {
   return "";
 }
 
+// A saved home-page job request for this posting is handled once the role exists.
+function closeJobRequest(workspace, role) {
+  const done = markJobRequestDone(workspace, role.urls && role.urls.job);
+  if (done.length > 0) console.log(`Marked ${done.length} job request${done.length === 1 ? "" : "s"} done for ${done[0].link}`);
+}
+
 function run(options) {
   const workspace = resolveWorkspace(options.workspace);
   const paths = workspacePaths(workspace);
@@ -55,6 +62,7 @@ function run(options) {
       syncOnboardingState(workspace);
       tryRebuildTrackers(workspace);
     }
+    closeJobRequest(workspace, existing.urls ? existing : role);
     return;
   }
 
@@ -66,6 +74,7 @@ function run(options) {
   }
   console.log(`Added ${role.status} role: ${role.company} — ${role.title}`);
   if (note) console.log(note);
+  closeJobRequest(workspace, role);
 }
 
 module.exports = { run };
