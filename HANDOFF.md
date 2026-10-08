@@ -4,23 +4,24 @@
 
 - Handoff commit: `c85f44a` on `main` (PR #179, "PR G", the last PR by the previous team). All CI on that commit passed: validate (node 18.x), validate (node 20.x), cursor-cloud-setup, Build demo, Deploy to GitHub Pages. The public demo runs this code. `npm test`: 736 tests pass (8 `.pptx` tests fail if the `zip` tool is not installed).
 - A final new-user browser walk on `c85f44a` with sample data passed: all 6 home steps tick; after setup, "Continue setup" becomes "Edit my answers"; after a reload all 10 form fields come back; a goal change persists; a cleared optional field stays empty; the Jobs tab and tracker show the tracked job.
+- After handoff, PR #181 merged to `main` as `28b6115` (2026-10-08). It fixed the five fix-first items below. `main` now includes that work.
 
 ## How to run
 
-- Node 16 or later; one runtime dependency (`docx`). `npm install` (CI uses `npm ci`).
+- Node 16 or later; one runtime dependency (`docx`). `npm install` (CI uses `npm ci`). Browser checks need Playwright (devDependency) and Chromium; they need Node 20+.
 - `npm start` runs a sample on fictional data in a temp folder and deletes it.
 - `npm run setup` creates a workspace; `npm run home` serves the home page at http://localhost:4321 (tracker at /tracker.html).
 - `npm run workspace:ingest -- --workspace candidate` reads files in; `npm run workspace:add-role -- --workspace candidate --title T --company C --tracked` adds a job; `node src/cli/index.js --help` lists commands.
-- Test: `npm test`, `npm run check:workspace`, `npm run check:privacy`, `npm run validate` (tests + sample + privacy).
-- CI: `validate.yml` (node 18.x and 20.x), `cursor-cloud-setup.yml` (node 22). Each push to `main` runs `deploy-demo.yml` and redeploys the public demo to GitHub Pages.
+- Test: `npm test`, `npm run test:browser` (headless Playwright home checks in `tests/browser/`; skips if Playwright or Chromium is missing), `npm run check:workspace`, `npm run check:privacy`, `npm run validate` (tests + sample + workspace check + privacy).
+- CI: `validate.yml` (node 18.x and 20.x; browser checks run on the 20.x job only), `cursor-cloud-setup.yml` (node 22). Each push to `main` runs `deploy-demo.yml` (privacy check first) and redeploys the public demo to GitHub Pages.
 
-## Fix first (in order)
+## Fixed after handoff (PR #181)
 
-1. Duplicate ids: `src/core/home-answers.js` makes Education ids (~line 164) and deal-breaker ids (~line 88) as count+1, so ids can repeat (e.g. agent wrote edu-001 and edu-003, a user save adds a second edu-003). `validate` does not catch it. Also fixing a typo in an agent-written Education entry adds a duplicate instead of replacing it. Fix: next id = highest id + 1; make validate reject repeated ids; replace on edit.
-2. Add a browser test to CI. Show/hide/fill bugs got past unit tests three times (#178, and the goal and clear bugs in PR G). Move headless Playwright checks into the repo and run them in `validate.yml`.
-3. The `validate.yml` step is named as workspace validation, but `npm run validate` (`package.json` ~line 48) does not run `check:workspace`. Add it or rename the step.
-4. Every push to `main` redeploys the public demo. Run the privacy check before the deploy so a bad merge cannot publish private data.
-5. If an agent and the home page both set the same work mode, changing the home answer removes it (from #177). This silently changes job matching.
+1. Duplicate ids — done in #181: Education (`edu-`) and deal-breaker (`deal-`) ids use highest existing id + 1; `validate` rejects repeated ids in profile experience/projects/education and preferences dealBreakers. Home still replaces only the education row tracked by `lastHomeEducationId` (unchanged); an edit of an agent-written row that home does not own still adds a new entry, now with a unique id.
+2. Browser tests in CI — done in #181: headless Playwright checks live in `tests/browser/` and run via `npm run test:browser` in `validate.yml` (Node 20.x job).
+3. `validate` vs workspace check — done in #181: `npm run validate` now runs `check:workspace`, and the workflow step name matches.
+4. Privacy before demo deploy — done in #181: `deploy-demo.yml` runs `check:privacy` before build and deploy.
+5. Work mode loss — done in #181: home Save only removes a work mode it added itself (`lastHomeWorkModeOwned`); an agent-written mode that home also picked is kept when the home answer changes.
 
 ## Smaller wording and layout items
 
@@ -35,8 +36,7 @@
 
 ## Known risks
 
-- Node versions differ: CI 18/20, cloud check 22, `engines` >=16.
-- No browser test tool in the repo.
+- Node versions differ: CI 18/20 (browser checks on 20 only), cloud check 22, `engines` >=16, Playwright needs Node 20+.
 
 ## Not checked
 
