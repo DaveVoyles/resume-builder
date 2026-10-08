@@ -207,8 +207,24 @@ function validateRoles(roles, label) {
     if (!Array.isArray(role.followUpQuestions)) errors.push(`${roleLabel}: followUpQuestions must be an array`);
     validatePostingMetadata(role.posting, `${roleLabel}.posting`, errors);
     validateReportPath(role.resume && role.resume.reportPath, `${roleLabel}.resume.reportPath`, errors);
+    validateCoverageRecord(role.resume && role.resume.baselineCoverage, `${roleLabel}.resume.baselineCoverage`, errors);
   });
   return errors;
+}
+
+// role.resume.baselineCoverage has the same shape as role.resume.keywordCoverage,
+// scored for the person's general resume (or the resume the tailored one extends).
+function validateCoverageRecord(value, label, errors) {
+  if (value === undefined) return;
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    errors.push(`${label}: must be an object`);
+    return;
+  }
+  if (!Array.isArray(value.covered)) errors.push(`${label}: covered must be an array`);
+  if (!Array.isArray(value.missing)) errors.push(`${label}: missing must be an array`);
+  if (value.percent !== undefined && !(Number.isFinite(value.percent) && value.percent >= 0 && value.percent <= 100)) {
+    errors.push(`${label}: percent must be a number from 0 to 100`);
+  }
 }
 
 function validateReportPath(value, label, errors) {

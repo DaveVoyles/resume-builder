@@ -185,6 +185,15 @@ function newestFile(dir, extensions, skip) {
   return best;
 }
 
+// The newest tailor report. Each report is written as <role>.html (readable) next to
+// <role>.md (for agents); the person is always shown the .html when it exists.
+function newestReport(dir) {
+  const found = newestFile(dir, [".md", ".html"]);
+  if (!found || path.extname(found.file).toLowerCase() !== ".md") return found;
+  const sibling = found.file.replace(/\.md$/iu, ".html");
+  return fs.existsSync(sibling) ? { file: sibling, mtimeMs: found.mtimeMs } : found;
+}
+
 // Newest resume file. A .pdf that sits next to a .docx of the same name is the
 // copy RB made for viewing, so it never counts as its own resume.
 function newestResume(workspace) {
@@ -213,7 +222,7 @@ function resumePayload(found, pdfDeps) {
 function outputsPayload(workspace, pdfDeps) {
   const paths = workspacePaths(workspace);
   const resume = newestResume(workspace);
-  const report = newestFile(path.join(paths.outputs, "tailor-reports"), [".md", ".html"]);
+  const report = newestReport(path.join(paths.outputs, "tailor-reports"));
   return {
     resume: resumePayload(resume, pdfDeps),
     report: report ? { name: path.basename(report.file), url: "/report/latest" } : null,
@@ -363,7 +372,7 @@ async function run(options, { openFolder = defaultOpenFolder, openHome = openInB
     }
 
     if (method === "GET" && requestedPath === "/report/latest") {
-      serveNewest(newestFile(path.join(workspacePaths(workspace).outputs, "tailor-reports"), [".md", ".html"]), res, "report");
+      serveNewest(newestReport(path.join(workspacePaths(workspace).outputs, "tailor-reports")), res, "report");
       return;
     }
 

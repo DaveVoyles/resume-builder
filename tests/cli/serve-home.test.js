@@ -1439,3 +1439,23 @@ test("serve-home serves the newest resume and report, favicon without a 404, and
     cleanup(tmpDir);
   }
 });
+
+test("serve-home /report/latest prefers the readable .html next to the newest .md", async () => {
+  const tmpDir = createHomeRoot();
+  const workspace = path.join(tmpDir, "candidate");
+  const reports = path.join(workspace, "outputs", "tailor-reports");
+  fs.mkdirSync(reports, { recursive: true });
+  fs.writeFileSync(path.join(workspace, "profile.json"), "{}\n");
+  const server = await run({ root: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    fs.writeFileSync(path.join(reports, "role-1.html"), "<p>REPORT_HTML</p>");
+    fs.writeFileSync(path.join(reports, "role-1.md"), "REPORT_MD\n");
+    const response = await get(port, "/report/latest");
+    assert.match(response.body, /REPORT_HTML/);
+    assert.deepEqual(JSON.parse((await get(port, "/api/onboarding-state")).body).outputs.report, { name: "role-1.html", url: "/report/latest" });
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});

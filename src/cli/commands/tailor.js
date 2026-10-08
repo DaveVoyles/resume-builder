@@ -76,7 +76,7 @@ function analyzeCoverage(keywords, config, paths, source) {
 function writeBlockedReport(workspace, options, config, audits) {
   try {
     const role = createRole({ ...options, tracked: true, company: options.company || config.company });
-    const { path: reportPath } = writeTailorReport(workspace, role, { config, ...audits });
+    const { htmlPath: reportPath } = writeTailorReport(workspace, role, { config, ...audits });
     console.log(`Report ready: ${reportPath}`);
   } catch {
     // Report is a courtesy; the audit error below is what matters.
@@ -276,9 +276,9 @@ async function run(options, deps = {}) {
   // Step 5c: plain-language report for the person (src/core/tailor-report.js).
   // Written before the tracker rebuild below so the tracker row can link it.
   const report = writeTailorReport(workspace, role, { config, profile, evidence, claimAudit, factAudit: facts, styleLint: styleLintResult });
-  role.resume.reportPath = report.path;
+  role.resume.reportPath = report.htmlPath;
   writeJson(paths.rolesTracked, trackedRoles);
-  console.log(`Report ready: ${report.path}`);
+  console.log(`Report ready: ${report.htmlPath}`);
 
   // Step 6: land the role un-applied (plan 0001 Decision 8 / D4 acceptance
   // criteria — a human reviews the resume before anything is sent). Reuse

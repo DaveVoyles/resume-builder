@@ -183,10 +183,12 @@ async function runPersona(name, options = {}) {
       expect(stage, "tailor coverage uses the stored keywords", /Keyword coverage: \d+% .*stored posting keywords/u.test(tailorOutput), "tailor ran without --keywords");
 
       const reportRelative = storedRole && storedRole.resume && storedRole.resume.reportPath;
-      const reportFile = reportRelative ? path.join(workspace, reportRelative) : "";
+      const reportHtmlFile = reportRelative ? path.join(workspace, reportRelative) : "";
+      const reportHtml = reportHtmlFile && fs.existsSync(reportHtmlFile) ? fs.readFileSync(reportHtmlFile, "utf8") : "";
+      const reportFile = reportRelative ? path.join(workspace, reportRelative.replace(/\.html$/u, ".md")) : "";
       const reportText = reportFile && fs.existsSync(reportFile) ? fs.readFileSync(reportFile, "utf8") : "";
       expect(stage, "tailor report written with a status line", /\*\*Status: (Ready to review|Draft made; job match not checked yet|Needs your confirmation|Blocked)\*\*/u.test(reportText), reportRelative || "no report path on role");
-      expect(stage, "tracker row links the report", Boolean(reportRelative) && /^outputs\/tailor-reports\/[^/]+\.md$/u.test(reportRelative));
+      expect(stage, "tracker row links the readable (.html) report", Boolean(reportRelative) && /^outputs\/tailor-reports\/[^/]+\.html$/u.test(reportRelative) && reportHtml.length > 0, reportRelative || "no report path on role");
 
       const config = readJson(configPath);
       const schema = validateResumeConfig(config);
@@ -211,8 +213,25 @@ async function runPersona(name, options = {}) {
         storedPercent >= posting.minKeywordPercent,
         `${storedPercent}% (missing: ${storedCoverage ? storedCoverage.missing.map((item) => item.keyword).join(", ") || "none" : "no coverage stored"})`,
       );
-      const reportedPercent = (reportText.match(/covers \d+ of \d+ keywords \((\d+)%\)/u) || [])[1];
+      const reportedPercent = (reportText.match(/The resume covers \d+ of \d+ keywords \((\d+)%\)/u) || [])[1];
       expect(stage, "report shows the same keyword percent as the stored coverage", Number(reportedPercent) === storedPercent, `report ${reportedPercent || "none"}% vs stored ${storedPercent}%`);
+
+      // Proof of tailoring: the person must SEE what changed and how much closer
+      // the resume is to the posting than their general resume.
+      expect(stage, "report page shows before and after", /class="before"/u.test(reportHtml) && /class="after"/u.test(reportHtml), "the .html report has a before/after block");
+      expect(stage, "report page shows a coverage bar", /class="track"/u.test(reportHtml), "the .html report has a coverage bar");
+      const baselineCoverage = storedRole && storedRole.resume && storedRole.resume.baselineCoverage;
+      const baselinePercent = baselineCoverage && Number.isFinite(baselineCoverage.percent) ? baselineCoverage.percent : -1;
+      expect(stage, "baseline coverage stored next to keyword coverage", baselinePercent >= 0, baselineCoverage ? `general resume ${baselinePercent}%` : "no baselineCoverage on the role");
+      const liftLine = reportText.match(/(?:Your general resume|The resume this one was based on) covers (\d+) of (\d+) keywords \((\d+)%\)\. This resume covers (\d+) of (\d+) \((\d+)%\)\./u) || [];
+      expect(stage, "report states the coverage lift", Boolean(liftLine[0]) && Number(liftLine[3]) === baselinePercent && Number(liftLine[6]) === storedPercent, liftLine[0] || "no lift sentence in the report");
+      const lift = storedPercent - baselinePercent;
+      expect(stage, "tailored coverage is not below the general resume", baselinePercent >= 0 && lift >= 0, `general ${baselinePercent}% -> tailored ${storedPercent}% (lift ${lift})`);
+      if (baselinePercent >= 0 && lift === 0) {
+        add(stage, "tailoring improves keyword coverage over the general resume", "warn", `tailored ${storedPercent}% is no better than general ${baselinePercent}%: the person cannot see a benefit`);
+      } else if (lift > 0) {
+        pass(stage, "tailoring improves keyword coverage over the general resume", `+${lift} points (${baselinePercent}% -> ${storedPercent}%)`);
+      }
 
       const lint = lintConfig(config, "resume");
       expect(stage, `style-lint warnings <= ${expected.maxStyleWarnings}`, lint.findings.length <= expected.maxStyleWarnings, `${lint.findings.length} warning(s)`);
