@@ -84,6 +84,8 @@ Draft `candidate/resume-configs/<company-slug>-<role-slug>.json` per the [resume
 
 **Every claim needs a source.** Do not invent metrics, dates, or scope. See [Accuracy and claims](../accuracy-and-claims.md) for the full rules. A useful check while drafting: for every number in a bullet (a percentage, a dollar amount, a count, a team size, years of experience), can you point to the exact `evidence.jsonl` entry that states it? If not, either find the evidence or rephrase without the number — `tailor`'s claim audit will block on it either way (see Section 3).
 
+**Tie numbers to the entry that proves them.** For each job with a metric, add `evidenceIds` (ids from `evidence.jsonl`, for example the bullet entry `ingest` made from the candidate's resume) on the job, or `bulletEvidenceIds` for one bullet. The audit then checks the number against only those entries and blocks if they do not state it. Without ids the audit still matches against the whole ledger but prints a "Not tied to specific evidence" warning; clear it by adding the id. See [workspace schemas](../workspace-schemas.md#resume-render-config-render-resume).
+
 **Emphasize what maps to the posting.** Reorder and select bullets, skills, and `summary.fitOverride` to lead with what Section 1.2 identified as the strongest matches — without fabricating anything new. This is where the tailoring happens: the same evidence, positioned for this specific role.
 
 ### Step 2.2: Sanity-check the draft
