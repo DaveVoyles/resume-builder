@@ -1,0 +1,21 @@
+Alex Rivera
+Raleigh, NC | alex.rivera@example.invalid | portfolio.example.invalid/alex-rivera | github.example.invalid/alex-rivera
+Senior product manager for developer platforms and AI workflows
+SUMMARY
+Fictional product and program leader focused on developer platforms, AI-assisted workflows, and launch readiness.
+Exceptional fit for Northwind Tools' developer-experience roadmap and AI workflow adoption goals.
+EXPERIENCE
+Senior Platform Program Manager — Contoso Labs 2022 - Present
+Remote
+Led launch coordination for an internal developer platform used by multiple product teams.
+Created a fictional demo project for documenting AI-assisted developer workflow experiments.
+SKILLS
+Developer platforms
+Platform strategy, internal tooling, developer experience
+AI workflows
+AI-assisted developer tooling, workflow automation
+Launch readiness
+Cross-functional launch coordination, rollout planning
+EDUCATION
+B.S. Fictional Information Systems — Example State University 2012 - 2016
+Fictional coursework in information systems and product management.

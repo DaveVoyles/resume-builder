@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "1.0",
+  "company": "Harborview Family Health",
+  "outputFileName": "jordan-sample-harborview.docx",
+  "candidate": {
+    "name": "Jordan Sample",
+    "headline": "Healthcare office operations manager",
+    "contact": [
+      { "text": "Philadelphia, PA" },
+      { "text": "jordan.sample@example.com", "link": "mailto:jordan.sample@example.com" }
+    ]
+  },
+  "summary": {
+    "text": "Office operations professional with clinic experience in scheduling, billing questions, front-desk workflow, and training new staff."
+  },
+  "experienceSections": [
+    {
+      "heading": "Experience",
+      "jobs": [
+        {
+          "title": "Office Manager",
+          "company": "Riverside Dental",
+          "dates": "2019 - Present",
+          "subHeader": "Philadelphia, PA",
+          "bullets": [
+            "Ran day-to-day office operations for a 12-person clinic.",
+            "Set the weekly staff schedule and handled patient billing questions.",
+            "Introduced a simple checklist that cut front-desk wait time by 20%."
+          ]
+        },
+        {
+          "title": "Front Desk Lead",
+          "company": "Lakeview Clinic",
+          "dates": "2015 - 2019",
+          "bullets": [
+            "Booked patient appointments and trained two new hires on the booking system.",
+            "Kept paper charts in order until the clinic moved to electronic records."
+          ]
+        }
+      ]
+    }
+  ],
+  "skills": [
+    ["Clinic operations", "Front-desk workflow, scheduling, checklists"],
+    ["Patient billing", "Billing questions, appointment booking"],
+    ["Records", "Paper charts, electronic records transition"]
+  ],
+  "education": [
+    {
+      "degree": "Associate degree, Health Office Administration",
+      "institution": "Example Community College",
+      "dates": "2015"
+    }
+  ],
+  "includeEducation": true,
+  "includePublicationsSpeaking": false
+}

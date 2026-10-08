@@ -46,7 +46,8 @@
     "check:workspace": "node scripts/check-workspace.js --workspace examples/sample-candidate",
     "check": "npm run check:workspace && npm run check:privacy",
     "validate": "npm run test && npm run sample:quickstart && npm run check:workspace && npm run check:privacy",
-    "test:browser": "node --test tests/browser/home.browser.js"
+    "test:browser": "node --test tests/browser/home.browser.js tests/browser/persona-home.browser.js",
+    "e2e": "node scripts/e2e-persona.js"
   },
   "dependencies": {
     "docx": "^9.7.1"

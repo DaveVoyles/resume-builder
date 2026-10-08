@@ -38,3 +38,7 @@ jobs:
       - name: Run headless browser checks
         if: startsWith(matrix.node-version, '20.')
         run: npm run test:browser
+
+      - name: Run persona end-to-end scorecard
+        if: startsWith(matrix.node-version, '20.')
+        run: npm run e2e

@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "1.0",
+  "company": "Fabrikam AI",
+  "outputFileName": "alex-rivera-fabrikam-ai.docx",
+  "candidate": {
+    "name": "Alex Rivera",
+    "headline": "Senior product manager for developer platforms",
+    "contact": [
+      { "text": "Raleigh, NC" },
+      { "text": "alex.rivera@example.invalid", "link": "mailto:alex.rivera@example.invalid" }
+    ]
+  },
+  "summary": {
+    "text": "Fictional product and program leader focused on developer platforms and launch coordination across product teams."
+  },
+  "experienceSections": [
+    {
+      "heading": "Experience",
+      "jobs": [
+        {
+          "title": "Senior Platform Program Manager",
+          "company": "Contoso Labs",
+          "dates": "2022 - Present",
+          "subHeader": "Remote",
+          "bullets": [
+            "Led launch coordination for an internal developer platform used by multiple product teams.",
+            "Wrote the rollout plan and ran weekly launch check-ins until the platform opened to all product teams.",
+            "Created a fictional demo project for documenting AI-assisted developer workflow experiments."
+          ]
+        }
+      ]
+    }
+  ],
+  "skills": [
+    ["Developer platforms", "Platform strategy, internal tooling, roadmap"],
+    ["Launch coordination", "Rollout planning, launch readiness reviews"],
+    ["AI workflows", "AI-assisted developer tooling, workflow experiments"]
+  ],
+  "education": [
+    {
+      "degree": "B.S. Fictional Information Systems",
+      "institution": "Example State University",
+      "dates": "2012 - 2016"
+    }
+  ],
+  "includeEducation": true,
+  "includePublicationsSpeaking": false
+}

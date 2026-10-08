@@ -55,7 +55,30 @@ test("apply needs approval, then prints dry run", () => {
   assert.equal(rows[0].note, "ok");
   const result = quiet(() => apply.run(opts));
   assert.equal(result.confirmSubmit, false);
-  assert.equal(quiet(() => apply.run({ ...opts, confirmSubmit: true })).confirmSubmit, true);
+});
+
+test("apply refuses to run without --dry-run and never records an applied status", () => {
+  const dir = tmp();
+  const trackedPath = path.join(dir, "roles.tracked.json");
+  const role = { id: "role-1", company: "Fabrikam", title: "Analyst", status: "tracked", application: { status: "interested" } };
+  fs.writeFileSync(trackedPath, `${JSON.stringify([role], null, 2)}\n`);
+  const before = fs.readFileSync(trackedPath, "utf8");
+  quiet(() => approveApply.run({ workspace: dir, company: "Fabrikam", title: "Analyst" }));
+
+  const live = { workspace: dir, company: "Fabrikam", title: "Analyst" };
+  assert.throws(() => apply.run(live), /only supports --dry-run/);
+  assert.throws(() => apply.run({ ...live, dryRun: false }), /only supports --dry-run/);
+  assert.throws(() => apply.run({ ...live, dryRun: "true" }), /only supports --dry-run/);
+
+  quiet(() => apply.run({ ...live, dryRun: true }));
+  assert.equal(fs.readFileSync(trackedPath, "utf8"), before, "apply must not touch roles.tracked.json");
+  assert.doesNotMatch(fs.readFileSync(trackedPath, "utf8"), /"applied"/);
+  assert.equal(fs.existsSync(path.join(dir, "outputs")), false, "apply writes no outputs");
+});
+
+test("apply without approval fails before anything else, even with --dry-run", () => {
+  const dir = tmp();
+  assert.throws(() => apply.run({ workspace: dir, company: "Nobody", title: "Nothing", dryRun: true }), /No approval/);
 });
 
 test("fillFields maps profile values and never invents a phone", () => {
