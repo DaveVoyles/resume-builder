@@ -11,6 +11,7 @@ const { loadResumeConfig, validateResumeConfig } = require("../../core/resume-co
 const { auditResumeConfig } = require("../../core/claim-audit");
 const { auditFacts } = require("../../core/fact-audit");
 const { buildCoverageRecord, classifyMissingKeywords, scoreKeywordCoverage } = require("../../core/keyword-coverage");
+const { findPossibleMatches } = require("../../core/possible-matches");
 const { displayPath } = require("../../core/role-lookup");
 const { lintConfig } = require("../../core/style-lint");
 const { allKeywords, hasPosting, parseKeywordsOption } = require("../../core/role-posting");
@@ -62,13 +63,16 @@ function printKeywordCoverage(run, suffix) {
   console.log(`Present: ${result.present.length > 0 ? result.present.join(", ") : "(none)"}`);
   console.log(`Missing: ${result.missing.length > 0 ? result.missing.join(", ") : "(none)"}`);
   support.forEach((item) => console.log(`  - ${item.keyword}: ${item.note}`));
+  const possible = new Set(run.possibleMatches.map((item) => item.keyword));
+  if (possible.size > 0) console.log(`Possible matches in your record (suggestions only, ask before using): ${[...possible].join(", ")}`);
 }
 
 /** Scores keywords against the config and classifies what is missing against the profile and evidence. */
 function analyzeCoverage(keywords, config, paths, source) {
   const result = scoreKeywordCoverage(keywords, config);
-  const support = classifyMissingKeywords(result.missing, { profile: readJson(paths.profile, null), evidence: readJsonLines(paths.evidence) });
-  return { result, support, source };
+  const evidence = readJsonLines(paths.evidence);
+  const support = classifyMissingKeywords(result.missing, { profile: readJson(paths.profile, null), evidence });
+  return { result, support, source, possibleMatches: findPossibleMatches(support, { evidence }) };
 }
 
 // A blocked run renders nothing and tracks nothing, but the person still gets
@@ -230,7 +234,7 @@ async function run(options, deps = {}) {
   role.resume.outputPath = relativeToWorkspace(workspace, outputPath);
   role.resume.status = "review-needed";
   if (coverageRun) {
-    role.resume.keywordCoverage = buildCoverageRecord(coverageRun.result, coverageRun.support, { source: coverageRun.source });
+    role.resume.keywordCoverage = buildCoverageRecord(coverageRun.result, coverageRun.support, { source: coverageRun.source, possibleMatches: coverageRun.possibleMatches });
   }
   if (pageCount) role.resume.pageCount = pageCount;
 

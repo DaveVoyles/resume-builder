@@ -83,6 +83,7 @@
   "skills": [
     ["Platform and APIs", "Atomic APIs, modular publishing, Entitlements and Event Grid integrations, 8 partner systems"],
     ["AI agents", "Local and cloud models, A/B testing, live evals on every request, CI replay"],
+    ["Leadership, analytics", "Led Fast Game Package Publishing; AI telemetry pipeline"],
     ["Partner integration", "Saga compensating transactions, streaming data pipelines, Buy Once Play Anywhere without a parallel stack"]
   ],
   "education": [

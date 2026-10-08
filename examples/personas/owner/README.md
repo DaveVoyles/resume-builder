@@ -11,7 +11,8 @@ Status: **complete and part of the suite.** `npm run e2e`, `npm test` and `npm r
 | `answers.json` | The home-form answers. Where and when to start are assumptions for the demo (remote, 1 to 3 months). Salary and deal breakers are skipped. Change them if the owner's real preferences differ. |
 | `JOBS.md` | The shortlist of roles that fit the resume, why each fits, and where it came from. |
 | `postings/` | One snapshot per job. See `postings/README.md` for the format. |
-| `expected.json` | Scorecard thresholds per posting, each with a `note` saying why. `inputs` points at `examples/real-resume/owner/owner-resume.docx`, so the 770 KB resume is not copied here. |
+| `inputs/notes/owner-confirmations.md` | The owner's yes/no answers of 2026-10-08 to the JPMorgan Chase report's confirmation questions, in their own words: nine keywords confirmed (each with the resume line behind it), RAID, agile and ServiceNow not done. Ingested as a note; the tool treats it as the source for those answers. |
+| `expected.json` | Scorecard thresholds per posting, each with a `note` saying why. `inputs` points at `examples/real-resume/owner/owner-resume.docx`, so the 770 KB resume is not copied here, plus the confirmation note. `neverClaim` lists the keywords no resume may contain. |
 | `resume-configs/` | The three tailored resumes. Every figure is bound to the resume bullet that states it. |
 | `golden/` | The expected DOCX text of each tailored resume. Review any change to these line by line against the resume. |
 
@@ -19,9 +20,11 @@ Status: **complete and part of the suite.** `npm run e2e`, `npm test` and `npm r
 
 | Role | General resume | Tailored | Fit |
 | --- | --- | --- | --- |
-| JPMorgan Chase, Lead Technical Program Manager | 7% | 20% | Closest fit. |
-| Bentley Systems, Senior Principal Engineer, Developer Platform | 12% | 12% | Stretch. No lift: the general resume already says everything the resume supports. |
-| Deloitte, Lead Forward Deployed Engineer, Frontier GenAI | 20% | 20% | Weakest fit. The percent is only generic words (AI, cloud, Azure, API, agents). |
+| JPMorgan Chase, Lead Technical Program Manager | 7% | 80% | Closest fit. Nine of the twelve extra keywords are on the resume under different words; the owner confirmed them. RAID, agile and ServiceNow stay off. |
+| Bentley Systems, Senior Principal Engineer, Developer Platform | 12% | 20% | Stretch. The lift is two words the posting asks for by name (leadership, analytics), not new experience. Every real requirement is still missing. |
+| Deloitte, Lead Forward Deployed Engineer, Frontier GenAI | 20% | 28% | Weakest fit. Generic words (AI, cloud, Azure, API, agents) plus leadership and risk management. Every real requirement is still missing. |
+
+Before the owner answered, the JPMorgan Chase report listed those nine keywords under "Possible matches in your record. You decide." with the resume line behind each, and the tailored resume stayed at 20%. The literal matcher alone could not see them.
 
 ## Rules
 

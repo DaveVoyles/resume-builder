@@ -79,4 +79,11 @@ function matchKeyword(text, keyword) {
   return null;
 }
 
-module.exports = { matchKeyword, termVariants };
+/** True when two keywords are the same term, directly or through the alias map ("ML" and "machine learning"). */
+function sameKeyword(a, b) {
+  if (typeof a !== "string" || typeof b !== "string") return false;
+  const target = normalize(b);
+  return termVariants(a).some((variant) => normalize(variant) === target);
+}
+
+module.exports = { matchKeyword, sameKeyword, termVariants };

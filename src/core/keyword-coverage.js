@@ -18,6 +18,7 @@
  * it, so it could be added" and "no evidence, do not suggest adding it".
  */
 
+const { answerFor, collectConfirmations, isConfirmationNote } = require("./confirmations");
 const { matchKeyword } = require("./keyword-match");
 
 const REQUIRED_WEIGHT = 2;
@@ -184,17 +185,38 @@ const UNSUPPORTED_NOTE = "no evidence of this in the ledger — ask the candidat
  * agent still checks the wording against the cited entries); `false` means do
  * NOT suggest adding it. Uses the same word-boundary and alias matching.
  *
- * @returns {Array<{ keyword: string, supported: boolean, evidenceIds: string[], inProfile: boolean, note: string }>}
+ * The person's own yes/no answers (a notes file with "Confirmed: ..." and
+ * "Not done: ..." lines, see src/core/confirmations.js) come first: a yes makes
+ * the keyword supported with the note as the source (`confirmed: true`); a no
+ * makes it unsupported (`declined: true`). The note's own text is never matched
+ * literally, so "Not done: RAID" cannot count as proof of RAID.
+ *
+ * @returns {Array<{ keyword: string, supported: boolean, evidenceIds: string[], inProfile: boolean, note: string, confirmed?: boolean, declined?: boolean }>}
  */
 function classifyMissingKeywords(keywords, { profile, evidence } = {}) {
   const profileStrings = [];
   collectStrings(profile || {}, profileStrings);
   const profileText = profileStrings.join("\n");
-  const entries = usableEvidence(evidence).map((entry) => ({ id: entry.id, text: evidenceText(entry) }));
+  const entries = usableEvidence(evidence).filter((entry) => !isConfirmationNote(entry)).map((entry) => ({ id: entry.id, text: evidenceText(entry) }));
+  const confirmations = collectConfirmations(evidence);
 
   return (Array.isArray(keywords) ? keywords : []).filter(isNonBlankString).map((keyword) => {
+    const answer = answerFor(keyword, confirmations);
+    if (answer && answer.status === "declined") {
+      return { keyword, supported: false, evidenceIds: [], inProfile: false, declined: true, note: "you told me you have not done this — do not add it" };
+    }
     const evidenceIds = entries.filter((entry) => entry.id && matchKeyword(entry.text, keyword)).map((entry) => entry.id);
     const inProfile = Boolean(matchKeyword(profileText, keyword));
+    if (answer) {
+      return {
+        keyword,
+        supported: true,
+        evidenceIds: [answer.evidenceId, ...evidenceIds.filter((id) => id !== answer.evidenceId)],
+        inProfile,
+        confirmed: true,
+        note: "you confirmed this in your notes — could be added where it is true for this role",
+      };
+    }
     const supported = evidenceIds.length > 0 || inProfile;
     return {
       keyword,
@@ -212,8 +234,15 @@ function classifyMissingKeywords(keywords, { profile, evidence } = {}) {
  * The record stored on a tracked role as role.resume.keywordCoverage:
  * { score, percent, covered: [...], missing: [...], checkedAt, source }.
  */
-function buildCoverageRecord(result, support, { checkedAt, source } = {}) {
+function buildCoverageRecord(result, support, { checkedAt, source, possibleMatches } = {}) {
   const supportByKeyword = new Map((support || []).map((item) => [item.keyword, item]));
+  const importanceByKeyword = new Map(result.details.map((item) => [item.keyword, item.importance]));
+  // Suggestions only (see possible-matches.js): never counted as covered or supported.
+  const suggestions = (Array.isArray(possibleMatches) ? possibleMatches : []).map((item) => ({
+    keyword: item.keyword,
+    importance: importanceByKeyword.get(item.keyword) || item.importance || "required",
+    matches: item.matches,
+  }));
   return {
     score: result.weightedScore,
     percent: result.percent,
@@ -229,8 +258,11 @@ function buildCoverageRecord(result, support, { checkedAt, source } = {}) {
         importance: item.importance,
         supported: found ? found.supported : false,
         evidenceIds: found ? found.evidenceIds : [],
+        ...(found && found.confirmed ? { confirmed: true } : {}),
+        ...(found && found.declined ? { declined: true } : {}),
       };
     }),
+    possibleMatches: suggestions,
     checkedAt: checkedAt || new Date().toISOString(),
     ...(source ? { source } : {}),
   };

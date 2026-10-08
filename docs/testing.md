@@ -20,14 +20,14 @@ Personas: `alex` (product manager, two roles, adapted from `examples/sample-cand
 By default a persona's files come from its own `inputs/resumes/` and `inputs/notes/`. When the file already lives elsewhere in the repo, `expected.json` can point at it instead of keeping a second copy:
 
 ```json
-"inputs": { "resumes": ["../../real-resume/owner/owner-resume.docx"], "notes": [] }
+"inputs": { "resumes": ["../../real-resume/owner/owner-resume.docx"], "notes": ["inputs/notes/owner-confirmations.md"] }
 ```
 
 Paths are relative to the persona folder, must exist, and must stay inside the repo. `scripts/e2e-persona.js` (`personaInputFiles`) resolves them for `npm run e2e`, `npm test` and `tests/browser/persona-home.browser.js`. Personas without an `inputs` key behave as before.
 
 ### The owner persona
 
-`owner` is the only persona built from a real person, with their permission. Its resume is `examples/real-resume/owner/owner-resume.docx` (email scrubbed), read through the real Word ingest path; there is no notes folder, so the resume is the only evidence. Its three postings in `examples/personas/owner/postings/` are real public job pages saved as offline snapshots (text plus a screenshot), so the run still works after the pages come down. They are for tailoring and testing only and nothing is ever sent.
+`owner` is the only persona built from a real person, with their permission. Its resume is `examples/real-resume/owner/owner-resume.docx` (email scrubbed), read through the real Word ingest path; its one note, `examples/personas/owner/inputs/notes/owner-confirmations.md`, records the owner's yes/no answers of 2026-10-08 about nine posting keywords (confirmed) and RAID, agile and ServiceNow (not done); see [the tailor playbook](playbooks/tailor.md#step-32c-record-the-persons-yesno-answers-then-re-ingest-and-re-tailor). Its three postings in `examples/personas/owner/postings/` are real public job pages saved as offline snapshots (text plus a screenshot), so the run still works after the pages come down. They are for tailoring and testing only and nothing is ever sent.
 
 The three tailored resumes use only what the resume shows. `JOBS.md` in that folder lists, per posting, what the resume backs and what it does not, and `tests/e2e/personas.test.js` fails if a tailored config names a tool, platform or credential from that "not on the resume" list. The roles are deliberately uneven: one close fit, one stretch, and one weak fit. The thresholds in `expected.json` are the measured results with a `note` saying why, so a drop is a regression, not noise. Because the general resume already holds everything the resume supports, tailoring for the stretch roles cannot raise the keyword percent; the scorecard prints that as a WARN and the report says so.
 
@@ -53,6 +53,8 @@ For each persona the script builds a temp workspace and runs: `init`, copy input
 | keyword coverage | the percent stored on the role (`resume.keywordCoverage.percent`, scored against the keywords extracted from the posting) is below `minKeywordPercent`. This is the same number the tailor report prints, and the scorecard also fails if the two differ |
 | report proof of tailoring | the role's `.html` report has no before/after block or no coverage bar, `baselineCoverage` is not stored, the `.md` lacks the "Your general resume covers X of N ... This resume covers ..." line, or tailored coverage is below the general resume. It is a **WARN** (not a failure) when the lift is exactly 0: the person cannot see a benefit from tailoring |
 | posting keywords | an `expectedKeywords` entry was not stored, or a `forbiddenKeywords` entry was |
+| possible matches | a possible match stored on the role is missing from the `.md` or `.html` report (quote and evidence id), is counted as covered, or the section heading is missing |
+| never claim | `expected.json` lists top-level `neverClaim` keywords (the owner persona: RAID, agile, ServiceNow) and one appears in a resume config or its rendered DOCX |
 | style-lint warnings | more than `maxStyleWarnings` |
 | proxy score | above `maxProxyScore` (summary words + bullet words + 40 per job + 20 per education row) |
 | page count | more pages than the posting's limit (1, or `maxPages` in `expected.json`), counted with `src/core/page-count.js` (the same check `tailor` runs). Runs only when LibreOffice (`soffice`) is installed, otherwise skipped |

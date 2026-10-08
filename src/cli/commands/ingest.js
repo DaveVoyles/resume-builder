@@ -5,6 +5,7 @@ const path = require("path");
 const { fetchGithubMetadata } = require("../../adapters/github");
 const { readTextSource } = require("../../adapters/freeform-notes");
 const { createEvidenceEntry, createChunkEvidenceEntry, appendUniqueEvidence, snippet } = require("../../core/evidence-ledger");
+const { parseConfirmations, withoutConfirmationLines } = require("../../core/confirmations");
 const { chunkResumeText } = require("../../core/resume-chunker");
 const { mergeProfileSource } = require("../../core/candidate-profile");
 const { syncOnboardingState } = require("../../core/onboarding-state");
@@ -189,6 +190,16 @@ function collectSources(options, workspace, paths) {
   return folderSources;
 }
 
+/**
+ * A notes file can hold the person's yes/no answers about posting keywords
+ * ("Confirmed (date): keyword. Resume line: ..." / "Not done (date): keyword").
+ * They are stored on the note's entry so the note is the source for the answer.
+ */
+function withConfirmations(kind, read) {
+  const confirmations = kind === "notes" ? parseConfirmations(read.text) : [];
+  return confirmations.length > 0 ? { ...read.metadata, confirmations } : read.metadata;
+}
+
 async function ingestLocalSources(sources, workspace, paths, profile, deps = {}) {
   const entries = [];
   let nextProfile = profile;
@@ -211,7 +222,7 @@ async function ingestLocalSources(sources, workspace, paths, profile, deps = {})
         source: sourceInfo,
         text: read.text,
         summary: `${source.kind} source ingested from ${relativePath}`,
-        metadata: read.metadata,
+        metadata: withConfirmations(source.kind, read),
       }),
     );
     if (path.extname(read.path).toLowerCase() === ".pdf" && !read.text) {
@@ -238,7 +249,8 @@ async function ingestLocalSources(sources, workspace, paths, profile, deps = {})
         }
       }
     }
-    nextProfile = mergeProfileSource(nextProfile, sourceInfo, read.text);
+    const confirmed = source.kind === "notes" && parseConfirmations(read.text).length > 0;
+    nextProfile = mergeProfileSource(nextProfile, sourceInfo, confirmed ? withoutConfirmationLines(read.text) : read.text);
   }
   const appended = appendUniqueEvidence(paths.evidence, entries);
   return { profile: nextProfile, appended };

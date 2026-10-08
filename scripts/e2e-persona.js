@@ -32,6 +32,7 @@ const { onboardingSteps, syncOnboardingState } = require("../src/core/onboarding
 const { auditResumeConfig } = require("../src/core/claim-audit");
 const { lintConfig } = require("../src/core/style-lint");
 const { validateResumeConfig } = require("../src/core/resume-config");
+const { matchKeyword } = require("../src/core/keyword-match");
 const { readJson, readJsonLines, workspacePaths } = require("../src/core/workspace");
 const { findSoffice } = require("../src/cli/commands/export-pdf");
 const { checkPageCount, countPdfPages } = require("../src/core/page-count");
@@ -262,6 +263,22 @@ async function runPersona(name, options = {}) {
         pass(stage, "tailoring improves keyword coverage over the general resume", `+${lift} points (${baselinePercent}% -> ${storedPercent}%)`);
       }
 
+      // Possible matches are suggestions: each one must be shown to the person with its
+      // evidence quote and id (md and html), and none may be counted as covered.
+      const possible = (storedCoverage && Array.isArray(storedCoverage.possibleMatches)) ? storedCoverage.possibleMatches : [];
+      const coveredNow = new Set(((storedCoverage && storedCoverage.covered) || []).map((item) => item.keyword.toLowerCase()));
+      const htmlText = reportHtml.replace(/&amp;/gu, "&").replace(/&lt;/gu, "<").replace(/&gt;/gu, ">").replace(/&quot;/gu, "\"").replace(/&#39;/gu, "'").replace(/&ldquo;|&rdquo;/gu, "\"");
+      const unshown = [];
+      possible.forEach((item) => item.matches.forEach((match) => {
+        const inMd = reportText.includes(match.quote) && reportText.includes(match.evidenceId);
+        const inHtml = htmlText.includes(match.quote) && htmlText.includes(match.evidenceId);
+        if (!inMd || !inHtml) unshown.push(`${item.keyword} (${match.evidenceId})`);
+      }));
+      expect(stage, "every possible match is shown with its evidence quote", unshown.length === 0 && possible.every((item) => !coveredNow.has(item.keyword.toLowerCase())), unshown.length ? `not shown: ${unshown.join("; ")}` : `${possible.length} keyword(s) with a possible match`);
+      if (possible.length > 0) {
+        expect(stage, "report has the possible-matches section", reportText.includes("## Possible matches in your record. You decide.") && reportHtml.includes("Possible matches in your record. You decide."), "md and html");
+      }
+
       const lint = lintConfig(config, "resume");
       expect(stage, `style-lint warnings <= ${expected.maxStyleWarnings}`, lint.findings.length <= expected.maxStyleWarnings, `${lint.findings.length} warning(s)`);
 
@@ -275,6 +292,12 @@ async function runPersona(name, options = {}) {
       if (docxExists) {
         text = readDocxText(docxPath);
         expect(stage, "DOCX contains candidate name", text.includes(config.candidate.name));
+      }
+      // Keywords the person said they have not done must never reach a resume.
+      if (Array.isArray(expected.neverClaim) && expected.neverClaim.length > 0) {
+        const configText = JSON.stringify(config);
+        const leaked = expected.neverClaim.filter((keyword) => matchKeyword(configText, keyword) || matchKeyword(text, keyword));
+        expect(stage, "no resume contains a keyword the person said they have not done", docxExists && leaked.length === 0, leaked.length ? `found: ${leaked.join(", ")}` : `${expected.neverClaim.join(", ")} absent from the config and the DOCX`);
       }
       outputs.push({ id: posting.id, text: normalizeText(text), goldenPath: path.join(personaDir, "golden", `${posting.id}.txt`) });
 

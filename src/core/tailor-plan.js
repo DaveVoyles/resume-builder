@@ -19,7 +19,9 @@
  */
 
 const { classifyMissingKeywords, normalizeKeywords, usableEvidence } = require("./keyword-coverage");
+const { isConfirmationNote } = require("./confirmations");
 const { matchKeyword } = require("./keyword-match");
+const { findPossibleMatches } = require("./possible-matches");
 const { LIMITS } = require("./resume-config");
 
 const MAX_JOBS = 4;
@@ -144,6 +146,7 @@ function buildTailorPlan({ role, profile, evidence, now }) {
   const importanceOf = new Map(keywords.map((item) => [item.keyword, item.importance]));
   const entryRank = (id) => {
     const found = (evidence || []).find((entry) => entry.id === id);
+    if (isConfirmationNote(found)) return -1;
     const kind = found && found.metadata && found.metadata.chunkKind;
     return kind === "bullet" ? 0 : kind ? 1 : 2;
   };
@@ -152,12 +155,19 @@ function buildTailorPlan({ role, profile, evidence, now }) {
     importance: importanceOf.get(item.keyword),
     evidenceIds: [...item.evidenceIds].sort((a, b) => entryRank(a) - entryRank(b)).slice(0, MAX_EVIDENCE_IDS_PER_KEYWORD),
     inProfile: item.inProfile,
+    ...(item.confirmed ? { confirmed: true } : {}),
   }));
-  const doNotClaim = support.filter((item) => !item.supported).map((item) => ({
+  // Suggestions only: the person decides. A keyword with a suggestion is not on the do-not-claim list
+  // until they say no, but it is not claimable either until they say yes.
+  const possibleMatches = findPossibleMatches(support, { evidence }).map((item) => ({ ...item, importance: importanceOf.get(item.keyword) }));
+  const suggested = new Set(possibleMatches.map((item) => item.keyword));
+  const doNotClaim = support.filter((item) => !item.supported && !suggested.has(item.keyword)).map((item) => ({
     keyword: item.keyword,
     importance: importanceOf.get(item.keyword),
     note: item.note,
+    ...(item.declined ? { declined: true } : {}),
   }));
+  if (possibleMatches.length > 0) notes.push("keywords.possibleMatches are suggestions only. Ask the person about each one; never put one on the resume until they confirm it.");
 
   // Rank jobs and bullets.
   const jobs = collectJobs(profile, evidence).map((job, order) => {
@@ -222,7 +232,7 @@ function buildTailorPlan({ role, profile, evidence, now }) {
   // Notes and other evidence that is not part of a job.
   const jobEvidenceIds = new Set(jobs.flatMap((job) => job.bullets.flatMap((bullet) => bullet.evidenceIds)));
   const otherEvidence = usableEvidence(evidence)
-    .filter((entry) => !jobEvidenceIds.has(entry.id) && !(entry.metadata && entry.metadata.chunkKind === "job-header") && isNonBlankString(entry.snippet))
+    .filter((entry) => !jobEvidenceIds.has(entry.id) && !isConfirmationNote(entry) && !(entry.metadata && entry.metadata.chunkKind === "job-header") && isNonBlankString(entry.snippet))
     .map((entry) => ({ id: entry.id, snippet: entry.snippet.slice(0, 160), ...scoreText(entry.snippet, keywords) }))
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score || a.id.localeCompare(b.id))
@@ -237,7 +247,7 @@ function buildTailorPlan({ role, profile, evidence, now }) {
     limits: { maxFirstJobBullets: LIMITS.maxFirstJobBullets, maxLaterJobBullets: LIMITS.maxLaterJobBullets, maxProxyScore: LIMITS.maxProxyScore },
     jobs: planJobs,
     skills: rankSkills(profile, keywords, supported),
-    keywords: { supported, doNotClaim },
+    keywords: { supported, possibleMatches, doNotClaim },
     otherEvidence,
     notes,
   };

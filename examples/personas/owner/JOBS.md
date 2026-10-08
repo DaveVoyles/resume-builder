@@ -16,7 +16,9 @@ Snapshot: `postings/jpmc-lead-technical-program-manager.md`. Closest fit of the 
 | AI used in program workflows, with validation habits | Internal AI telemetry pipeline across 74 Azure DevOps queries for 14 PM teams; live evals on every request |
 | Platform as a product | Partner Center publishing workflow and entitlement platform work |
 
-Not on the resume, so not claimed: ServiceNow or similar workflow tools, banking risk, controls and regulatory work, and budget or headcount ownership.
+On 2026-10-08 the owner confirmed that leadership, stakeholder management, risk management, dependency management, release management, change management, product delivery, deployment and data analytics describe work already on the resume (`inputs/notes/owner-confirmations.md`). The tailored resume uses those words, rewording lines the resume already has and adding no numbers or facts.
+
+Not on the resume, so not claimed: RAID, agile, ServiceNow or similar workflow tools (the owner said none of these), banking risk, controls and regulatory work, and budget or headcount ownership.
 
 ## 2. Bentley Systems, Senior Principal Engineer, Developer Platform (hybrid, Philadelphia)
 
