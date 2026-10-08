@@ -114,8 +114,10 @@ async function selectIfSet(page, selector, value) {
   if (value) await page.selectOption(selector, { label: value });
 }
 
-async function selectChoice(page, selector, value) {
-  if (value) await page.selectOption(selector, value);
+// The form has one "Skip this" checkbox per optional field; any saved choice
+// ("skip" or "none") means tick it.
+async function skipIfSet(page, selector, value) {
+  if (value) await page.check(selector);
 }
 
 for (const persona of listPersonas()) {
@@ -151,11 +153,11 @@ for (const persona of listPersonas()) {
       await selectIfSet(page, "#when", answers.when);
       await page.fill("#extra", answers.extra || "");
       await page.fill("#dealBreakers", answers.dealBreakers || "");
-      await selectChoice(page, "#dealBreakersChoice", answers.dealBreakersChoice);
+      await skipIfSet(page, "#dealBreakersSkip", answers.dealBreakersChoice);
       await page.fill("#education", answers.education || "");
-      await selectChoice(page, "#educationChoice", answers.educationChoice);
+      await skipIfSet(page, "#educationSkip", answers.educationChoice);
       await page.fill("#salary", answers.salary || "");
-      await selectChoice(page, "#salaryChoice", answers.salaryChoice);
+      await skipIfSet(page, "#salarySkip", answers.salaryChoice);
       await page.click("#intakeForm button[type=submit]");
 
       await page.locator("#saved").waitFor({ state: "visible" });

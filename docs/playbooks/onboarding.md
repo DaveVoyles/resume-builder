@@ -164,3 +164,6 @@ No messaging — this state is a deliberate no-op. A candidate with a populated 
 - Next playbook: [`grill.md`](grill.md) — the intake interview this playbook hands off to.
 
 See [`onboarding-sample-transcript.md`](onboarding-sample-transcript.md) for a walkthrough against a fresh, empty workspace.
+
+- **Job requests.** The Jobs tab "Add a job" box writes `{ link, text, createdAt }` entries to `candidate/job-requests.json` (POST `/api/job-request`) and gives the person a sentence to paste to you. Check that file, handle each entry (add the role, tailor, as in the tailor playbook), then remove the entry. The page never fetches the link and never applies for anything.
+- **Resume ready card.** Home shows "Your resume is ready" once a resume file exists under `candidate/outputs/resumes`. "Open my resume" serves the newest file there (`/resume/latest`); "Open the report" serves the newest file in `candidate/outputs/tailor-reports` (`/report/latest`).

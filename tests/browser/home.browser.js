@@ -195,9 +195,8 @@ test("home: saving without a goal shows an error and keeps the form open", async
   try {
     await page.click("#continueBtn");
     await page.fill("#name", "Jordan Sample");
-    await page.evaluate(() => document.getElementById("intakeForm").setAttribute("novalidate", ""));
     await page.click("#intakeForm .btn.primary");
-    await page.locator("#formError").waitFor({ state: "visible" });
+    await page.locator("#goalError").waitFor({ state: "visible" });
     assert.equal(await page.locator("#setup").isVisible(), true);
     assert.equal(await page.locator("#saved").isVisible(), false);
   } finally {
