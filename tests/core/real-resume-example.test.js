@@ -6,9 +6,9 @@ const fs = require("fs");
 const path = require("path");
 const { readDocxText, readDocxEntry } = require("../helpers/read-docx-text");
 
-const dir = path.join(__dirname, "..", "..", "examples", "real-resume", "dave-voyles");
-const docx = path.join(dir, "dave-voyles-resume.docx");
-const txt = path.join(dir, "dave-voyles-resume.txt");
+const dir = path.join(__dirname, "..", "..", "examples", "real-resume", "owner");
+const docx = path.join(dir, "owner-resume.docx");
+const txt = path.join(dir, "owner-resume.txt");
 
 const EMAIL = /[A-Za-z0-9._%+-]+@([A-Za-z0-9-]+\.)+[A-Za-z]{2,}/gu;
 const PHONE = /(?:\+?\d{1,2}[\s.-])?\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}/gu;
