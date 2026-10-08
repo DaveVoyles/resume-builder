@@ -92,4 +92,9 @@ function readDocxText(filePath) {
   return stripXmlTags(documentXml);
 }
 
-module.exports = { readDocxText };
+/** Read one raw entry (e.g. "word/_rels/document.xml.rels") from a .docx on disk. */
+function readDocxEntry(filePath, entryName) {
+  return readZipEntryText(require("fs").readFileSync(filePath), entryName);
+}
+
+module.exports = { readDocxText, readDocxEntry };

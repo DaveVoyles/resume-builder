@@ -180,8 +180,8 @@
         <p class="muted">An <strong>AI agent</strong> is an AI helper that can do tasks on your computer, like downloading files and filling in forms. It asks before doing big things.</p>
       </div>
       <div class="card" data-o="3">
-        <h2>Ready?</h2>
-        <p class="muted">When your files are in the folder, continue. It takes about 5 minutes. You can stop and come back.</p>
+        <h2 id="readyTitle">Ready?</h2>
+        <p class="muted" id="readyCopy">When your files are in the folder, continue. It takes about 5 minutes. You can stop and come back.</p>
         <button class="btn primary" type="button" id="continueBtn" aria-expanded="false" aria-controls="setup">Continue setup →</button>
         <p class="hint" style="margin-top:1rem">Nervous? Read the <a href="#faq" data-goto="faq">FAQ</a> first.</p>
       </div>
@@ -561,6 +561,9 @@
     var editLabel="Edit my answers";
     var cb=document.getElementById("continueBtn");
     if(cb) cb.textContent=complete?editLabel:"Continue setup →";
+    var readyTitle=document.getElementById("readyTitle"),readyCopy=document.getElementById("readyCopy");
+    if(readyTitle) readyTitle.textContent=complete?"Your answers are saved":"Ready?";
+    if(readyCopy) readyCopy.textContent=complete?"Setup is complete. Change anything that is no longer right.":"When your files are in the folder, continue. It takes about 5 minutes. You can stop and come back.";
     var setupBtn=document.getElementById("jobsGoToSetup");
     if(setupBtn) setupBtn.textContent=complete?editLabel:"Go to setup";
   }

@@ -59,6 +59,7 @@ This is a solo project and the stakes are low. When CI is green, agents may merg
 - Treat `candidate/` as private workspace data.
 - Do not commit real resumes, private notes, profile files, evidence ledgers, tracked roles, or generated outputs.
 - Commit reusable code, docs, templates, schemas, and fictional examples only.
+- One exception: `examples/real-resume/dave-voyles/` is the repo owner's own resume, committed on purpose with their permission, with email and phone scrubbed. Do not add anyone else's real resume, and do not put an email address or phone number back in it. `tests/core/real-resume-example.test.js` enforces this.
 - If a privacy check fails, stop and fix the staged or tracked private file before proceeding.
 
 ## 💬 Communication style

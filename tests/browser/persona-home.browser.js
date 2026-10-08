@@ -193,6 +193,11 @@ for (const persona of listPersonas()) {
       assert.equal(done, payload.trackerSteps.length, `${persona}: setup should be ${payload.trackerSteps.length}/${payload.trackerSteps.length}`);
       assert.equal(payload.trackerSteps.length, 10);
       assert.ok(payload.homeSteps.every((step) => step.done), `${persona}: every home step done`);
+
+      // Once setup is complete the Ready? card must stop telling the person to continue.
+      assert.equal(await page.locator("#continueBtn").textContent(), "Edit my answers");
+      assert.equal(await page.locator("#readyTitle").textContent(), "Your answers are saved");
+      assert.doesNotMatch(await page.locator("#readyCopy").textContent(), /continue|files are in the folder/iu);
     } finally {
       await page.close();
     }
