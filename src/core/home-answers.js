@@ -50,6 +50,10 @@ function lastRecordedHomeWorkMode(answers) {
   return mapped ? mapped[0] : "";
 }
 
+function lastRecordedHomeEducationId(answers) {
+  return trimmed(answers && answers.lastHomeEducationId);
+}
+
 function applyHomeWorkMode(currentModes, previousHomeMode, nextHomeMode) {
   // Home Save replaces only its own previous work mode. Remove lastHomeWorkMode
   // if it is present, then append the new value if it is absent. Agent-written
@@ -138,33 +142,41 @@ function parseSalaryInput(raw) {
   return { value };
 }
 
-function applyEducation(profile, answers) {
+function applyEducation(profile, answers, previousAnswers) {
   const text = trimmed(answers && answers.education);
   const choice = trimmed(answers && answers.educationChoice).toLowerCase();
+  const previousHomeEducationId = lastRecordedHomeEducationId(previousAnswers);
   if (text) {
-    delete profile.educationSkip;
-    const existing = Array.isArray(profile.education) ? profile.education : [];
-    const already = existing.some(
-      (row) => trimmed(row && row.institution) === text || trimmed(row && row.degree) === text,
-    );
-    if (!already) {
-      profile.education = existing.concat([
-        {
-          id: `edu-${String(existing.length + 1).padStart(3, "0")}`,
-          institution: text,
-        },
-      ]);
+    if (text === educationPrefill(profile).education) {
+      return { education: text, educationChoice: "", lastHomeEducationId: previousHomeEducationId };
     }
-    return { education: text, educationChoice: "" };
+    delete profile.educationSkip;
+    const existing = Array.isArray(profile.education) ? profile.education.slice() : [];
+    const homeIndex = previousHomeEducationId
+      ? existing.findIndex((row) => row && row.id === previousHomeEducationId)
+      : -1;
+    if (homeIndex >= 0) {
+      existing[homeIndex] = { ...existing[homeIndex], institution: text };
+      profile.education = existing;
+      return { education: text, educationChoice: "", lastHomeEducationId: previousHomeEducationId };
+    }
+    const id = `edu-${String(existing.length + 1).padStart(3, "0")}`;
+    profile.education = existing.concat([
+      {
+        id,
+        institution: text,
+      },
+    ]);
+    return { education: text, educationChoice: "", lastHomeEducationId: id };
   }
   if (choice === "skip") {
     if (hasRealEducation(profile)) {
-      return { education: "", educationChoice: "" };
+      return { education: "", educationChoice: "", lastHomeEducationId: previousHomeEducationId };
     }
     profile.educationSkip = { skipped: true };
-    return { education: "", educationChoice: "skip" };
+    return { education: "", educationChoice: "skip", lastHomeEducationId: previousHomeEducationId };
   }
-  return { education: "", educationChoice: "" };
+  return { education: "", educationChoice: "", lastHomeEducationId: previousHomeEducationId };
 }
 
 function applyCompensation(preferences, answers) {
@@ -176,6 +188,10 @@ function applyCompensation(preferences, answers) {
       const error = new Error(parsed.error);
       error.code = "SALARY_INVALID";
       throw error;
+    }
+    const prefillAmount = compensationPrefillAmount(preferences.compensation);
+    if (prefillAmount != null && parsed.value === prefillAmount) {
+      return { salary: text, salaryChoice: "" };
     }
     const current = preferences.compensation;
     if (isExclusiveTrueKey(current, "skipped") || !isRecord(current)) {
@@ -211,15 +227,20 @@ function educationPrefill(profile) {
   return { education: "", educationChoice: "" };
 }
 
+function compensationPrefillAmount(compensation) {
+  if (!hasRealCompensation(compensation)) return null;
+  const amount = [compensation.baseMinimum, compensation.totalTarget, compensation.totalMinimum].find((value) =>
+    Number.isFinite(Number(value)),
+  );
+  return amount == null ? null : Number(amount);
+}
+
 function salaryPrefill(preferences) {
-  const compensation = preferences && preferences.compensation;
-  if (hasRealCompensation(compensation)) {
-    const amount = [compensation.baseMinimum, compensation.totalTarget, compensation.totalMinimum].find((value) =>
-      Number.isFinite(Number(value)),
-    );
+  const amount = compensationPrefillAmount(preferences && preferences.compensation);
+  if (amount != null) {
     return { salary: String(amount), salaryChoice: "" };
   }
-  if (isExclusiveTrueKey(compensation, "skipped")) {
+  if (isExclusiveTrueKey(preferences && preferences.compensation, "skipped")) {
     return { salary: "", salaryChoice: "skip" };
   }
   return { salary: "", salaryChoice: "" };
@@ -293,9 +314,12 @@ function saveHomeAnswers(workspace, answers) {
   if (payload.location) {
     profile.candidate.location = payload.location;
   }
-  const educationRecord = applyEducation(profile, answers);
+  const educationRecord = applyEducation(profile, answers, previousAnswers);
   payload.education = educationRecord.education;
   payload.educationChoice = educationRecord.educationChoice;
+  if (educationRecord.lastHomeEducationId) {
+    payload.lastHomeEducationId = educationRecord.lastHomeEducationId;
+  }
   profile.updatedAt = savedAt;
   writeJson(answersPath, payload);
   writeJson(paths.profile, profile);
