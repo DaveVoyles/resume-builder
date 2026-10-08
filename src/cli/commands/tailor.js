@@ -8,6 +8,7 @@ const setStatus = require("./set-status");
 const buildTracker = require("./build-tracker");
 const { createRole } = require("../../adapters/job-posting");
 const { loadResumeConfig, validateResumeConfig } = require("../../core/resume-config");
+const { declinedClaimErrors } = require("../../core/declined-guard");
 const { auditResumeConfig } = require("../../core/claim-audit");
 const { auditFacts } = require("../../core/fact-audit");
 const { buildCoverageRecord, classifyMissingKeywords, scoreKeywordCoverage } = require("../../core/keyword-coverage");
@@ -132,6 +133,10 @@ async function run(options, deps = {}) {
   const facts = auditFacts(config, profile, evidence);
   audit.errors.push(...facts.errors);
   audit.warnings.push(...facts.warnings);
+  // Something the person said they have not done must not reach a resume.
+  const declinedErrors = declinedClaimErrors(config, evidence);
+  claimAudit.errors.push(...declinedErrors);
+  audit.errors.push(...declinedErrors);
   if (audit.errors.length > 0) {
     writeBlockedReport(workspace, options, config, { profile, evidence, claimAudit, factAudit: facts });
     throw new Error(`Resume config failed the evidence-backed claim audit:\n${audit.errors.map((error) => `  - ${error}`).join("\n")}`);
