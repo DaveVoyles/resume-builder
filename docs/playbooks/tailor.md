@@ -60,7 +60,8 @@ It writes `outputs/tailor-plans/<role-id>.json` and prints a short summary. The 
 - `jobs`: experience entries ranked by weighted keyword overlap (required 2, preferred 1, same matcher as the coverage score), each with `include`, `maxBullets` (6 for the first job, 4 for later ones, from `src/core/resume-config.js`), and its bullets ranked with `recommended` and `evidenceIds`.
 - `skills`: profile skills ordered by overlap, plus `suggestAdd` (keywords the evidence supports but the profile skills do not list).
 - `keywords.supported`: keywords with supporting `evidenceIds`, ready for `evidenceIds` / `bulletEvidenceIds` in the config.
-- `keywords.doNotClaim`: keywords with no evidence at all. Do not add them to the resume; ask the candidate first.
+- `keywords.possibleMatches`: keywords the ledger does not state in so many words but whose related words appear in an evidence line (a small map in `src/core/data/related-terms.json`, plus whole-word overlap). Each has up to three `matches` with `evidenceId` and a `quote`. These are suggestions only: ask the person, and never put one on the resume until they say yes (Step 3.2c).
+- `keywords.doNotClaim`: keywords with no evidence at all and no suggestion, plus any the person said they have not done (`declined: true`). Do not add them to the resume; ask the candidate first.
 
 The plan only orders and cites what the candidate already has. You still write the wording, and `tailor` still audits every claim. The workflow is: save posting, `tailor-plan`, write the config (optionally with `"extends"`, below), `tailor`.
 
@@ -251,10 +252,30 @@ Open `candidate/outputs/tailor-reports/<role-id>.md` with them. Its status is **
 
 - **Answer is yes (they did it, the number is right):** record it in `evidence.jsonl` as a source-backed entry in their words, tie the line to it with `evidenceIds` or `bulletEvidenceIds`, then re-run `tailor`.
 - **Answer is no, or they are unsure:** reword or remove the line, then re-run `tailor`.
-- **Missing keywords:** "you have the experience" ones can be added, with evidence. "No proof" ones are never added without a yes and a recorded source.
+- **Missing keywords:** "you have the experience" ones can be added, with evidence. "No proof" ones are never added without a yes and a recorded source. Ones under "Possible matches in your record. You decide." are questions with the evidence line quoted; follow Step 3.2c.
 - After the config changes without a re-render (for example, after a page count or keyword step), regenerate the report with `npm run workspace:tailor-report -- --workspace candidate --id <role-id>`.
 
 Say it as the sentences in [`what-to-say.md`](../first-run/what-to-say.md) allow: no command names, real paths from the repo root.
+
+### Step 3.2c: Record the person's yes/no answers, then re-ingest and re-tailor
+
+The keyword matcher is literal, so a resume can show the work without using the posting's words. For each keyword that is missing, has no literal match in the evidence, and has related words in an evidence line, the report shows a **possible match**: `Does this show release management? "Led Fast Game Package Publishing..." (evidence ev_...)`. The same lines are listed in their own section, "Possible matches in your record. You decide.", and are stored on the role as `resume.keywordCoverage.possibleMatches`. A possible match is never counted as covered and never added to a resume by the tool.
+
+Ask the person one keyword at a time, in the report's words. Their answer decides:
+
+1. Write the answer to a **notes file the person approved** in `candidate/inputs/notes/` (copy it from `my-documents` if they gave you one). Use a new file for each round of answers, for example `answers-2026-10-08.md`; ingest keys a notes file by its path, so editing a file that was already ingested changes nothing. One line per keyword, in their words:
+
+   ```
+   Confirmed (2026-10-08): release management. Resume line: "Led Fast Game Package Publishing inside Partner Center"
+   Not done (2026-10-08): RAID, agile
+   ```
+
+   For a yes, quote the resume line (or lines, each in quotes) the person pointed at. Add no fact beyond what those lines say. For a no, list the keywords after `Not done`. Quote the person's own sentence above the lines if they said one. Do not paraphrase a "no" into a "yes".
+2. Run `npm run workspace:ingest -- --workspace candidate`. Ingest stores the answers on that note's evidence entry (`metadata.confirmations`). The answer lines are not read as the person's skills.
+3. Re-run `tailor` for the role. A confirmed keyword is now supported evidence with the note as the source: it moves to "could add (you confirmed this)" and its question disappears. Reword the bullet that already says the thing so it uses the posting's word, and cite both ids: the resume line in `bulletEvidenceIds` and the note id next to it (`summary.evidenceIds` for the summary). A keyword the person declined stays on the do-not-claim list ("you told me you have not done it"), is not asked about again, and must not appear anywhere on the resume.
+4. A "possible match" the person rejects needs no note: leave it off. Record a "no" only when you want the tool to stop asking.
+
+The wording stays honest: reword what the resume already says; never add a number, employer or outcome the cited line does not state.
 
 ### Step 3.3: Re-running tailor for the same role
 

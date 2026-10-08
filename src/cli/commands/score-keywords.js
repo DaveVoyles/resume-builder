@@ -2,6 +2,7 @@
 
 const path = require("path");
 const { buildCoverageRecord, classifyMissingKeywords, scoreKeywordCoverage } = require("../../core/keyword-coverage");
+const { findPossibleMatches } = require("../../core/possible-matches");
 const { rebuildTrackers } = require("./build-tracker");
 const { findTrackedRole, namesRole } = require("../../core/role-lookup");
 const { hasPosting } = require("../../core/role-posting");
@@ -54,14 +55,16 @@ async function run(options) {
   }
 
   const result = scoreKeywordCoverage(keywords, resumeConfig);
+  const evidence = paths ? readJsonLines(paths.evidence) : [];
   const support = classifyMissingKeywords(result.missing, {
     profile: paths ? readJson(paths.profile, null) : null,
-    evidence: paths ? readJsonLines(paths.evidence) : [],
+    evidence,
   });
+  const possibleMatches = findPossibleMatches(support, { evidence });
 
   if (role) {
     role.resume = role.resume || {};
-    role.resume.keywordCoverage = buildCoverageRecord(result, support, { source });
+    role.resume.keywordCoverage = buildCoverageRecord(result, support, { source, possibleMatches });
     writeJson(paths.rolesTracked, roles);
     rebuildTrackers(options.workspace);
   }

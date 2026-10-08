@@ -1,0 +1,16 @@
+{
+  "_note": "Words that often show the work behind a posting keyword. Used only to SUGGEST evidence lines for a keyword the ledger does not state in so many words (src/core/possible-matches.js). A suggestion is never added to a resume without the person's yes. Matching is the same word-boundary matcher as keyword coverage; earlier terms weigh more.",
+  "related": {
+    "leadership": ["led", "orchestrated", "owned", "directed", "spearheaded", "mentored"],
+    "stakeholder management": ["stakeholders", "stakeholder", "partner systems", "partners", "partner"],
+    "risk management": ["risk", "fail-closed", "fails closed", "rollback", "rollbacks", "gates"],
+    "dependency management": ["partner systems", "dependencies", "dependency", "ownership transfers"],
+    "release management": ["release", "publishing", "shipped", "rollout", "launch"],
+    "change management": ["modernization", "transition", "transfer", "transfers", "migration", "adoption"],
+    "product delivery": ["GA", "general availability", "shipped", "delivered", "launched"],
+    "deployment": ["deploy", "deployed", "deploying", "pipeline", "pipelines", "publishing", "rollout"],
+    "data analytics": ["telemetry", "analytics", "queries", "dashboards", "metrics"],
+    "project management": ["led", "delivered", "program", "roadmap"],
+    "cross-functional": ["partners", "stakeholders", "engineering", "teams"]
+  }
+}

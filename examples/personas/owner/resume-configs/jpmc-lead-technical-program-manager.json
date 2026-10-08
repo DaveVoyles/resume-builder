@@ -12,10 +12,11 @@
     ]
   },
   "summary": {
-    "text": "Senior technical program manager who takes platform and AI capabilities from design to GA and retention: entitlements, publishing pipelines, and live evals on production traffic. Partners with engineering on API contracts that surface in systems customers already use, and kept 8 partner systems on their existing tools through ownership transfers.",
+    "text": "Senior technical program manager in product delivery, taking platform and AI capabilities from design to GA and retention: entitlements, publishing pipelines, and live evals on production traffic. Partners with engineering on API contracts that surface in systems customers already use, and kept 8 partner systems on their existing tools through ownership transfers.",
     "evidenceIds": [
       "ev_resume-inputs-resumes-owner-resume-docx_04a0bd7346",
-      "ev_resume-inputs-resumes-owner-resume-docx_ea828f409d"
+      "ev_resume-inputs-resumes-owner-resume-docx_ea828f409d",
+      "ev_notes-inputs-notes-owner-confirmations-md_bef7c955ab"
     ]
   },
   "experienceSections": [
@@ -27,11 +28,11 @@
           "company": "Independent R&D",
           "dates": "2025 - Present",
           "bullets": [
-            "Gated routing and tool-call changes with live evals on every request plus CI replay, so the running stack fails closed before a bad change lands.",
+            "Risk management for the running stack: routing and tool-call changes gated by live evals on every request plus CI replay, so it fails closed before a bad change lands.",
             "Run an agentic workflow of personalized agents with A/B testing of local and cloud models, plus a self-improvement loop (167 skills, 57 commands, live evals); operated, never authored."
           ],
           "bulletEvidenceIds": [
-            ["ev_resume-inputs-resumes-owner-resume-docx_47f7ac5bce"],
+            ["ev_resume-inputs-resumes-owner-resume-docx_47f7ac5bce", "ev_notes-inputs-notes-owner-confirmations-md_bef7c955ab"],
             ["ev_resume-inputs-resumes-owner-resume-docx_26f8f2f118"]
           ]
         },
@@ -40,16 +41,16 @@
           "company": "Microsoft",
           "dates": "2020 - 2026",
           "bullets": [
-            "Led Fast Game Package Publishing inside Partner Center (the existing publisher workflow), cutting SLA 12 hours to 30 minutes (24x); P90 under 10 minutes; production-traffic shadowing with zero release risk.",
-            "Designed Game Reparenting Validate / Execute Reparent APIs so 8 partner systems kept their existing tools through ownership transfers; Saga compensating transactions; 100% data fidelity, zero rollbacks.",
-            "Orchestrated an internal AI telemetry pipeline across 74 Azure DevOps queries for 14 PM teams, putting hygiene, trends, and alerts into the work-tracking system they already lived in.",
-            "Led Xbox 360 catalog modernization of 30,000+ items protecting $50M annual revenue and $15M annual profit with zero storefront downtime."
+            "Led release management for Fast Game Package Publishing inside Partner Center (the existing publisher workflow), cutting SLA 12 hours to 30 minutes (24x); P90 under 10 minutes; production-traffic shadowing with zero release risk.",
+            "Designed Game Reparenting Validate / Execute Reparent APIs for dependency management across 8 partner systems, which kept their existing tools through ownership transfers; Saga compensating transactions; 100% data fidelity, zero rollbacks.",
+            "Orchestrated an internal AI telemetry pipeline for data analytics across 74 Azure DevOps queries for 14 PM teams, putting hygiene, trends, and alerts into the work-tracking system they already lived in.",
+            "Led change management for the Xbox 360 catalog modernization of 30,000+ items, protecting $50M annual revenue and $15M annual profit with zero storefront downtime."
           ],
           "bulletEvidenceIds": [
-            ["ev_resume-inputs-resumes-owner-resume-docx_949262103a"],
-            ["ev_resume-inputs-resumes-owner-resume-docx_ea828f409d"],
-            ["ev_resume-inputs-resumes-owner-resume-docx_3e8e9d26a1"],
-            ["ev_resume-inputs-resumes-owner-resume-docx_426665b3ee"]
+            ["ev_resume-inputs-resumes-owner-resume-docx_949262103a", "ev_notes-inputs-notes-owner-confirmations-md_bef7c955ab"],
+            ["ev_resume-inputs-resumes-owner-resume-docx_ea828f409d", "ev_notes-inputs-notes-owner-confirmations-md_bef7c955ab"],
+            ["ev_resume-inputs-resumes-owner-resume-docx_3e8e9d26a1", "ev_notes-inputs-notes-owner-confirmations-md_bef7c955ab"],
+            ["ev_resume-inputs-resumes-owner-resume-docx_426665b3ee", "ev_notes-inputs-notes-owner-confirmations-md_bef7c955ab"]
           ]
         },
         {
@@ -57,11 +58,11 @@
           "company": "Microsoft (CSE)",
           "dates": "2016 - 2020",
           "bullets": [
-            "Delivered as a senior IC with stakeholders in the room, then shipped the APIs and pipelines those teams kept.",
+            "Stakeholder management as a senior IC: delivered with stakeholders in the room, then shipped the APIs and pipelines those teams kept.",
             "Translated enterprise account workflows into platform capabilities those product teams retained after CSE left."
           ],
           "bulletEvidenceIds": [
-            ["ev_resume-inputs-resumes-owner-resume-docx_ef1f45184e"],
+            ["ev_resume-inputs-resumes-owner-resume-docx_ef1f45184e", "ev_notes-inputs-notes-owner-confirmations-md_bef7c955ab"],
             ["ev_resume-inputs-resumes-owner-resume-docx_17c87240bb"]
           ]
         }
@@ -69,7 +70,8 @@
     }
   ],
   "skills": [
-    ["Program delivery", "Publishing pipelines, ownership transfers, entitlements, 8 partner systems"],
+    ["Leadership", "Led Fast Game Package Publishing and the Xbox 360 catalog modernization"],
+    ["Release and deployment", "Publishing pipelines, entitlements, ownership transfers, 8 partner systems"],
     ["Cross-functional", "Engineering, certification, royalties, seller services"],
     ["AI in workflows", "Live evals, telemetry for 14 PM teams inside existing tools"]
   ],

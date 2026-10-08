@@ -208,6 +208,7 @@ function validateRoles(roles, label) {
     validatePostingMetadata(role.posting, `${roleLabel}.posting`, errors);
     validateReportPath(role.resume && role.resume.reportPath, `${roleLabel}.resume.reportPath`, errors);
     validateCoverageRecord(role.resume && role.resume.baselineCoverage, `${roleLabel}.resume.baselineCoverage`, errors);
+    validatePossibleMatches(role.resume && role.resume.keywordCoverage && role.resume.keywordCoverage.possibleMatches, `${roleLabel}.resume.keywordCoverage.possibleMatches`, errors);
   });
   return errors;
 }
@@ -225,6 +226,32 @@ function validateCoverageRecord(value, label, errors) {
   if (value.percent !== undefined && !(Number.isFinite(value.percent) && value.percent >= 0 && value.percent <= 100)) {
     errors.push(`${label}: percent must be a number from 0 to 100`);
   }
+}
+
+// role.resume.keywordCoverage.possibleMatches: suggestions only, never counted as covered.
+// [{ keyword, importance?, matches: [{ evidenceId, quote, source? }] }]
+function validatePossibleMatches(value, label, errors) {
+  if (value === undefined) return;
+  if (!Array.isArray(value)) {
+    errors.push(`${label}: must be an array`);
+    return;
+  }
+  value.forEach((item, index) => {
+    const at = `${label}[${index}]`;
+    if (!item || typeof item !== "object" || typeof item.keyword !== "string" || item.keyword.trim() === "") {
+      errors.push(`${at}: needs a keyword`);
+      return;
+    }
+    if (!Array.isArray(item.matches) || item.matches.length === 0) {
+      errors.push(`${at}: matches must be a non-empty array`);
+      return;
+    }
+    item.matches.forEach((match, matchIndex) => {
+      if (!match || typeof match.evidenceId !== "string" || match.evidenceId === "" || typeof match.quote !== "string" || match.quote.trim() === "") {
+        errors.push(`${at}.matches[${matchIndex}]: needs an evidenceId and a quote`);
+      }
+    });
+  });
 }
 
 function validateReportPath(value, label, errors) {

@@ -28,6 +28,8 @@ const { loadResumeConfig } = require("./resume-config");
 const { lintConfig } = require("./style-lint");
 const { readJson, readJsonLines } = require("./workspace");
 
+const POSSIBLE_HEADING = "Possible matches in your record. You decide.";
+const POSSIBLE_INTRO = "These lines in your record may show the keyword under different words. I have not added any of them to your resume. Tell me yes or no for each one.";
 const REPORT_DIR = "outputs/tailor-reports";
 const STATUS = { ready: "Ready to review", draft: "Draft made; job match not checked yet", confirm: "Needs your confirmation", blocked: "Blocked" };
 const MAX_CHANGES = 8;
@@ -267,19 +269,56 @@ function readKeywordCoverage(input) {
     .map((item) => ({ keyword: keywordName(item), places: coveragePlaces(item && (item.where !== undefined ? item.where : item.locations)) }))
     .filter((item) => item.keyword);
   const missing = asArray(stored.missing)
-    .map((item) => ({ keyword: keywordName(item), supported: Boolean(item && typeof item === "object" && item.supported) }))
+    .map((item) => ({
+      keyword: keywordName(item),
+      supported: Boolean(item && typeof item === "object" && item.supported),
+      confirmed: Boolean(item && typeof item === "object" && item.confirmed),
+      declined: Boolean(item && typeof item === "object" && item.declined),
+    }))
     .filter((item) => item.keyword);
+  // Suggestions only (never counted as covered): [{ keyword, matches: [{ evidenceId, quote, source }] }]
+  const possible = asArray(stored.possibleMatches)
+    .map((item) => ({
+      keyword: keywordName(item),
+      matches: asArray(item && item.matches)
+        .filter((match) => match && isText(match.quote))
+        .map((match) => ({ evidenceId: isText(match.evidenceId) ? match.evidenceId : "", quote: oneLine(match.quote), source: isText(match.source) ? match.source : "" })),
+    }))
+    .filter((item) => item.keyword && item.matches.length > 0);
   // `percent` is the plain share of keywords found (the number shown everywhere);
   // `score` is the weighted one, used only when no plain percent was stored.
   const raw = stored.percent !== undefined ? Number(stored.percent) : Number(stored.score);
   const percent = Number.isFinite(raw) ? Math.round(raw <= 1 && stored.percent === undefined ? raw * 100 : raw) : null;
-  return { percent, covered, missing, checkedAt: isText(stored.checkedAt) ? stored.checkedAt : "" };
+  return { percent, covered, missing, possible, checkedAt: isText(stored.checkedAt) ? stored.checkedAt : "" };
 }
 
 function readPageCount(input) {
   const stored = input.pageCount !== undefined ? input.pageCount : input.role && input.role.resume && input.role.resume.pageCount;
   const pages = stored && typeof stored === "object" ? Number(stored.pages) : Number(stored);
   return Number.isFinite(pages) && pages > 0 ? { pages, checkedAt: stored && isText(stored.checkedAt) ? stored.checkedAt : "" } : null;
+}
+
+/**
+ * Splits the missing keywords by what the person still has to decide:
+ * addable (their record backs it), possible (a suggested line to review),
+ * noProof (nothing found), declined (they said they have not done it).
+ */
+function splitMissing(coverage) {
+  const possibleBy = new Map(coverage.possible.map((item) => [item.keyword.toLowerCase(), item]));
+  const unsupported = coverage.missing.filter((item) => !item.supported && !item.declined);
+  return {
+    addable: coverage.missing.filter((item) => item.supported),
+    possible: unsupported.filter((item) => possibleBy.has(item.keyword.toLowerCase())).map((item) => possibleBy.get(item.keyword.toLowerCase())),
+    noProof: unsupported.filter((item) => !possibleBy.has(item.keyword.toLowerCase())),
+    declined: coverage.missing.filter((item) => item.declined),
+  };
+}
+
+function shortQuote(text, max = 110) {
+  const ellipsis = text.endsWith("…");
+  const clean = oneLine(text).replace(/…$/u, "");
+  if (clean.length <= max) return `${clean}${ellipsis ? "…" : ""}`;
+  return `${clean.slice(0, max).replace(/\s+\S*$/u, "").replace(/[\s,;:—-]+$/u, "")}…`;
 }
 
 // ---------------------------------------------------------------------------
@@ -558,12 +597,19 @@ function buildLift(coverage, baselineRecord, baseline, profile, evidence, eviden
         keyword: item.keyword,
         where: item.places.length ? item.places.map((kind) => PLACE_WORDS[kind] || kind).join(" and ") : "the resume",
         supported: found ? found.supported : false,
+        confirmed: Boolean(found && found.confirmed),
         evidenceIds: ids,
         sources: evidenceSources(ids, evidenceById),
       };
     }),
     lost: base.covered.filter((item) => !nowCovered.has(item.keyword.toLowerCase())).map((item) => item.keyword),
-    stillMissing: coverage.missing.map((item) => ({ keyword: item.keyword, supported: item.supported })),
+    stillMissing: coverage.missing.map((item) => ({
+      keyword: item.keyword,
+      supported: item.supported,
+      confirmed: item.confirmed,
+      declined: item.declined,
+      possible: coverage.possible.some((p) => p.keyword.toLowerCase() === item.keyword.toLowerCase()),
+    })),
   };
 }
 
@@ -608,7 +654,15 @@ function analyzeTailorReport(input) {
 
   const coverage = readKeywordCoverage(input);
   if (coverage) {
-    for (const item of coverage.missing.filter((m) => !m.supported)) {
+    const split = splitMissing(coverage);
+    for (const item of split.possible) {
+      const first = item.matches[0];
+      questions.push({
+        type: "possible-match",
+        question: `Does this show ${item.keyword}? "${shortQuote(first.quote)}" (evidence ${first.evidenceId}). If yes, tell me and I'll record it and use it. If not, we leave it off.`,
+      });
+    }
+    for (const item of split.noProof) {
       questions.push({
         type: "keyword",
         question: `The posting asks for "${item.keyword}", and I found nothing in your record that shows it. Have you done this? If yes, tell me where and I'll add it. If not, we leave it off.`,
@@ -732,11 +786,23 @@ function buildTailorReportModel(input, analysisIn) {
     coverage: coverage
       ? { covered: coverage.covered, missing: coverage.missing, percent: coverage.percent, total: coverage.covered.length + coverage.missing.length }
       : null,
+    missingSplit: coverage ? simpleSplit(splitMissing(coverage)) : null,
+    possibleMatches: coverage ? splitMissing(coverage).possible : [],
+    possibleHeading: POSSIBLE_HEADING,
+    possibleIntro: POSSIBLE_INTRO,
     confirm: [...problems, ...questions].map((item) => item.question),
     checks: checkItems(analysis),
     fit: pages ? (pages.pages <= 1 ? "Fits on 1 page." : `Runs over 1 page (${pages.pages} pages): trim ${trimSuggestion(config)}.`) : "",
     notDone,
     gaps: asArray(input.gapReport && input.gapReport.gaps).map((gap) => ({ keyword: oneLine(gap.keyword), type: GAP_TYPES[gap.type] || oneLine(gap.type), action: oneLine(gap.recommendedAction) })),
+  };
+}
+
+function simpleSplit(split) {
+  return {
+    addable: split.addable.map((item) => ({ keyword: item.keyword, confirmed: item.confirmed })),
+    noProof: split.noProof.map((item) => item.keyword),
+    declined: split.declined.map((item) => item.keyword),
   };
 }
 
@@ -782,7 +848,8 @@ function buildTailorReport(input, analysisIn) {
       lines.push("", "Posting keywords this resume gained, and where:", "");
       analysis.lift.gained.forEach((item) => {
         const backing = item.supported
-          ? item.evidenceIds.length ? ` (backed by evidence ${item.evidenceIds.join(", ")})` : " (backed by your profile)"
+          ? item.confirmed ? ` (you confirmed this; evidence ${item.evidenceIds.join(", ")})`
+          : item.evidenceIds.length ? ` (backed by evidence ${item.evidenceIds.join(", ")})` : " (backed by your profile)"
           : " (not found in your record: please confirm)";
         lines.push(`- ${item.keyword}: now in ${item.where}${backing}`);
       });
@@ -819,10 +886,21 @@ function buildTailorReport(input, analysisIn) {
     if (coverage.covered.length > 0) {
       lines.push(`- Covered: ${coverage.covered.map((item) => (item.places.length ? `${item.keyword} (${item.places.join(", ")})` : item.keyword)).join(", ")}.`);
     }
-    const addable = coverage.missing.filter((item) => item.supported);
-    const unsupported = coverage.missing.filter((item) => !item.supported);
-    lines.push(`- Missing, and you have the experience (could add): ${addable.length ? addable.map((i) => i.keyword).join(", ") : "none"}.`);
-    lines.push(`- Missing, and I found no proof (don't claim): ${unsupported.length ? unsupported.map((i) => i.keyword).join(", ") : "none"}.`);
+    const split = splitMissing(coverage);
+    lines.push(`- Missing, and you have the experience (could add): ${split.addable.length ? split.addable.map((i) => (i.confirmed ? `${i.keyword} (you confirmed this)` : i.keyword)).join(", ") : "none"}.`);
+    lines.push(`- Missing, and I found no proof (don't claim): ${split.noProof.length ? split.noProof.map((i) => i.keyword).join(", ") : "none"}.`);
+    if (split.possible.length > 0) lines.push(`- Missing, with a possible match to review below (not claimed): ${split.possible.map((i) => i.keyword).join(", ")}.`);
+    if (split.declined.length > 0) lines.push(`- Missing, and you told me you have not done it (don't claim): ${split.declined.map((i) => i.keyword).join(", ")}.`);
+
+    if (split.possible.length > 0) {
+      lines.push("", `## ${POSSIBLE_HEADING}`, "", POSSIBLE_INTRO, "");
+      split.possible.forEach((item) => {
+        lines.push(`- **${item.keyword}**`);
+        item.matches.forEach((match) => {
+          lines.push(`  - "${match.quote}" (evidence ${match.evidenceId}${match.source ? `, from ${match.source}` : ""})`);
+        });
+      });
+    }
   }
 
   // 5) Fit (only when the page count is known; no made-up limit numbers)
@@ -947,6 +1025,8 @@ function writeTailorReport(workspace, role, extra = {}) {
 }
 
 module.exports = {
+  POSSIBLE_HEADING,
+  POSSIBLE_INTRO,
   REPORT_DIR,
   STATUS,
   analyzeTailorReport,

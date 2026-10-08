@@ -2,8 +2,9 @@
   "persona": "owner",
   "inputs": {
     "resumes": ["../../real-resume/owner/owner-resume.docx"],
-    "notes": []
+    "notes": ["inputs/notes/owner-confirmations.md"]
   },
+  "neverClaim": ["RAID", "agile", "ServiceNow"],
   "setupSteps": 10,
   "maxStyleWarnings": 0,
   "postings": [
@@ -21,7 +22,12 @@
         "change management",
         "risk management",
         "dependency management",
+        "leadership",
+        "product delivery",
+        "deployment",
+        "data analytics",
         "agile",
+        "RAID",
         "ServiceNow",
         "AI"
       ],
@@ -36,9 +42,9 @@
         "Enterprise Technology",
         "Specialty Services Group"
       ],
-      "minKeywordPercent": 20,
+      "minKeywordPercent": 80,
       "maxProxyScore": 450,
-      "note": "Closest fit and the highest of the three. 20% is 3 of 15 keywords (AI, cross-functional, program management). Stakeholder, release, change, risk and dependency management, agile, RAID and ServiceNow are not on the resume, so they stay off the tailored one. The floor is today's result."
+      "note": "Closest fit and the highest of the three. 80% is 12 of 15 keywords. Nine of them (leadership, stakeholder, risk, dependency, release and change management, product delivery, deployment, data analytics) are on the resume under different words, and the owner confirmed on 2026-10-08 that they describe work already on it (inputs/notes/owner-confirmations.md). The general resume says none of them in so many words (7%). The other three, RAID, agile and ServiceNow, the owner has not done, so they stay off every resume (neverClaim). The floor is today's result."
     },
     {
       "id": "bentley-senior-principal-engineer-developer-platform",
@@ -73,9 +79,9 @@
         "iTwin",
         "LI-Hybrid"
       ],
-      "minKeywordPercent": 12,
+      "minKeywordPercent": 20,
       "maxProxyScore": 500,
-      "note": "Stretch role. 12% is 3 of 25 keywords (API, cloud, AI). The resume shows no API gateway, authentication, metering, billing, MCP or API-management tool work, and its last hands-on engineering job ended in 2020. The general resume already says everything the resume supports, so tailoring cannot lift this number; it only changes what leads. The floor is today's result."
+      "note": "Stretch role. 20% is 5 of 25 keywords (API, cloud, AI, plus leadership and analytics, which the posting asks for by name and the owner confirmed). The resume shows no API gateway, authentication, metering, billing, MCP or API-management tool work, and its last hands-on engineering job ended in 2020, so every real requirement stays on the do-not-claim list. The lift is two words, not new experience. The floor is today's result."
     },
     {
       "id": "deloitte-lead-fde-frontier-genai",
@@ -103,9 +109,9 @@
         "Position Summary",
         "Work you'll do"
       ],
-      "minKeywordPercent": 20,
+      "minKeywordPercent": 28,
       "maxProxyScore": 500,
-      "note": "Weakest fit, kept on purpose. The 20% matches JPMC only because 5 of 25 keywords are generic words the resume does say (AI, cloud, Azure, API, agents). Every real requirement is missing: GenAI platform experience, RAG, LLM work, the computer science degree and 7+ years in engineering. Tailoring cannot lift it. The floor is today's result."
+      "note": "Weakest fit, kept on purpose. 28% is 7 of 25 keywords: five generic words the resume does say (AI, cloud, Azure, API, agents) plus leadership and risk management, which the posting asks for by name and the owner confirmed. Every real requirement is missing: GenAI platform experience, RAG, LLM work, the computer science degree and 7+ years in engineering. Analytics is confirmed but left off on purpose: the posting means analytics engineering, which the resume does not show. The floor is today's result."
     }
   ]
 }

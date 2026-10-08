@@ -169,13 +169,32 @@ function coverageHtml(model) {
     ? `<h3>Keywords this resume gained</h3><ul class="chips">${gained.map((item) =>
       `<li class="chip${item.supported ? "" : " chip-warn"}">${esc(item.keyword)} <small>in ${esc(item.where)}${item.supported ? "" : "; please confirm"}</small></li>`).join("")}</ul>`
     : "<p class=\"note\">No keywords were gained; the general resume already covered every keyword this one does.</p>";
-  const missing = asArray(lift.stillMissing).filter((item) => !item.supported);
-  const missingHtml = missing.length
-    ? `<p class="note">Still not on the resume, and I found nothing in your record that backs them, so I left them off: ${missing.map((item) => esc(item.keyword)).join(", ")}.</p>`
-    : "";
+  const still = asArray(lift.stillMissing);
+  const missing = still.filter((item) => !item.supported && !item.possible && !item.declined);
+  const declined = still.filter((item) => item.declined);
+  const confirmedOff = still.filter((item) => item.supported && item.confirmed);
+  const missingHtml =
+    (missing.length
+      ? `<p class="note">Still not on the resume, and I found nothing in your record that backs them, so I left them off: ${missing.map((item) => esc(item.keyword)).join(", ")}.</p>`
+      : "") +
+    (declined.length
+      ? `<p class="note">You told me you have not done these, so they stay off: ${declined.map((item) => esc(item.keyword)).join(", ")}.</p>`
+      : "") +
+    (confirmedOff.length
+      ? `<p class="note">You confirmed these, but this resume does not use them yet: ${confirmedOff.map((item) => esc(item.keyword)).join(", ")}.</p>`
+      : "");
   return `<section class="card hero"><h2>Proof it was tailored</h2>${head}` +
     `<p>${esc(model.liftSentence)}</p>` +
     `<div class="bars">${barHtml(lift.label, lift.baseline, "")}${barHtml("This resume", lift.tailored, "fill-after")}</div>${chips}${missingHtml}</section>`;
+}
+
+function possibleHtml(model) {
+  const items = asArray(model.possibleMatches);
+  if (model.blocked || !items.length) return "";
+  const list = items.map((item) =>
+    `<li><strong>${esc(item.keyword)}</strong><ul class="plain">${asArray(item.matches).map((match) =>
+      `<li>&ldquo;${esc(match.quote)}&rdquo; <span class="note">(evidence <code>${esc(match.evidenceId)}</code>${match.source ? `, from ${esc(match.source)}` : ""})</span></li>`).join("")}</ul></li>`).join("");
+  return `<section class="card"><h2>${esc(model.possibleHeading)}</h2><p>${esc(model.possibleIntro)}</p><ul class="plain">${list}</ul></section>`;
 }
 
 function listCard(title, items, ordered) {
@@ -202,6 +221,7 @@ function renderHtmlTailorReport(model) {
     `<p class="meta">Resume file: ${esc(model.resumeFile || "not made yet")} &middot; Report written: ${esc(model.date)}</p>`,
     `<p>${esc(model.intro)}</p>`,
     model.blocked ? "" : coverageHtml(model),
+    possibleHtml(model),
     `<section class="card"><h2>What changed for this job</h2>${changesHtml(model)}</section>`,
     confirm.length
       ? listCard("Needs your confirmation", confirm.map(esc), true).replace("</section>", '<p class="note">Answer in plain words. I&rsquo;ll record what you tell me before anything is sent.</p></section>')

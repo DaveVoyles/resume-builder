@@ -30,13 +30,13 @@
           "dates": "2025 - Present",
           "bullets": [
             "Run an agentic workflow of personalized agents with A/B testing of local and cloud models, plus a self-improvement loop (167 skills, 57 commands, live evals); operated, never authored.",
-            "Gated routing and tool-call changes with live evals on every request plus CI replay, so the running stack fails closed before a bad change lands.",
+            "Risk management for the running stack: routing and tool-call changes gated by live evals on every request plus CI replay, so it fails closed before a bad change lands.",
             "Authored a portable coding-agent playbook: versioned adapters any git repo can stamp, fail-closed receipted gates, and a machine layer that dispatches isolated agent sessions; personal infrastructure, not a customer product.",
             "Operate a redundant Mac mini network for that agent fleet, Docker containers, and local models: performance testing, cost comparisons, watchdogs, and self-healing scripts."
           ],
           "bulletEvidenceIds": [
             ["ev_resume-inputs-resumes-owner-resume-docx_26f8f2f118"],
-            ["ev_resume-inputs-resumes-owner-resume-docx_47f7ac5bce"],
+            ["ev_resume-inputs-resumes-owner-resume-docx_47f7ac5bce", "ev_notes-inputs-notes-owner-confirmations-md_bef7c955ab"],
             ["ev_resume-inputs-resumes-owner-resume-docx_55a4d407b2"],
             ["ev_resume-inputs-resumes-owner-resume-docx_3d2f9b6ca7"]
           ]
@@ -75,6 +75,7 @@
     }
   ],
   "skills": [
+    ["Leadership", "Led Fast Game Package Publishing and the Xbox 360 catalog modernization"],
     ["AI agents and evals", "Local and cloud models, A/B testing, live evals on every request, CI replay"],
     ["Data pipelines", "Streaming data pipelines and ML models for customers; AI telemetry across 74 Azure DevOps queries"],
     ["Integration", "APIs shared by 8 partner systems, Event Grid, Saga compensating transactions"]
