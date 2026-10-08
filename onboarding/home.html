@@ -418,11 +418,11 @@
   }
 
   function applySetupComplete(complete){
-    var hidden=Boolean(complete);
+    var editLabel="Edit my answers";
     var cb=document.getElementById("continueBtn");
-    if(cb) cb.hidden=hidden;
+    if(cb) cb.textContent=complete?editLabel:"Continue setup →";
     var setupBtn=document.getElementById("jobsGoToSetup");
-    if(setupBtn) setupBtn.hidden=hidden;
+    if(setupBtn) setupBtn.textContent=complete?editLabel:"Go to setup";
   }
 
   function renderNextStep(nextStep){

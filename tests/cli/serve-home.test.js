@@ -667,7 +667,7 @@ test("home.html Jobs tab fetches /api/roles and has no copied bucket logic", () 
   assert.match(homePage, /data-role-count="applied"/);
   assert.match(homePage, /applyRoles/);
   assert.match(homePage, /function applySetupComplete\(/);
-  assert.match(homePage, /setupBtn\.hidden=hidden/);
+  assert.match(homePage, /Edit my answers/);
   assert.doesNotMatch(homePage, /statusBucket/);
   assert.doesNotMatch(homePage, /not-applied/);
 });
@@ -688,8 +688,10 @@ test("GET /api/roles setupComplete is true after answering home questions and ho
     assert.match(homePage, /jobsGoToSetup/);
     assert.match(homePage, /function applySetupComplete\(/);
     assert.match(homePage, /getElementById\("continueBtn"\)/);
-    assert.match(homePage, /cb\.hidden=hidden/);
-    assert.match(homePage, /setupBtn\.hidden=hidden/);
+    const applyFn = homePage.match(/function applySetupComplete\(complete\)\{[\s\S]*?\n  \}/);
+    assert.ok(applyFn, "applySetupComplete must exist");
+    assert.match(applyFn[0], /Edit my answers/);
+    assert.doesNotMatch(applyFn[0], /\.hidden\s*=/);
   } finally {
     server.close();
     cleanup(tmpDir);
@@ -953,7 +955,7 @@ test("home Save nextStep is Setup complete when every step is done", async () =>
   }
 });
 
-test("home.html renders server nextStep and hides Continue setup when complete", () => {
+test("home.html renders server nextStep and relabels Continue setup when complete", () => {
   const homePage = fs.readFileSync(path.join(__dirname, "../../onboarding/home.html"), "utf8");
   assert.match(homePage, /id="savedNextStep"/);
   assert.match(homePage, /function renderNextStep\(/);
@@ -961,7 +963,6 @@ test("home.html renders server nextStep and hides Continue setup when complete",
   assert.doesNotMatch(homePage, /Add a job you want/);
   assert.match(homePage, /id="continueBtn"/);
   assert.match(homePage, /function applySetupComplete\(/);
-  assert.match(homePage, /cb\.hidden=hidden/);
   assert.match(homePage, /id="education"/);
   assert.match(homePage, /id="salary"/);
   assert.match(homePage, /id="educationChoice"/);
@@ -1058,6 +1059,18 @@ test("home.html [hidden] forces display none even on .btn", () => {
   const style = styleMatch[1];
   assert.match(style, /\[hidden\]\s*\{[^}]*display\s*:\s*none\s*!important/);
   assert.match(style, /\.btn\{[^}]*display\s*:\s*inline-block/);
+});
+
+test("home.html applySetupComplete relabels to Edit my answers and does not hide buttons", () => {
+  const homePage = fs.readFileSync(path.join(__dirname, "../../onboarding/home.html"), "utf8");
+  const applyFn = homePage.match(/function applySetupComplete\(complete\)\{[\s\S]*?\n  \}/);
+  assert.ok(applyFn, "applySetupComplete must exist");
+  assert.match(applyFn[0], /textContent=complete\?editLabel:"Continue setup →"/);
+  assert.match(applyFn[0], /textContent=complete\?editLabel:"Go to setup"/);
+  assert.match(applyFn[0], /var editLabel="Edit my answers"/);
+  assert.doesNotMatch(applyFn[0], /\.hidden\s*=/);
+  assert.match(homePage, /cb\.addEventListener\("click",openSetup\)/);
+  assert.match(homePage, /id="jobsGoToSetup"[^>]*data-goto="setup"/);
 });
 
 test("home.html formError is an alert and Save failure focuses it", () => {
@@ -1223,6 +1236,7 @@ test("GET form from agent profile without home-answers POSTs back without changi
     assert.doesNotMatch(saved.body, /Goal is required/);
     const after = snapshotHomeFiles(workspace);
     assertSnapshotsEqual(before, after, ["profile.json", "preferences.json", "roles.tracked.json"]);
+    assert.equal(fs.existsSync(path.join(workspace, HOME_ANSWERS_FILENAME)), false);
   } finally {
     server.close();
     cleanup(tmpDir);

@@ -323,6 +323,19 @@ function keepPreviousHomeField(submitted, previous) {
   return nonempty(submitted) ? trimmed(submitted) : trimmed(previous);
 }
 
+function homeOnlyFieldsEmpty(answers) {
+  return !nonempty(answers && answers.history)
+    && !nonempty(answers && answers.where)
+    && !nonempty(answers && answers.when)
+    && !nonempty(answers && answers.extra);
+}
+
+function submittedMatchesPrefill(answers, prefill) {
+  return Object.keys(emptyHomeFormValues()).every(
+    (key) => trimmed(answers && answers[key]) === trimmed(prefill[key]),
+  );
+}
+
 function readHomeFormPrefill(workspace) {
   const paths = workspacePaths(workspace);
   const profile = readJson(paths.profile, createDefaultProfile());
@@ -381,6 +394,10 @@ function saveHomeAnswers(workspace, answers) {
   const savedAt = new Date().toISOString();
   const preferences = readJson(paths.preferences, emptyPreferences());
   const answersPath = path.join(workspace, HOME_ANSWERS_FILENAME);
+  const homeAnswersExisted = fs.existsSync(answersPath);
+  const prefill = readHomeFormPrefill(workspace);
+  const skipCreateHomeAnswers =
+    !homeAnswersExisted && homeOnlyFieldsEmpty(answers) && submittedMatchesPrefill(answers, prefill);
   const previousAnswers = readJson(answersPath, {});
   const dealBreakersRecord = applyDealBreakers(preferences, answers);
   const compensationRecord = applyCompensation(preferences, answers);
@@ -433,7 +450,9 @@ function saveHomeAnswers(workspace, answers) {
     payload.lastHomeEducationId = educationRecord.lastHomeEducationId;
   }
   profile.updatedAt = savedAt;
-  writeJsonIfMeaningfulChange(answersPath, payload);
+  if (!skipCreateHomeAnswers) {
+    writeJsonIfMeaningfulChange(answersPath, payload);
+  }
   writeJsonIfMeaningfulChange(paths.profile, profile);
 
   const hasTitles =
