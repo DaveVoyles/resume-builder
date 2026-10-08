@@ -67,10 +67,12 @@ function build(extra = {}) {
   });
 }
 
-const SECTIONS = ["## Needs your confirmation", "## What the checks found", "## Job match", "## Fit", "## Open gaps", "## Where the files are"];
+const SECTIONS = ["## What changed for this job", "## Needs your confirmation", "## What the checks found", "## Job match", "## Fit", "## Open gaps", "## Where the files are"];
+
+const CHECKED = { keywordCoverage: { score: 1, covered: [{ keyword: "Python", where: "skills" }], missing: [] }, pageCount: { pages: 1 } };
 
 test("report has the headline and every section, in order", () => {
-  const md = build();
+  const md = build({ role: role(CHECKED) });
   assert.match(md, /^# Resume report: Developer platform product manager at Fabrikam AI/u);
   assert.match(md, /\*\*Status: Ready to review\*\*/u);
   assert.match(md, /Resume file: sample-candidate-fabrikam-ai\.docx/u);
@@ -84,7 +86,7 @@ test("report has the headline and every section, in order", () => {
 });
 
 test("status: ready, needs confirmation, blocked", () => {
-  assert.equal(analyzeTailorReport({ role: role(), config: config(), claimAudit: clean, factAudit: cleanFacts, styleLint: noStyle }).status, STATUS.ready);
+  assert.equal(analyzeTailorReport({ role: role(CHECKED), config: config(), claimAudit: clean, factAudit: cleanFacts, styleLint: noStyle }).status, STATUS.ready);
   const warn = { ...clean, warnings: ['Not tied to specific evidence at summary.text: "40%" matches something in evidence.jsonl, but this line does not say which entry. Add the entry id to evidenceIds'] };
   assert.equal(analyzeTailorReport({ role: role(), config: config(), claimAudit: warn, factAudit: cleanFacts, styleLint: noStyle }).status, STATUS.confirm);
   const bad = { errors: ['Unsupported claim at summary.text: "500%" in "Grew 500%" — no evidence.jsonl entry supports this percentage. Add'], warnings: [], claimsFound: [] };
@@ -147,31 +149,112 @@ test("keyword coverage and page count are read from the role when not passed", (
   });
   const md = build({ role: stored });
   assert.match(md, /covers 1 of 1 keywords \(80%\)/u);
-  assert.match(md, /Page count: 2 pages \(aim for one\)/u);
+  assert.match(md, /Runs over 1 page \(2 pages\): trim the weakest bullets under Senior Platform Program Manager at Contoso Labs|Runs over 1 page \(2 pages\): trim the summary and the longest bullets/u);
   assert.match(md, /The resume runs to 2 pages\./u);
   assert.match(md, /\*\*Status: Needs your confirmation\*\*/u);
 });
 
-test("absent keyword and page data read as not checked yet", () => {
+test("checks that have not run are listed once under Not done yet, with no placeholder lines", () => {
   const md = build();
-  assert.match(md, /## Job match\n\nNot checked yet\./u);
-  assert.match(md, /Page count: not checked yet\./u);
-  assert.match(md, /Length estimate: \d+ out of a 1000 limit/u);
-  assert.match(md, /\*\*Status: Ready to review\*\*/u);
+  assert.match(md, /\*\*Status: Draft made; job match not checked yet\*\*/u);
+  assert.doesNotMatch(md, /Ready to review/u);
+  assert.match(md, /## Not done yet\n\n- Give me the job posting text so I can check how well the resume matches it\./u);
+  assert.match(md, /- Ask me to check the page count/u);
+  assert.doesNotMatch(md, /Not checked yet|not checked yet\./u);
+  assert.doesNotMatch(md, /## Job match|## Fit/u);
 });
 
-test("malformed stored keyword and page data do not throw", () => {
+test("the person-facing report never shows the length proxy or a limit number", () => {
+  for (const extra of [{}, { role: role(CHECKED) }, { role: role({ pageCount: { pages: 3 } }) }]) {
+    const md = build(extra);
+    assert.doesNotMatch(md, /Length estimate|out of a \d+ limit|1000/u);
+  }
+});
+
+test("fit says Fits on 1 page, or Runs over 1 page with what to trim", () => {
+  assert.match(build({ role: role({ pageCount: { pages: 1 } }) }), /## Fit\n\nFits on 1 page\./u);
+  const two = build({ role: role({ pageCount: { pages: 2 } }) });
+  assert.match(two, /## Fit\n\nRuns over 1 page \(2 pages\): trim /u);
+  const cfg = config();
+  cfg.experienceSections[0].jobs[0].bullets = ["One.", "Two.", "Three."];
+  assert.match(build({ config: cfg, role: role({ pageCount: { pages: 2 } }) }), /trim the weakest bullets under Senior Platform Program Manager at Contoso Labs first/u);
+});
+
+test("malformed stored keyword and page data do not throw and read as not done", () => {
   const md = build({ role: role({ keywordCoverage: "oops", pageCount: { pages: "many" } }) });
-  assert.match(md, /Not checked yet/u);
-  assert.match(md, /Page count: not checked yet/u);
+  assert.match(md, /## Not done yet/u);
+  assert.match(md, /Draft made; job match not checked yet/u);
 });
 
 test("single page and no unsupported keywords stays ready", () => {
   const md = build({
     role: role({ keywordCoverage: { score: 1, covered: [{ keyword: "A", where: "summary" }], missing: [{ keyword: "B", supported: true }] }, pageCount: { pages: 1 } }),
   });
-  assert.match(md, /Page count: 1 page\./u);
+  assert.match(md, /Fits on 1 page\./u);
   assert.match(md, /\*\*Status: Ready to review\*\*/u);
+  assert.doesNotMatch(md, /## Not done yet/u);
+});
+
+// --- What changed for this job ---------------------------------------------
+
+function baseAndTailored() {
+  const base = config({
+    summary: { text: "Fictional product leader." },
+    skills: [["Developer platforms", "Platform strategy"]],
+  });
+  base.experienceSections[0].jobs[0].bullets = ["Alpha bullet one.", "Beta bullet two.", "Gamma bullet three."];
+  const tailored = config({
+    summary: { text: "Fictional product leader focused on developer platforms and launches." },
+    skills: [["Developer platforms", "Platform strategy, Internal tooling"]],
+  });
+  tailored.experienceSections[0].jobs[0].bullets = ["Gamma bullet three.", "Alpha bullet one.", "Delta new bullet four."];
+  return { base, tailored };
+}
+
+test("what changed lists summary, bullet and skills edits against the base, at most five lines", () => {
+  const { base, tailored } = baseAndTailored();
+  const md = build({ config: tailored, baseConfig: base });
+  const section = md.split("## What changed for this job")[1].split("## ")[0];
+  const bullets = section.split("\n").filter((l) => l.startsWith("- "));
+  assert.ok(bullets.length >= 3 && bullets.length <= 5, `got ${bullets.length}`);
+  assert.match(section, /Reworded the summary to: "Fictional product leader focused on developer platforms/u);
+  assert.match(section, /Added a bullet under Senior Platform Program Manager at Contoso Labs: "Delta new bullet four"/u);
+  assert.match(section, /Removed a bullet under .*: "Beta bullet two"/u);
+  assert.match(section, /Reordered the bullets under .* so "Gamma bullet three" comes first/u);
+  assert.match(section, /Added to skills: Internal tooling/u);
+  assert.doesNotMatch(section, /nothing to compare/u);
+});
+
+test("what changed says so when the resume matches its base", () => {
+  const { base } = baseAndTailored();
+  const md = build({ config: base, baseConfig: base });
+  assert.match(md, /No wording changes: this resume matches the one it was based on\./u);
+});
+
+test("what changed without a base says there is nothing to compare and lists keywords with where they are used", () => {
+  const md = build({
+    role: role({
+      keywordCoverage: {
+        score: 1,
+        covered: [{ keyword: "roadmap", where: "summary" }, { keyword: "launch", where: "bullet 1 of Senior Platform Program Manager at Contoso Labs" }, { keyword: "Python", where: "skills: Developer platforms" }],
+        missing: [],
+      },
+    }),
+  });
+  assert.match(md, /This is the first resume for this role, so there is nothing to compare yet\./u);
+  assert.match(md, /- roadmap: now in summary/u);
+  assert.match(md, /- launch: now in a bullet/u);
+  assert.match(md, /- Python: now in skills/u);
+});
+
+test("what changed compares the summary with the profile when there is no base config", () => {
+  const md = build({ profile: { summary: "General product leader." } });
+  assert.match(md, /Reworded the summary from the one in your profile to: "Fictional product leader focused on developer platforms"/u);
+});
+
+test("what changed on a blocked report says nothing was made", () => {
+  const bad = { errors: ['Unsupported claim at summary.text: "500%" in "Grew 500%" — no evidence.jsonl entry supports this percentage. Add'], warnings: [], claimsFound: [] };
+  assert.match(build({ claimAudit: bad }), /No resume file was made yet, so there is nothing to compare\./u);
 });
 
 test("style findings name the field and offer a plain fix", () => {
@@ -247,4 +330,21 @@ test("validateRoles accepts a clean reportPath and rejects absolute or .. paths"
     assert.equal(errors.length, 1, `expected an error for ${JSON.stringify(bad)}`);
     assert.match(errors[0], /resume\.reportPath/u);
   }
+});
+
+test("the coverage record stored by tailor is read: plain percent, and where from locations", () => {
+  const stored = role({
+    keywordCoverage: {
+      score: 40,
+      percent: 88,
+      covered: [{ keyword: "scheduling", importance: "required", locations: ["summary", "bullet 2 of Office Manager at Riverside Dental", "skills: Operations"] }],
+      missing: [{ keyword: "healthcare", importance: "required", supported: true, evidenceIds: [] }],
+      checkedAt: GENERATED_AT,
+    },
+    pageCount: { pages: 1 },
+  });
+  const md = build({ role: stored });
+  assert.match(md, /covers 1 of 2 keywords \(88%\)/u);
+  assert.doesNotMatch(md, /\(40%\)/u);
+  assert.match(md, /Covered: scheduling \(summary, bullet, skills\)/u);
 });

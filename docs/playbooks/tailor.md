@@ -247,7 +247,7 @@ The rerun produces a fresh DOCX with the rewritten text. If lint warnings remain
 
 ### Step 3.2b: Open the report with the person
 
-Open `candidate/outputs/tailor-reports/<role-id>.md` with them. Its status is **Ready to review**, **Needs your confirmation**, or **Blocked**. Each item under "Needs your confirmation" is a question. Ask them one at a time, in the report's words. Do not paste the report or its file names at them.
+Open `candidate/outputs/tailor-reports/<role-id>.md` with them. Its status is **Ready to review**, **Draft made; job match not checked yet** (no posting text was given), **Needs your confirmation**, or **Blocked**. Start from "What changed for this job" and "Not done yet" (if present): the latter says what to ask them for. Each item under "Needs your confirmation" is a question. Ask them one at a time, in the report's words. Do not paste the report or its file names at them.
 
 - **Answer is yes (they did it, the number is right):** record it in `evidence.jsonl` as a source-backed entry in their words, tie the line to it with `evidenceIds` or `bulletEvidenceIds`, then re-run `tailor`.
 - **Answer is no, or they are unsure:** reword or remove the line, then re-run `tailor`.

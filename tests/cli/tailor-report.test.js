@@ -89,7 +89,8 @@ test("tailor writes a plain-language report, records its path, and prints one li
     assert.equal(role.resume.reportPath, `outputs/tailor-reports/${role.id}.md`);
     const report = fs.readFileSync(path.join(workspace, role.resume.reportPath), "utf8");
     assert.match(report, /^# Resume report: Developer platform product manager at Fabrikam AI/u);
-    assert.match(report, /\*\*Status: (Ready to review|Needs your confirmation)\*\*/u);
+    assert.match(report, /\*\*Status: (Ready to review|Draft made; job match not checked yet|Needs your confirmation)\*\*/u);
+    assert.match(report, /## What changed for this job/u);
     assert.match(report, /## Where the files are/u);
     assert.ok(log.includes(`Report ready: ${role.resume.reportPath}`), `expected the report line in: ${log.join(" | ")}`);
     assert.ok(!report.includes(workspace), "report must not contain absolute paths");
@@ -130,7 +131,8 @@ test("tailor-report regenerates the report from stored data without re-rendering
     const result = await tailorReport.run({ workspace, id: role.id });
     assert.equal(result.status, "Needs your confirmation");
     const report = fs.readFileSync(path.join(workspace, role.resume.reportPath), "utf8");
-    assert.match(report, /Page count: 2 pages/u);
+    assert.match(report, /Runs over 1 page \(2 pages\): trim /u);
+    assert.doesNotMatch(report, /Length estimate/u);
     assert.match(report, /The posting asks for "Go"/u);
     assert.equal(fs.statSync(docx).mtimeMs, docxBefore, "the resume file must not be touched");
     assert.ok(log.includes(`Report ready: ${role.resume.reportPath}`));
@@ -155,5 +157,38 @@ test("a blocked audit still writes a Blocked report, tracks nothing, and renders
     assert.match(report, /Where does "500%" in bullet 1 under your Senior Platform Program Manager at Contoso Labs job come from\?/u);
     assert.match(report, /I'll reword the line without the number/u);
     assert.ok(log.some((line) => /^Report ready: outputs\/tailor-reports\/.+\.md$/u.test(line)));
+  });
+});
+
+test("tailor compares a config that extends a base and lists the edits", async () => {
+  await withWorkspace(fictionalConfig(), async ({ workspace, paths }) => {
+    const base = fictionalConfig();
+    base.summary = { text: "Fictional product leader." };
+    writeJson(path.join(paths.resumeConfigs, "base.json"), base);
+    const child = {
+      extends: "base.json",
+      company: "Fabrikam AI",
+      outputFileName: "sample-candidate-fabrikam-ai.docx",
+      summary: { text: "Fictional product leader focused on developer platforms and AI-assisted workflows." },
+    };
+    const childPath = path.join(paths.resumeConfigs, "fabrikam-child.json");
+    writeJson(childPath, child);
+    await run(workspace, childPath);
+    const [role] = readJson(paths.rolesTracked);
+    const report = fs.readFileSync(path.join(workspace, role.resume.reportPath), "utf8");
+    const section = report.split("## What changed for this job")[1].split("\n## ")[0];
+    assert.match(section, /- Reworded the summary to: "Fictional product leader focused on developer platforms/u);
+    assert.doesNotMatch(section, /nothing to compare/u);
+  });
+});
+
+test("tailor with no base says there is nothing to compare yet", async () => {
+  await withWorkspace(fictionalConfig(), async ({ workspace, configPath, paths }) => {
+    await run(workspace, configPath);
+    const [role] = readJson(paths.rolesTracked);
+    const report = fs.readFileSync(path.join(workspace, role.resume.reportPath), "utf8");
+    assert.match(report, /This is the first resume for this role, so there is nothing to compare yet\./u);
+    assert.match(report, /## Not done yet/u);
+    assert.match(report, /Give me the job posting text/u);
   });
 });

@@ -10,7 +10,17 @@
       "company": "Lumen Cloud",
       "title": "Customer education specialist",
       "url": "https://jobs.example.invalid/lumen/customer-education-specialist",
-      "keywords": ["workshops", "training", "help guide", "handouts", "feedback", "technical writing", "documentation"],
+      "expectedKeywords": [
+        "customer education",
+        "training",
+        "workshops",
+        "documentation"
+      ],
+      "forbiddenKeywords": [
+        "Lumen",
+        "Lumen Cloud",
+        "cloud"
+      ],
       "minKeywordPercent": 85,
       "maxProxyScore": 250
     }

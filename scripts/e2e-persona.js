@@ -30,7 +30,6 @@ const personasDir = path.join(repoRoot, "examples", "personas");
 const { saveHomeAnswers } = require("../src/core/home-answers");
 const { onboardingSteps, syncOnboardingState } = require("../src/core/onboarding-state");
 const { auditResumeConfig } = require("../src/core/claim-audit");
-const { scoreKeywordCoverage } = require("../src/core/keyword-coverage");
 const { lintConfig } = require("../src/core/style-lint");
 const { validateResumeConfig } = require("../src/core/resume-config");
 const { readJson, readJsonLines, workspacePaths } = require("../src/core/workspace");
@@ -186,7 +185,7 @@ async function runPersona(name, options = {}) {
       const reportRelative = storedRole && storedRole.resume && storedRole.resume.reportPath;
       const reportFile = reportRelative ? path.join(workspace, reportRelative) : "";
       const reportText = reportFile && fs.existsSync(reportFile) ? fs.readFileSync(reportFile, "utf8") : "";
-      expect(stage, "tailor report written with a status line", /\*\*Status: (Ready to review|Needs your confirmation|Blocked)\*\*/u.test(reportText), reportRelative || "no report path on role");
+      expect(stage, "tailor report written with a status line", /\*\*Status: (Ready to review|Draft made; job match not checked yet|Needs your confirmation|Blocked)\*\*/u.test(reportText), reportRelative || "no report path on role");
       expect(stage, "tracker row links the report", Boolean(reportRelative) && /^outputs\/tailor-reports\/[^/]+\.md$/u.test(reportRelative));
 
       const config = readJson(configPath);
@@ -196,13 +195,24 @@ async function runPersona(name, options = {}) {
       const audit = auditResumeConfig(config, readJsonLines(paths.evidence));
       expect(stage, "claim audit passes", audit.errors.length === 0, `${audit.claimsFound.length} numeric claim(s) checked${audit.errors.length ? `: ${audit.errors[0]}` : ""}`);
 
-      const coverage = scoreKeywordCoverage(posting.keywords, config);
+      // One keyword number: the percent stored on the role, the same one the
+      // person sees in the report. expected.json lists keywords the posting
+      // extraction must store (a guard on extraction), not a second scoring list.
+      const storedCoverage = storedRole && storedRole.resume && storedRole.resume.keywordCoverage;
+      const storedPercent = storedCoverage && Number.isFinite(storedCoverage.percent) ? storedCoverage.percent : -1;
+      const storedLower = new Set(storedKeywords.map((keyword) => keyword.toLowerCase()));
+      const unextracted = (posting.expectedKeywords || []).filter((keyword) => !storedLower.has(keyword.toLowerCase()));
+      expect(stage, "posting extraction stores the expected keywords", unextracted.length === 0, unextracted.length ? `not stored: ${unextracted.join(", ")}` : `${(posting.expectedKeywords || []).length} expected keyword(s) stored`);
+      const noisy = (posting.forbiddenKeywords || []).filter((keyword) => storedLower.has(keyword.toLowerCase()));
+      expect(stage, "posting extraction leaves out company names, places and filler", noisy.length === 0, noisy.length ? `stored: ${noisy.join(", ")}` : "no noise keywords stored");
       expect(
         stage,
-        `keyword coverage >= ${posting.minKeywordPercent}%`,
-        coverage.percent >= posting.minKeywordPercent,
-        `${coverage.percent}% (missing: ${coverage.missing.join(", ") || "none"})`,
+        `stored keyword coverage >= ${posting.minKeywordPercent}%`,
+        storedPercent >= posting.minKeywordPercent,
+        `${storedPercent}% (missing: ${storedCoverage ? storedCoverage.missing.map((item) => item.keyword).join(", ") || "none" : "no coverage stored"})`,
       );
+      const reportedPercent = (reportText.match(/covers \d+ of \d+ keywords \((\d+)%\)/u) || [])[1];
+      expect(stage, "report shows the same keyword percent as the stored coverage", Number(reportedPercent) === storedPercent, `report ${reportedPercent || "none"}% vs stored ${storedPercent}%`);
 
       const lint = lintConfig(config, "resume");
       expect(stage, `style-lint warnings <= ${expected.maxStyleWarnings}`, lint.findings.length <= expected.maxStyleWarnings, `${lint.findings.length} warning(s)`);

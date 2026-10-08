@@ -20,12 +20,13 @@ const fs = require("fs");
 const path = require("path");
 const { auditResumeConfig, collectConfigClaimSites } = require("./claim-audit");
 const { auditFacts } = require("./fact-audit");
+const { loadResumeConfig } = require("./resume-config");
 const { lintConfig } = require("./style-lint");
 const { readJson, readJsonLines } = require("./workspace");
 
 const REPORT_DIR = "outputs/tailor-reports";
-const STATUS = { ready: "Ready to review", confirm: "Needs your confirmation", blocked: "Blocked" };
-const MAX_PROXY_SCORE = 1000; // same limit resume-config.js enforces on the length estimate
+const STATUS = { ready: "Ready to review", draft: "Draft made; job match not checked yet", confirm: "Needs your confirmation", blocked: "Blocked" };
+const MAX_CHANGES = 5;
 const LOW_CONFIDENCE = new Set(["low", "medium", "uncertain", "unverified", "inferred"]);
 
 const isText = (value) => typeof value === "string" && value.trim() !== "";
@@ -240,21 +241,34 @@ function keywordName(item) {
   return isText(item) ? item.trim() : item && isText(item.keyword) ? item.keyword.trim() : "";
 }
 
-function describeCoverageLocation(where) {
-  if (isText(where)) return where.trim();
-  if (Array.isArray(where)) return where.filter(isText).join(", ");
-  return "";
+// Stored coverage locations look like "summary", "bullet 2 of <job>", "skills: <row>".
+// The person only needs the kind of place, once each.
+function placeKind(location) {
+  const text = String(location).trim();
+  if (/^summary/iu.test(text)) return "summary";
+  if (/^bullet\s+\d/iu.test(text)) return "bullet";
+  if (/^skills:/iu.test(text)) return "skills";
+  return text;
+}
+
+function coveragePlaces(where) {
+  const list = Array.isArray(where) ? where : [where];
+  return [...new Set(list.filter(isText).map(placeKind))];
 }
 
 function readKeywordCoverage(input) {
   const stored = input.keywordCoverage !== undefined ? input.keywordCoverage : input.role && input.role.resume && input.role.resume.keywordCoverage;
   if (!stored || typeof stored !== "object" || Array.isArray(stored)) return null;
-  const covered = asArray(stored.covered).map((item) => ({ keyword: keywordName(item), where: describeCoverageLocation(item && item.where) })).filter((item) => item.keyword);
+  const covered = asArray(stored.covered)
+    .map((item) => ({ keyword: keywordName(item), places: coveragePlaces(item && (item.where !== undefined ? item.where : item.locations)) }))
+    .filter((item) => item.keyword);
   const missing = asArray(stored.missing)
     .map((item) => ({ keyword: keywordName(item), supported: Boolean(item && typeof item === "object" && item.supported) }))
     .filter((item) => item.keyword);
-  const score = Number(stored.score);
-  const percent = Number.isFinite(score) ? Math.round(score <= 1 ? score * 100 : score) : null;
+  // `percent` is the plain share of keywords found (the number shown everywhere);
+  // `score` is the weighted one, used only when no plain percent was stored.
+  const raw = stored.percent !== undefined ? Number(stored.percent) : Number(stored.score);
+  const percent = Number.isFinite(raw) ? Math.round(raw <= 1 && stored.percent === undefined ? raw * 100 : raw) : null;
   return { percent, covered, missing, checkedAt: isText(stored.checkedAt) ? stored.checkedAt : "" };
 }
 
@@ -264,19 +278,120 @@ function readPageCount(input) {
   return Number.isFinite(pages) && pages > 0 ? { pages, checkedAt: stored && isText(stored.checkedAt) ? stored.checkedAt : "" } : null;
 }
 
-// Same formula as validateShortResume in resume-config.js: summary words +
-// bullet words + 40 per job + 20 per education row.
-function lengthScore(config) {
-  const words = (text) => (isText(text) ? text.split(/\s+/u).filter(Boolean).length : 0);
-  let bullets = 0;
-  let jobs = 0;
+// ---------------------------------------------------------------------------
+// What changed for this job (deterministic comparison with a base config)
+// ---------------------------------------------------------------------------
+
+function snippet(text, words = 8) {
+  const parts = oneLine(text).replace(/[.;,]+$/u, "").split(" ");
+  return parts.length > words ? `${parts.slice(0, words).join(" ")}...` : parts.join(" ");
+}
+
+const normText = (text) => oneLine(text).toLowerCase();
+
+function jobsOf(config) {
+  const jobs = [];
   for (const section of asArray(config && config.experienceSections)) {
-    for (const job of asArray(section && section.jobs)) {
-      jobs += 1;
-      asArray(job && job.bullets).forEach((bullet) => { bullets += words(bullet); });
+    for (const job of asArray(section && section.jobs)) jobs.push(job || {});
+  }
+  return jobs;
+}
+
+const jobKey = (job) => `${normText(job.title)}|${normText(job.company)}`;
+const jobLabel = (job) => [job.title, job.company].filter(isText).join(" at ") || "a job";
+
+function skillItems(config) {
+  const items = new Map();
+  for (const row of asArray(config && config.skills)) {
+    if (!Array.isArray(row)) continue;
+    if (isText(row[0])) items.set(normText(row[0]), oneLine(row[0]));
+    if (isText(row[1])) row[1].split(/[,;]/u).map(oneLine).filter(Boolean).forEach((item) => items.set(normText(item), item));
+  }
+  return items;
+}
+
+function summaryTextOf(config) {
+  return config && config.summary && isText(config.summary.text) ? oneLine(config.summary.text) : "";
+}
+
+function bulletChanges(next, base) {
+  const lines = [];
+  const baseJobs = new Map(jobsOf(base).map((job) => [jobKey(job), job]));
+  for (const job of jobsOf(next)) {
+    const before = baseJobs.get(jobKey(job));
+    const nowBullets = asArray(job.bullets).filter(isText);
+    if (!before) {
+      if (nowBullets.length) lines.push(`Added ${jobLabel(job)} with ${nowBullets.length} ${nowBullets.length === 1 ? "bullet" : "bullets"}.`);
+      continue;
+    }
+    const beforeBullets = asArray(before.bullets).filter(isText);
+    const beforeSet = new Set(beforeBullets.map(normText));
+    const nowSet = new Set(nowBullets.map(normText));
+    const added = nowBullets.filter((b) => !beforeSet.has(normText(b)));
+    const removed = beforeBullets.filter((b) => !nowSet.has(normText(b)));
+    const label = jobLabel(job);
+    if (added.length) lines.push(`Added ${added.length === 1 ? "a bullet" : `${added.length} bullets`} under ${label}: "${snippet(added[0])}".`);
+    if (removed.length) lines.push(`Removed ${removed.length === 1 ? "a bullet" : `${removed.length} bullets`} under ${label}: "${snippet(removed[0])}".`);
+    const keptNow = nowBullets.filter((b) => beforeSet.has(normText(b))).map(normText);
+    const keptBefore = beforeBullets.filter((b) => nowSet.has(normText(b))).map(normText);
+    const firstMoved = keptNow.findIndex((b, i) => b !== keptBefore[i]);
+    if (firstMoved !== -1) {
+      const lead = nowBullets.find((b) => normText(b) === keptNow[firstMoved]);
+      lines.push(`Reordered the bullets under ${label} so "${snippet(lead)}" comes ${firstMoved === 0 ? "first" : "earlier"}.`);
     }
   }
-  return words(config && config.summary && config.summary.text) + bullets + 40 * jobs + 20 * asArray(config && config.education).length;
+  const nowKeys = new Set(jobsOf(next).map(jobKey));
+  for (const job of jobsOf(base)) {
+    if (!nowKeys.has(jobKey(job))) lines.push(`Left out ${jobLabel(job)}.`);
+  }
+  return lines;
+}
+
+function keywordPlaces(coverage) {
+  const label = { summary: "summary", bullet: "a bullet", skills: "skills" };
+  return (coverage ? coverage.covered : []).map((item) => ({
+    keyword: item.keyword,
+    where: item.places.length ? item.places.map((kind) => label[kind] || kind).join(" and ") : "the resume",
+  }));
+}
+
+/**
+ * Plain-language edits of `config` against its base, at most MAX_CHANGES lines.
+ * Returns { hasBase, lines, keywordLines }.
+ */
+function describeChanges(config, baseConfig, profile, coverage) {
+  const keywordLines = keywordPlaces(coverage).slice(0, 8).map((p) => `${p.keyword}: now in ${p.where}`);
+  if (baseConfig && typeof baseConfig === "object") {
+    const lines = [];
+    const before = summaryTextOf(baseConfig);
+    const now = summaryTextOf(config);
+    if (now && !before) lines.push(`Added a summary: "${snippet(now, 14)}".`);
+    else if (now && normText(now) !== normText(before)) lines.push(`Reworded the summary to: "${snippet(now, 14)}".`);
+    else if (!now && before) lines.push("Removed the summary.");
+    lines.push(...bulletChanges(config, baseConfig));
+    const baseSkills = skillItems(baseConfig);
+    const added = [...skillItems(config)].filter(([key]) => !baseSkills.has(key)).map(([, label]) => label);
+    if (added.length) lines.push(`Added to skills: ${added.slice(0, 6).join(", ")}${added.length > 6 ? ", and more" : ""}.`);
+    if (lines.length === 0) lines.push("No wording changes: this resume matches the one it was based on.");
+    return { hasBase: true, lines: lines.slice(0, MAX_CHANGES), keywordLines };
+  }
+  const profileSummary = profile && isText(profile.summary) ? oneLine(profile.summary) : "";
+  const now = summaryTextOf(config);
+  const lines = [];
+  if (profileSummary && now && normText(profileSummary) !== normText(now)) {
+    lines.push(`Reworded the summary from the one in your profile to: "${snippet(now, 14)}".`);
+  }
+  return { hasBase: false, lines, keywordLines };
+}
+
+// Where to cut when the resume runs long: the oldest job with the most bullets.
+function trimSuggestion(config) {
+  let pick = null;
+  jobsOf(config).forEach((job) => {
+    const count = asArray(job.bullets).length;
+    if (count > 1 && (!pick || count >= pick.count)) pick = { job, count };
+  });
+  return pick ? `the weakest bullets under ${jobLabel(pick.job)} first, then the summary` : "the summary and the longest bullets";
 }
 
 // ---------------------------------------------------------------------------
@@ -320,8 +435,13 @@ function analyzeTailorReport(input) {
     });
   }
 
-  const status = problems.length > 0 ? STATUS.blocked : questions.length > 0 ? STATUS.confirm : STATUS.ready;
-  return { config, claimAudit, factAudit, styleLint, problems, questions, notes, coverage, pages, status };
+  const notDone = [];
+  if (!coverage) notDone.push("Give me the job posting text so I can check how well the resume matches it.");
+  if (!pages) notDone.push("Ask me to check the page count so I can tell you whether it fits on one page.");
+
+  const status = problems.length > 0 ? STATUS.blocked : questions.length > 0 ? STATUS.confirm : !coverage ? STATUS.draft : STATUS.ready;
+  const changes = describeChanges(config, input.baseConfig, input.profile, coverage);
+  return { config, claimAudit, factAudit, styleLint, problems, questions, notes, coverage, pages, notDone, changes, status };
 }
 
 const GAP_TYPES = {
@@ -338,7 +458,7 @@ function pathLine(label, value) {
 function buildTailorReport(input) {
   const role = input.role || {};
   const analysis = analyzeTailorReport(input);
-  const { config, problems, questions, notes, coverage, pages, status } = analysis;
+  const { config, problems, questions, notes, coverage, pages, notDone, changes, status } = analysis;
   const title = role.title || role.role || "this role";
   const company = role.company || config.company || "this company";
   const resumeFile = path.basename(String((role.resume && role.resume.outputPath) || "") || "") || "not made yet";
@@ -352,8 +472,25 @@ function buildTailorReport(input) {
     lines.push("", "I stopped before making the resume file, so nothing new was added to your list for this role. Fix the points below and I'll run it again.");
   } else if (status === STATUS.confirm) {
     lines.push("", "The resume is made and nothing has been sent. A few things need a yes or no from you first.");
+  } else if (status === STATUS.draft) {
+    lines.push("", "The resume is made and nothing has been sent. I haven't compared it with the job posting yet, so read it through and tell me any sentence you would not say.");
   } else {
     lines.push("", "The resume is made and nothing has been sent. Read it through and tell me any sentence you would not say.");
+  }
+
+  // What changed for this job
+  lines.push("", "## What changed for this job", "");
+  if (status === STATUS.blocked) {
+    lines.push("No resume file was made yet, so there is nothing to compare.");
+  } else {
+    changes.lines.forEach((line) => lines.push(`- ${line}`));
+    if (!changes.hasBase) {
+      if (changes.lines.length === 0) lines.push("This is the first resume for this role, so there is nothing to compare yet.");
+      if (changes.keywordLines.length > 0) {
+        lines.push("", "Posting keywords the resume now uses, and where:", "");
+        changes.keywordLines.forEach((line) => lines.push(`- ${line}`));
+      }
+    }
   }
 
   // 2) Needs your confirmation
@@ -384,14 +521,12 @@ function buildTailorReport(input) {
   notes.forEach((note) => lines.push(`- Also noted: ${note}`));
 
   // 4) Job match
-  lines.push("", "## Job match", "");
-  if (!coverage) {
-    lines.push("Not checked yet. I haven't compared this resume with the posting's keywords.");
-  } else {
+  if (coverage) {
+    lines.push("", "## Job match", "");
     const total = coverage.covered.length + coverage.missing.length;
     lines.push(`- The resume covers ${coverage.covered.length} of ${total} keywords${coverage.percent === null ? "" : ` (${coverage.percent}%)`}.`);
     if (coverage.covered.length > 0) {
-      lines.push(`- Covered: ${coverage.covered.map((item) => (item.where ? `${item.keyword} (${item.where})` : item.keyword)).join(", ")}.`);
+      lines.push(`- Covered: ${coverage.covered.map((item) => (item.places.length ? `${item.keyword} (${item.places.join(", ")})` : item.keyword)).join(", ")}.`);
     }
     const addable = coverage.missing.filter((item) => item.supported);
     const unsupported = coverage.missing.filter((item) => !item.supported);
@@ -399,10 +534,17 @@ function buildTailorReport(input) {
     lines.push(`- Missing, and I found no proof (don't claim): ${unsupported.length ? unsupported.map((i) => i.keyword).join(", ") : "none"}.`);
   }
 
-  // 5) Fit
-  lines.push("", "## Fit", "");
-  lines.push(pages ? `- Page count: ${pages.pages} ${pages.pages === 1 ? "page" : "pages"}${pages.pages > 1 ? " (aim for one)" : ""}.` : "- Page count: not checked yet.");
-  if (input.config) lines.push(`- Length estimate: ${lengthScore(config)} out of a ${MAX_PROXY_SCORE} limit. This is a rough guide, not a page count.`);
+  // 5) Fit (only when the page count is known; no made-up limit numbers)
+  if (pages) {
+    lines.push("", "## Fit", "");
+    lines.push(pages.pages <= 1 ? "Fits on 1 page." : `Runs over 1 page (${pages.pages} pages): trim ${trimSuggestion(config)}.`);
+  }
+
+  // Checks that have not run
+  if (notDone.length > 0) {
+    lines.push("", "## Not done yet", "");
+    notDone.forEach((line) => lines.push(`- ${line}`));
+  }
 
   // 6) Open gaps
   lines.push("", "## Open gaps", "");
@@ -453,6 +595,26 @@ function readGapReport(workspace, roleId) {
 }
 
 /**
+ * The config this role's resume started from: the `extends` parent when the
+ * config has one, else a `base.json` next to it. Null when there is none.
+ */
+function readBaseConfig(workspace, configRelative) {
+  if (!isText(configRelative)) return null;
+  const root = path.resolve(workspace);
+  const file = path.resolve(root, configRelative);
+  if (!file.startsWith(root + path.sep) || !fs.existsSync(file)) return null;
+  try {
+    const raw = readJson(file);
+    if (raw && isText(raw.extends)) return loadResumeConfig(path.resolve(path.dirname(file), raw.extends));
+    const sibling = path.join(path.dirname(file), "base.json");
+    if (sibling !== file && fs.existsSync(sibling)) return loadResumeConfig(sibling);
+  } catch {
+    // A base that cannot be read just means there is nothing to compare.
+  }
+  return null;
+}
+
+/**
  * Loads stored data for a role and writes its report. `extra` can carry values
  * only the current run has (claimAudit, factAudit, styleLint, blockedErrors,
  * config). Returns { path (workspace-relative), status, markdown }.
@@ -468,6 +630,7 @@ function writeTailorReport(workspace, role, extra = {}) {
   const input = {
     role,
     config,
+    baseConfig: extra.baseConfig !== undefined ? extra.baseConfig : readBaseConfig(workspace, configRelative),
     profile: extra.profile !== undefined ? extra.profile : readJson(paths.profile, null),
     evidence: extra.evidence !== undefined ? extra.evidence : readJsonLines(paths.evidence),
     gapReport: extra.gapReport !== undefined ? extra.gapReport : readGapReport(workspace, role.id),
