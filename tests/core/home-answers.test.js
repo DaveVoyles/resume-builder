@@ -698,3 +698,75 @@ test("readHomeFormPrefill fills agent profile fields when home-answers is missin
   }
 });
 
+test("second Save with a new goal replaces the first roleTargets title", () => {
+  const workspace = tempWorkspace();
+  try {
+    saveHomeAnswers(workspace, { goal: "Product Manager" });
+    saveHomeAnswers(workspace, { goal: "Staff Engineer" });
+    const preferences = JSON.parse(fs.readFileSync(workspacePaths(workspace).preferences, "utf8"));
+    assert.equal(preferences.roleTargets.length, 1);
+    assert.deepEqual(preferences.roleTargets[0].titles, ["Staff Engineer"]);
+    assert.equal(readHomeFormPrefill(workspace).goal, "Staff Engineer");
+    const answers = JSON.parse(fs.readFileSync(path.join(workspace, HOME_ANSWERS_FILENAME), "utf8"));
+    assert.equal(answers.goal, "Staff Engineer");
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("Save goal replaces only the first nonempty title in the first roleTargets row", () => {
+  const workspace = tempWorkspace();
+  try {
+    const row1 = {
+      titles: ["Product Manager", "Program Manager"],
+      seniority: "senior",
+      employmentTypes: ["full-time"],
+      priority: "must",
+    };
+    const row2 = {
+      titles: ["Operations Manager"],
+      seniority: "mid",
+      employmentTypes: ["contract"],
+      priority: "should",
+    };
+    writeAgentPreferences(workspace, {
+      roleTargets: [JSON.parse(JSON.stringify(row1)), JSON.parse(JSON.stringify(row2))],
+    });
+    const prefill = readHomeFormPrefill(workspace);
+    assert.equal(prefill.goal, "Product Manager");
+    saveHomeAnswers(workspace, { ...prefill, goal: "Staff Engineer" });
+    const preferences = JSON.parse(fs.readFileSync(workspacePaths(workspace).preferences, "utf8"));
+    assert.equal(preferences.roleTargets.length, 2);
+    assert.deepEqual(preferences.roleTargets[0].titles, ["Staff Engineer", "Program Manager"]);
+    const row1After = preferences.roleTargets[0];
+    assert.equal(JSON.stringify({ ...row1After, titles: row1.titles }), JSON.stringify(row1));
+    assert.equal(JSON.stringify(preferences.roleTargets[1]), JSON.stringify(row2));
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("blank extra and history Save stores empty strings", () => {
+  const workspace = tempWorkspace();
+  try {
+    saveHomeAnswers(workspace, {
+      goal: "Product Manager",
+      history: "Office Manager, Riverside Dental — 2019 to now",
+      extra: "Open to healthcare operations",
+    });
+    saveHomeAnswers(workspace, {
+      goal: "Product Manager",
+      history: "",
+      extra: "",
+    });
+    const answers = JSON.parse(fs.readFileSync(path.join(workspace, HOME_ANSWERS_FILENAME), "utf8"));
+    assert.equal(answers.history, "");
+    assert.equal(answers.extra, "");
+    const prefill = readHomeFormPrefill(workspace);
+    assert.equal(prefill.history, "");
+    assert.equal(prefill.extra, "");
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+

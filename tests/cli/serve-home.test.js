@@ -1276,4 +1276,57 @@ test("Save with blank name and location keeps saved values in profile and home-a
   }
 });
 
+test("second Save with a new goal replaces the first roleTargets title", async () => {
+  const tmpDir = createHomeRoot();
+  const workspace = path.join(tmpDir, "candidate");
+  const server = await run({ root: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    const first = await post(port, "/api/save-intake", { goal: "Product Manager" });
+    assert.equal(first.status, 200);
+    const form = JSON.parse((await get(port, "/api/onboarding-state")).body).form;
+    form.goal = "Staff Engineer";
+    const second = await post(port, "/api/save-intake", form);
+    assert.equal(second.status, 200);
+    const preferences = JSON.parse(fs.readFileSync(path.join(workspace, "preferences.json"), "utf8"));
+    assert.equal(preferences.roleTargets.length, 1);
+    assert.equal(preferences.roleTargets[0].titles[0], "Staff Engineer");
+    assert.deepEqual(preferences.roleTargets[0].titles, ["Staff Engineer"]);
+    const after = JSON.parse((await get(port, "/api/onboarding-state")).body).form;
+    assert.equal(after.goal, "Staff Engineer");
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
+test("blank extra and history Save clears home-answers and GET form", async () => {
+  const tmpDir = createHomeRoot();
+  const workspace = path.join(tmpDir, "candidate");
+  const server = await run({ root: tmpDir, port: 0, noOpen: true });
+  const port = server.address().port;
+  try {
+    const first = await post(port, "/api/save-intake", {
+      goal: "Product Manager",
+      history: "Office Manager, Riverside Dental — 2019 to now",
+      extra: "Open to healthcare operations",
+    });
+    assert.equal(first.status, 200);
+    const form = JSON.parse((await get(port, "/api/onboarding-state")).body).form;
+    form.history = "";
+    form.extra = "";
+    const second = await post(port, "/api/save-intake", form);
+    assert.equal(second.status, 200);
+    const answers = JSON.parse(fs.readFileSync(path.join(workspace, HOME_ANSWERS_FILENAME), "utf8"));
+    assert.equal(answers.history, "");
+    assert.equal(answers.extra, "");
+    const after = JSON.parse((await get(port, "/api/onboarding-state")).body).form;
+    assert.equal(after.history, "");
+    assert.equal(after.extra, "");
+  } finally {
+    server.close();
+    cleanup(tmpDir);
+  }
+});
+
 

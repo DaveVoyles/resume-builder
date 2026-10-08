@@ -275,6 +275,18 @@ function firstRoleTargetTitle(preferences) {
   return "";
 }
 
+function replaceFirstRoleTargetTitle(preferences, nextTitle) {
+  const targets = Array.isArray(preferences && preferences.roleTargets) ? preferences.roleTargets : [];
+  for (const row of targets) {
+    if (!Array.isArray(row && row.titles)) continue;
+    const index = row.titles.findIndex((title) => nonempty(title));
+    if (index >= 0) {
+      row.titles[index] = nextTitle;
+      return;
+    }
+  }
+}
+
 function dealBreakersPrefill(preferences, answers) {
   if (Array.isArray(preferences && preferences.dealBreakers)) {
     const row = preferences.dealBreakers.find(
@@ -406,14 +418,17 @@ function saveHomeAnswers(workspace, answers) {
   const submittedWhere = trimmed(answers && answers.where);
   const nextHomeModes = WHERE_TO_WORK_MODES[submittedWhere];
   const nextHomeWorkMode = nextHomeModes ? nextHomeModes[0] : "";
+  // Name and location: a blank Save keeps the previous home-answers value.
+  // Where (select): a blank Save keeps previous where and lastHomeWorkMode (#177).
+  // History, when, extra: a blank Save stores "" — the form always sends these keys.
   const payload = {
     name: keepPreviousHomeField(submittedName, previousAnswers.name),
     location: keepPreviousHomeField(submittedLocation, previousAnswers.location),
-    history: keepPreviousHomeField(answers && answers.history, previousAnswers.history),
+    history: trimmed(answers && answers.history),
     goal,
     where: keepPreviousHomeField(submittedWhere, previousAnswers.where),
-    when: keepPreviousHomeField(answers && answers.when, previousAnswers.when),
-    extra: keepPreviousHomeField(answers && answers.extra, previousAnswers.extra),
+    when: trimmed(answers && answers.when),
+    extra: trimmed(answers && answers.extra),
     dealBreakers: dealBreakersRecord.dealBreakers,
     dealBreakersChoice: dealBreakersRecord.dealBreakersChoice,
     education: "",
@@ -455,10 +470,8 @@ function saveHomeAnswers(workspace, answers) {
   }
   writeJsonIfMeaningfulChange(paths.profile, profile);
 
-  const hasTitles =
-    Array.isArray(preferences.roleTargets) &&
-    preferences.roleTargets.some((row) => Array.isArray(row.titles) && row.titles.some(trimmed));
-  if (!hasTitles) {
+  const currentTitle = firstRoleTargetTitle(preferences);
+  if (!currentTitle) {
     preferences.roleTargets = [
       {
         titles: [payload.goal],
@@ -467,6 +480,8 @@ function saveHomeAnswers(workspace, answers) {
         priority: "should",
       },
     ];
+  } else if (goal !== currentTitle) {
+    replaceFirstRoleTargetTitle(preferences, goal);
   }
   if (nextHomeWorkMode) {
     preferences.locations = preferences.locations || emptyPreferences().locations;
