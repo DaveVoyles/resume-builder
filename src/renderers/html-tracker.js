@@ -493,6 +493,8 @@ function renderHtmlTracker(roles, options = {}) {
     font-size: 0.95rem;
     line-height: 1.5;
   }
+  .compact-summary ~ .stats, .compact-summary ~ .funnel, .compact-summary ~ .controls { display: none; }
+  .compact-summary { margin: 0 0 16px; color: #475569; font-size: 15px; }
 </style>
 </head>
 <body>
@@ -506,10 +508,11 @@ function renderHtmlTracker(roles, options = {}) {
   </div>
 
   <div class="dashboard-section" style="display:${showDashboard ? "block" : "none"}">
+  ${total < 3 ? `<p class="compact-summary">${total} ${total === 1 ? "role" : "roles"} so far${readyToApplyCount ? ` · ${readyToApplyCount} with a resume ready` : ""}. The full dashboard appears once you track three or more.</p>` : ""}
   <div class="stats">
     <div class="stat-card"><div class="stat-value">${total}</div><div class="stat-label">📋 Total roles</div></div>
     <div class="stat-card"><div class="stat-value">${counts.applied}</div><div class="stat-label">✅ Applied</div></div>
-    <div class="stat-card"><div class="stat-value">${readyToApplyCount}</div><div class="stat-label">🎯 Ready to apply</div></div>
+    <div class="stat-card"><div class="stat-value">${readyToApplyCount}</div><div class="stat-label">🎯 Resume ready</div></div>
     <div class="stat-card"><div class="stat-value">${notStartedCount}</div><div class="stat-label">⏳ Not started</div></div>
     <div class="stat-card"><div class="stat-value">${counts.rejected}</div><div class="stat-label">❌ Rejected</div></div>
     <div class="stat-card"><div class="stat-value">${appliedFunnelPercent}%</div><div class="stat-label">📈 Applied funnel</div></div>
@@ -532,7 +535,7 @@ function renderHtmlTracker(roles, options = {}) {
     <input type="text" id="search" placeholder="Search company, title, or location...">
     <button data-filter="all" class="active">All</button>
     <button data-filter="not-applied">Not applied</button>
-    <button data-filter="ready-to-apply">Ready to apply</button>
+    <button data-filter="ready-to-apply">Resume ready</button>
     <button data-filter="applied">Applied</button>
     <button data-filter="interview">Interview</button>
     <button data-filter="offer">Offer</button>
@@ -682,7 +685,7 @@ function renderHtmlTracker(roles, options = {}) {
           // stacked reads as two unrelated pieces of information rather
           // than one coherent status (see #120). Only fall back to a
           // label when there's no raw status text to show at all — and
-          // when falling back, prefer "Ready to apply" over the generic
+          // when falling back, prefer "Resume ready" over the generic
           // "Not applied" bucket label for a role that already has a
           // rendered resume (see #121).
           //
@@ -696,7 +699,7 @@ function renderHtmlTracker(roles, options = {}) {
           let badgeClass = role.readyToApply ? "badge-ready-to-apply" : "badge-" + role.statusBucket;
           let label = (role.applied || "").trim();
           if (!label) {
-            label = role.readyToApply ? "Ready to apply" : statusLabels[role.statusBucket] || role.statusBucket;
+            label = role.readyToApply ? "Resume ready" : statusLabels[role.statusBucket] || role.statusBucket;
           }
           return (
             "<tr>" +

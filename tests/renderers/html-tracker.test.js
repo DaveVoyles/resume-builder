@@ -272,7 +272,7 @@ test("html tracker marks a not-applied role with a rendered resume as ready to a
   assert.match(output, /data-filter="ready-to-apply"/);
   // statusBucket stays the stable, canonical "not-applied" — readyToApply is a display-only dimension layered on top.
   assert.match(output, /"statusBucket": "not-applied"/);
-  assert.match(tbody.innerHTML, /<span class="badge badge-ready-to-apply">Ready to apply<\/span>/);
+  assert.match(tbody.innerHTML, /<span class="badge badge-ready-to-apply">Resume ready<\/span>/);
 });
 
 test("html tracker does not mark a not-applied role without a resume as ready to apply", () => {
@@ -327,7 +327,7 @@ test("html tracker badges a ready-to-apply role as 'ready to apply' even when it
   assert.match(tbody.innerHTML, /<span class="badge badge-ready-to-apply">Interested<\/span>/);
 });
 
-test("html tracker's Ready to apply filter button actually filters rows when clicked, not just exists in the markup", () => {
+test("html tracker's Resume ready filter button actually filters rows when clicked, not just exists in the markup", () => {
   const roles = [
     { id: "role-001", company: "Fabrikam AI", title: "PM", resume: { outputPath: "outputs/resumes/a.docx" } },
     { id: "role-002", company: "TechCorp", title: "Engineer", application: { status: "applied", appliedAt: "2026-07-01" } },
@@ -347,7 +347,7 @@ test("html tracker's Ready to apply filter button actually filters rows when cli
   assert.doesNotMatch(tbody.innerHTML, /StartupXYZ/u);
 });
 
-test("html tracker splits the not-applied stat into Ready to apply and Not started, without double-counting", () => {
+test("html tracker splits the not-applied stat into Resume ready and Not started, without double-counting", () => {
   const roles = [
     { id: "role-001", company: "Fabrikam AI", title: "PM", resume: { outputPath: "outputs/resumes/a.docx" } },
     { id: "role-002", company: "TechCorp", title: "Engineer" },
@@ -355,7 +355,7 @@ test("html tracker splits the not-applied stat into Ready to apply and Not start
 
   const output = renderHtmlTracker(roles);
 
-  assert.match(output, /<div class="stat-value">1<\/div><div class="stat-label">🎯 Ready to apply<\/div>/);
+  assert.match(output, /<div class="stat-value">1<\/div><div class="stat-label">🎯 Resume ready<\/div>/);
   assert.match(output, /<div class="stat-value">1<\/div><div class="stat-label">⏳ Not started<\/div>/);
   // The funnel's own "Not Applied" stage is untouched — it still reflects the full, undivided bucket count.
   assert.match(output, /funnel-stage">Not Applied<\/div><div class="funnel-count">2</);
