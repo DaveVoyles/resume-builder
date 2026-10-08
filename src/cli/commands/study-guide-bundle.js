@@ -5,6 +5,7 @@ const path = require("path");
 const { loadResumeConfig } = require("../../core/resume-config");
 const { readStoredPostingText } = require("../../core/role-posting");
 const { readJson, readJsonLines, resolveWorkspace, workspacePaths, ensureDir, writeJson } = require("../../core/workspace");
+const { displayPath } = require("../../core/role-lookup");
 
 /**
  * Find a role in the tracked roles list.
@@ -144,7 +145,7 @@ async function run(options) {
   const bundlePath = path.join(bundleDir, `${role.id}.json`);
   writeJson(bundlePath, bundle);
 
-  console.log(`Created study guide bundle for ${role.company} — ${role.title}: ${bundlePath}`);
+  console.log(`Created study guide bundle for ${role.company} — ${role.title}: ${displayPath(workspace, bundlePath)}`);
   return bundlePath;
 }
 

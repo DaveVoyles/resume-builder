@@ -10,6 +10,7 @@ const { renderSimilarRoles } = require("../../renderers/markdown-similar-roles")
 const { defaultOnboardingState } = require("../../core/onboarding-state");
 const { hasIdentityHeader } = require("../../core/server-config");
 const serve = require("./serve");
+const { displayWorkspace } = require("../../core/role-lookup");
 const {
   ensureDir,
   readJson,
@@ -185,7 +186,7 @@ async function run(options, { serveRunner = serve.run, openInBrowser = serve.ope
   writeTextIfMissing(paths.similarRoles, renderSimilarRoles({ searchBriefs: [], recommendations: [], duplicateCandidates: [] }), force);
   writeTextIfMissing(paths.gitignore, gitignoreText(), force);
 
-  console.log(`Initialized candidate workspace at ${workspace}`);
+  console.log(`Initialized candidate workspace at ${displayWorkspace(workspace)}`);
 
   if (options.noServe) return;
 

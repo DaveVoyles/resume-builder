@@ -8,6 +8,7 @@ const { validateCoverLetterConfig } = require("../../core/cover-letter-config");
 const { auditCoverLetterConfig } = require("../../core/claim-audit");
 const { readJson, readJsonLines, resolveWorkspace, workspacePaths, ensureDir } = require("../../core/workspace");
 const { slug } = require("../../core/ids");
+const { displayPath } = require("../../core/role-lookup");
 
 // Company becomes a literal path segment under outputs/cover-letters/
 // (issue #46: "outputs/cover-letters/<Company>/<file>.docx").
@@ -76,7 +77,7 @@ async function run(options) {
   ensureDir(companyDir);
   fs.writeFileSync(outputPath, buffer);
 
-  console.log(`Rendered cover letter for ${config.company}: ${outputPath}`);
+  console.log(`Rendered cover letter for ${config.company}: ${displayPath(workspace, outputPath)}`);
   return outputPath;
 }
 

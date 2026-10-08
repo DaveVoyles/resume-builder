@@ -8,6 +8,7 @@ const { readJson, resolveWorkspace, workspacePaths, ensureDir } = require("../..
 const { slug } = require("../../core/ids");
 const { loadResumeConfig } = require("../../core/resume-config");
 const { reportPageCount } = require("../../core/page-count");
+const { displayPath } = require("../../core/role-lookup");
 
 // Company and output file name both become literal path segments under
 // outputs/resumes/ (issue #6: "outputs/resumes/<Company>/<file>.docx").
@@ -104,7 +105,7 @@ async function runDetailed(options, deps = {}) {
   ensureDir(companyDir);
   fs.writeFileSync(outputPath, buffer);
 
-  console.log(`Rendered resume for ${config.company}: ${outputPath}`);
+  console.log(`Rendered resume for ${config.company}: ${displayPath(workspace, outputPath)}`);
   const pageCount = options.pageCheck === false || options.noPageCheck ? null : reportPageCount(outputPath, config, deps.pageCount || {});
   return { outputPath, pageCount: pageCount ? pageCount.record : null };
 }
