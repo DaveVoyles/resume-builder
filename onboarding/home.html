@@ -280,7 +280,7 @@
       <div class="card" data-o="6">
         <h2>Your steps</h2>
         <p class="muted">Tags show who does each step: <span class="who agent">Agent</span> or <span class="who you">You</span>.</p>
-        <p class="muted" id="homeStepCount"><strong>2 of 6 steps done</strong></p>
+        <p class="muted" id="homeStepCount"><strong>2 of 6 steps done</strong> RB is installed. Your part starts at step 3.</p>
         <p class="steps-summary" id="stepsSummary" hidden><button type="button" class="linkbtn" id="stepsToggle" aria-expanded="false" aria-controls="stepsList"></button></p>
         <ol class="steps" id="stepsList" data-home-checklist>
           <li data-home-step="downloadRb" class="done"><div><strong>Download RB</strong> <span class="who agent">Agent</span><br><span class="muted">Done. RB is now on your computer.</span></div></li>
@@ -534,7 +534,7 @@
     });
     var done=homeSteps.filter(function(step){return step.done;}).length;
     var count=document.getElementById("homeStepCount");
-    if(count) count.innerHTML="<strong>"+done+" of "+homeSteps.length+" steps done</strong>";
+    if(count) count.innerHTML="<strong>"+done+" of "+homeSteps.length+" steps done</strong>"+(done<=2?" RB is installed. Your part starts at step 3.":"");
     lastHomeSteps=homeSteps;
     collapseDoneSteps();
     updateReady();

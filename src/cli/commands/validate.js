@@ -86,7 +86,9 @@ function run(options) {
   const warnings = [];
 
   [paths.profile, paths.evidence, paths.rolesSeed, paths.rolesTracked, paths.tracker].forEach((file) => assertExists(file, errors, workspace));
-  if (errors.length > 0) throw new Error(errors.join("\n"));
+  if (errors.length > 0) {
+    throw new Error(`${errors.join("\n")}\nNo workspace yet? Run \`npm run setup\` to create your private workspace first.`);
+  }
 
   const profile = readJson(paths.profile);
   const seedRoles = readJson(paths.rolesSeed);
@@ -126,7 +128,12 @@ function run(options) {
 
   warnings.forEach((warning) => console.warn(`Warning: ${warning}`));
 
-  if (errors.length > 0) throw new Error(`Workspace validation failed:\n${errors.join("\n")}`);
+  if (errors.length > 0) {
+    const noWorkspace = errors.some((e) => e.startsWith("Missing required file"))
+      ? "\nNo workspace yet? Run `npm run setup` to create your private workspace first."
+      : "";
+    throw new Error(`Workspace validation failed:\n${errors.join("\n")}${noWorkspace}`);
+  }
   console.log(`Workspace valid: ${displayWorkspace(workspace)}`);
 }
 

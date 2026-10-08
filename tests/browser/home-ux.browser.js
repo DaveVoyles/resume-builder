@@ -108,7 +108,7 @@ test("home-ux: step count text and numbered done steps", async (t) => {
   const { url } = await startHome();
   const page = await newPage(url);
   try {
-    assert.match(await page.textContent("#homeStepCount"), /^2 of 6 steps done$/);
+    assert.match(await page.textContent("#homeStepCount"), /^2 of 6 steps done/);
     const doneContent = await page.evaluate(
       () => getComputedStyle(document.querySelector('[data-home-step="downloadRb"]'), "::before").content,
     );

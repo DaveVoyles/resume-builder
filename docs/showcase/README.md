@@ -1,6 +1,14 @@
 # Showcase: one real resume, three real jobs
 
-This walks the whole path with a real person's real resume (the repo owner's, shared with permission, email scrubbed) and three real job postings saved on 2026-10-08. Every screenshot comes from one run of the tool on `main`. Nothing is applied for at any step: the tool has no way to submit an application.
+This walks the whole path with a real person's real resume (the repo owner's, shared with permission, email scrubbed) and three real job postings saved on 2026-10-08. Every screenshot comes from one run of the tool on `main`. Nothing is applied for at any step: this demo never submits an application.
+
+## How to read this
+
+- **Coverage %** is how many of a posting's keywords appear on the resume. It is a rough check of wording, not a measure of how good a fit you are.
+- **Evidence** is one line of your own record (a resume bullet or a note you wrote), each with an id. The tool may only say what an evidence line backs.
+- **Possible match** is a posting keyword your resume says in other words. The tool shows the closest lines and asks; it never adds the keyword on its own.
+- **Declined keyword** is one you tell the tool you have not done. It stays off every resume, and a test fails if it appears.
+- The tailored resume has the same facts as the original, reordered and reworded for the job. Some bullets only gain the posting's term, and the owner confirmed each one.
 
 You can repeat it yourself:
 
@@ -72,13 +80,17 @@ Each resume comes with a report in plain words. It shows the person's general re
 | Bentley | 3 of 25 (12%) | 5 of 25 (20%) |
 | Deloitte | 5 of 25 (20%) | 7 of 25 (28%) |
 
+**How to read these percentages.** The three jobs have different keyword lists (15, 25 and 25 words), so do not compare one role's percent with another's. Each is only the same job before and after. JPMorgan Chase went from 7% to 20% from tailoring alone, then to 80% after the owner confirmed nine keywords the resume says in other words (step 6) and two more were backed by existing resume lines. Most of the jump is the owner's own confirmation, not a better resume. Bentley and Deloitte stay low for two reasons: their real requirements (API gateway, OAuth, RAG, named model platforms) are not on the resume, and the extracted keyword lists are padded with near-duplicates and brand names such as "Open AI" and "OpenAI".
+
 ![JPMorgan Chase report](images/08-report-jpmc.jpg)
 
 The other two reports: [Bentley](images/09-report-bentley.jpg) and [Deloitte](images/10-report-deloitte.jpg).
 
+The Bentley and Deloitte reports end with a "Needs your confirmation" list: yes/no questions about keywords the resume does not show. In this demo they stay unanswered, so those keywords stay off. Answering "yes" would only be right where the person truly did the work.
+
 ## 6. When the resume says it in other words
 
-This is the step that moved JPMorgan Chase from 20% to 80%.
+This is the step that moved JPMorgan Chase from 20% to 80%. (The first 7% to 20% came from tailoring alone.)
 
 The posting asked for things like release management and dependency management. The resume never uses those words, but it has lines that plausibly show them. The first version of the tool said "no proof" for all of them. Now it shows the closest lines from the person's own record and asks. It never adds anything on its own.
 
@@ -90,7 +102,7 @@ The owner's answer was: all nine, and none of RAID, agile or ServiceNow. That an
 
 ## What is still weak
 
-- **Rewording is light.** Several bullets just add the posting's term ("Led release management for…"). That is honest, because the owner confirmed it, but it reads a little keyword-inserted.
+- **Rewording is light.** Several bullets just add the posting's term. For example, the resume source says "Led Fast Game Package Publishing" and the tailored line says "Led release management for Fast Game Package Publishing". The owner confirmed it, but it relabels the work, so a skeptical reader should check these lines against the original.
 - **The stretch roles barely move.** Bentley and Deloitte gain two keywords each, both from a skills row. The real requirements (API gateway, OAuth, RAG, named model platforms and so on) are not on the resume, so they stay on the do-not-claim list instead of being invented.
 - **Keyword percent is a rough guide.** Deloitte's 28% comes from generic words (AI, cloud, API). It does not mean Deloitte is a closer fit than Bentley.
 - **Possible matches are only as good as the wording.** The first suggestion is usually right. The second and third are sometimes weak.

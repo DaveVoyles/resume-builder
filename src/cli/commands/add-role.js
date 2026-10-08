@@ -74,6 +74,9 @@ function run(options) {
   }
   console.log(`Added ${role.status} role: ${role.company} — ${role.title}`);
   if (note) console.log(note);
+  else if (role.status !== "tracked") {
+    console.log("No posting text saved, so there are no keywords to tailor against yet. Save it with: add-role ... --jd-file <file>");
+  }
   closeJobRequest(workspace, role);
 }
 

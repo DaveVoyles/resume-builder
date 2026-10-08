@@ -42,10 +42,24 @@ function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
 }
 
+// A path safe to print: relative to the current folder when inside it, else just the file name.
+function printableFile(file) {
+  const relative = path.relative(process.cwd(), path.resolve(file));
+  if (relative && !relative.startsWith("..") && !path.isAbsolute(relative)) return relative.split(path.sep).join("/");
+  return path.basename(file);
+}
+
+/** Throws a friendly error when the workspace folder does not exist yet. */
+function requireWorkspace(workspace) {
+  if (!fs.existsSync(workspace)) {
+    throw new Error(`No workspace found at ${printableFile(workspace)}. Run \`npm run setup\` to create your private workspace first.`);
+  }
+}
+
 function readJson(file, fallback) {
   if (!fs.existsSync(file)) {
     if (fallback !== undefined) return fallback;
-    throw new Error(`Missing required JSON file: ${file}`);
+    throw new Error(`Missing required JSON file: ${printableFile(file)}. Run \`npm run setup\` to create your private workspace first.`);
   }
   try {
     return JSON.parse(fs.readFileSync(file, "utf8"));
@@ -105,6 +119,7 @@ module.exports = {
   appendJsonLines,
   ensureDir,
   readJson,
+  requireWorkspace,
   readJsonLines,
   relativeToWorkspace,
   resolveWorkspace,

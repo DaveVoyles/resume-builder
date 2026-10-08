@@ -29,7 +29,7 @@ Snapshot: `postings/bentley-senior-principal-engineer-developer-platform.md`. St
 | Developer platform: API gateway, authentication, metering, billing | Multiplatform entitlement sync between Xbox Live and Battle.net; publisher onboarding automated through Event Grid; Buy Once Play Anywhere licensing |
 | API standards across product teams | Reparent validate and execute API contracts shared by eight partner systems |
 | AI and MCP surfaces as first-class | A running fleet of agents with local and cloud models, 167 skills and 57 commands, live evals |
-| Event streaming and distributed systems | Streaming data pipelines at Microsoft CSE; Saga compensating transactions |
+| Event streaming and distributed systems | Related work only (streaming data pipelines at Microsoft CSE; Saga compensating transactions). The report lists both phrases as "no proof" until the owner confirms them, so the resume does not claim them. |
 
 Not on the resume, so not claimed: 12+ years of recent hands-on production coding (the last hands-on engineering role ended in 2020), MuleSoft, Apigee, Kong, Workato or Backstage, OAuth 2.0 or OIDC work, and usage-based billing pipelines.
 
