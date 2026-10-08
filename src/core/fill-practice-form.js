@@ -35,7 +35,7 @@ function fillPracticeForm(html, profile) {
   return {
     html: fillPracticeHtml(html, result.values),
     missing: result.missing,
-    submitted: result.submitted,
+    submitted: false,
   };
 }
 
