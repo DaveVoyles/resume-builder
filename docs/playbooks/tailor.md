@@ -115,7 +115,7 @@ npm run workspace:tailor -- --workspace candidate \
 **This command, in one pass:**
 
 1. Validates the config against the resume-config schema (rejects it, with an itemized error, if malformed).
-2. Audits every claim in the config against `evidence.jsonl` — the same evidence-backed claim audit `validate` runs — and blocks with a per-claim error if anything is unsupported.
+2. Audits every claim in the config against `evidence.jsonl` — the same evidence-backed claim audit `validate` runs — and blocks with a per-claim error if anything is unsupported. It also runs the fact-consistency audit against `profile.json` and the evidence: employer, title, dates, education, and scope verbs ("led", "owned", "founded", and so on) block; tools not found in the candidate's record only warn (see Step 3.2).
 3. If `--keywords` was passed: prints a keyword-coverage advisory (never blocks — see Step 3.1a).
 4. Runs the [de-AI style lint](../style-lint.md) against the resume text — advisory only, never blocks.
 5. Renders the DOCX to `outputs/resumes/<Company>/<file>.docx`.
@@ -167,6 +167,12 @@ Resume config failed the evidence-backed claim audit:
 ```
 
 Fix the config — either add the missing evidence (if the candidate can confirm it) or rephrase the bullet without the unverified figure — and re-run `tailor`.
+
+The same step also blocks on facts that are not numbers (see [Accuracy and claims](../accuracy-and-claims.md#fact-consistency-audit-employers-titles-dates-scope-tools)):
+
+- **Employer, title, or dates that disagree with `profile.json`.** Use the profile's wording. If the candidate really held another title, add it to that profile entry's `titleAliases`.
+- **A scope verb with no support** ("led", "owned", "managed a team", "founded", "director", "head of", "architected", "built from scratch", "sole"). Ask the candidate whether they did it. If yes, record it in `evidence.jsonl` (and tie the bullet to it with `bulletEvidenceIds`). If not, soften to "contributed to" or "supported".
+- **A tool or technology the profile and evidence never mention** is only a warning. Confirm with the candidate before sending, or drop it.
 
 ### Step 3.2a: Address style-lint findings (de-AI rewrite step)
 

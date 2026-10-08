@@ -57,6 +57,14 @@ function validateProfile(profile) {
   ["experience", "projects", "education"].forEach((field) => {
     checkDuplicateIds(profile[field], `profile.${field}`, errors);
   });
+  if (Array.isArray(profile.experience)) {
+    profile.experience.forEach((row, index) => {
+      const aliases = row && typeof row === "object" ? row.titleAliases : undefined;
+      if (aliases !== undefined && (!Array.isArray(aliases) || !aliases.every((alias) => typeof alias === "string" && alias.trim() !== ""))) {
+        errors.push(`profile.experience[${index}].titleAliases must be an array of non-empty strings`);
+      }
+    });
+  }
   if (profile.educationSkip !== undefined) {
     const skip = profile.educationSkip;
     if (!skip || typeof skip !== "object" || Array.isArray(skip) || typeof skip.skipped !== "boolean") {

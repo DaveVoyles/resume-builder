@@ -9,6 +9,7 @@ const buildTracker = require("./build-tracker");
 const { createRole } = require("../../adapters/job-posting");
 const { validateResumeConfig } = require("../../core/resume-config");
 const { auditResumeConfig } = require("../../core/claim-audit");
+const { auditFacts } = require("../../core/fact-audit");
 const { scoreKeywordCoverage } = require("../../core/keyword-coverage");
 const { lintConfig } = require("../../core/style-lint");
 const { allKeywords, hasPosting, parseKeywordsOption } = require("../../core/role-posting");
@@ -99,6 +100,11 @@ async function run(options) {
   // tracked, not discovered later by a separate `validate` pass.
   const evidence = readJsonLines(paths.evidence);
   const audit = auditResumeConfig(config, evidence);
+  // Fact-consistency audit (src/core/fact-audit.js): employers, titles, dates,
+  // education, scope verbs (blocking) and named tools (advisory).
+  const facts = auditFacts(config, readJson(paths.profile, null), evidence);
+  audit.errors.push(...facts.errors);
+  audit.warnings.push(...facts.warnings);
   if (audit.errors.length > 0) {
     throw new Error(`Resume config failed the evidence-backed claim audit:\n${audit.errors.map((error) => `  - ${error}`).join("\n")}`);
   }

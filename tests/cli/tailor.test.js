@@ -59,7 +59,29 @@ function sourceBackedEntry(id, text) {
   };
 }
 
-function createFixtureWorkspace({ config = fictionalConfig(), evidenceEntries = [], configFileName = "fabrikam-ai.json" } = {}) {
+function fixtureProfile(override) {
+  return {
+    schemaVersion: "1.0",
+    candidate: { id: "test-candidate", preferredName: "Sample Candidate", links: [] },
+    skills: [],
+    experience: [
+      {
+        id: "exp-001",
+        organization: "Contoso Labs",
+        title: "Senior Platform Program Manager",
+        startDate: "2022-04",
+        endDate: null,
+        highlights: [{ text: "Led launch coordination for an internal developer platform." }],
+      },
+    ],
+    projects: [],
+    education: [],
+    sources: [],
+    ...override,
+  };
+}
+
+function createFixtureWorkspace({ config = fictionalConfig(), evidenceEntries = [], configFileName = "fabrikam-ai.json", profile } = {}) {
   const workspace = fs.mkdtempSync(path.join(os.tmpdir(), "tailor-workspace-"));
   const paths = workspacePaths(workspace);
   ensureDir(paths.resumeConfigs);
@@ -69,6 +91,9 @@ function createFixtureWorkspace({ config = fictionalConfig(), evidenceEntries = 
 
   const evidenceText = evidenceEntries.length > 0 ? `${evidenceEntries.map((entry) => JSON.stringify(entry)).join("\n")}\n` : "";
   fs.writeFileSync(paths.evidence, evidenceText);
+
+  // The fact audit compares the config's employer/title/dates with the profile.
+  writeJson(paths.profile, fixtureProfile(profile));
 
   return { workspace, configPath, paths };
 }
@@ -712,5 +737,50 @@ test("tailor does not touch onboarding-state on a second tracked role (already t
     const state = readJson(paths.onboardingState);
     assert.equal(state.firstRoleAdded.done, true, "still true after a second role — never reset");
     assert.equal(typeof state.firstRoleAdded.at, "string");
+  });
+});
+
+test("tailor blocks on an invented employer before rendering or tracking (fact audit)", async () => {
+  const config = fictionalConfig();
+  config.experienceSections[0].jobs[0].company = "Globex Dynamics";
+  await withWorkspace({ config, evidenceEntries: backedEvidence }, async ({ workspace, configPath, paths }) => {
+    await assert.rejects(
+      () => command.run({ workspace, config: configPath, title: "PM" }),
+      (error) => {
+        assert.match(error.message, /Employer not found/);
+        assert.match(error.message, /Globex Dynamics/);
+        return true;
+      },
+    );
+    assert.ok(!fs.existsSync(paths.outputResumes), "no DOCX should be written");
+    assert.deepStrictEqual(readJson(paths.rolesTracked, []), []);
+  });
+});
+
+test("tailor blocks an inflated title and an unsupported scope verb, but only warns about unknown tools", async () => {
+  const inflated = fictionalConfig();
+  inflated.experienceSections[0].jobs[0].title = "Director of Platform Program Management";
+  await withWorkspace({ config: inflated, evidenceEntries: backedEvidence }, async ({ workspace, configPath }) => {
+    await assert.rejects(() => command.run({ workspace, config: configPath, title: "PM" }), /Job title does not match/);
+  });
+
+  const scope = fictionalConfig();
+  scope.experienceSections[0].jobs[0].bullets = ["Founded the platform guild and coordinated launches."];
+  await withWorkspace({ config: scope, evidenceEntries: backedEvidence }, async ({ workspace, configPath }) => {
+    await assert.rejects(() => command.run({ workspace, config: configPath, title: "PM" }), /Unsupported scope claim/);
+  });
+
+  const tools = fictionalConfig();
+  tools.experienceSections[0].jobs[0].bullets = ["Led launch coordination for an internal developer platform, tracked in Jira."];
+  await withWorkspace({ config: tools, evidenceEntries: backedEvidence }, async ({ workspace, configPath }) => {
+    const warnings = [];
+    const original = console.warn;
+    console.warn = (message) => warnings.push(String(message));
+    try {
+      await command.run({ workspace, config: configPath, title: "PM" });
+    } finally {
+      console.warn = original;
+    }
+    assert.ok(warnings.some((message) => /"Jira"/.test(message) && /confirm with the candidate/.test(message)));
   });
 });

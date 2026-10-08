@@ -22,7 +22,10 @@ async function withWorkspace(fn) {
   writeJson(paths.rolesTracked, []);
   writeJson(paths.rolesSeed, []);
   fs.writeFileSync(paths.evidence, "");
-  writeJson(paths.profile, { candidate: { name: "Sample Candidate" } });
+  writeJson(paths.profile, {
+    candidate: { name: "Sample Candidate" },
+    experience: [{ organization: "Fabrikam", title: "PM", startDate: "2020-01", endDate: null, highlights: [{ text: "Led launch coordination for a developer platform." }] }],
+  });
   const jd = path.join(workspace, "jd-input.md");
   fs.writeFileSync(jd, POSTING);
   try {

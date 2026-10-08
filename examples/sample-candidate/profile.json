@@ -43,7 +43,14 @@
       "evidenceIds": ["ev-002"]
     }
   ],
-  "education": [],
+  "education": [
+    {
+      "id": "edu-001",
+      "institution": "Example State University",
+      "degree": "B.S. Fictional Information Systems",
+      "endDate": "2016"
+    }
+  ],
   "sources": [
     {
       "id": "src-001",
