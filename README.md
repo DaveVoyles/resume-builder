@@ -115,7 +115,7 @@ Hard rules, in short:
 
 ```bash
 npm install
-npm start          # practice sample, nothing is kept
+npm start          # practice sample only; nothing is kept
 npm test           # unit and CLI tests
 npm run validate   # schema, claims and privacy checks
 npm run e2e        # persona scorecards (nothing is submitted)
