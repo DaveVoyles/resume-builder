@@ -13,6 +13,15 @@ candidate ("Troy McClure"). Not Dave's real job search.
 resume, three saved job postings, and a step-by-step walk with screenshots. It shows the
 before and after, and what the tool refuses to claim. Nothing is applied for.
 
+## Pick your path
+
+| You are | Start here |
+| --- | --- |
+| **A job seeker** (no coding needed) | [Start here if you are a person](#start-here-if-you-are-a-person). Paste one message to an AI assistant. |
+| **An AI assistant** setting this up for someone | [For agents](#for-agents), then [`AGENTS.md`](AGENTS.md) and [`docs/first-run/FAQ.md`](docs/first-run/FAQ.md) |
+| **A developer** extending or testing the tool | [For developers](#for-developers), then [Testing with personas](docs/testing.md) |
+| **Just looking** | The [live demo](https://DaveVoyles.github.io/resume-builder/), the [tour below](#what-you-get) or the [showcase](docs/showcase/README.md) |
+
 ## What you get
 
 Give it your old resume and a few job postings. For each job you get a one-page resume reworded for that posting, a plain-language report that proves what changed, and a tracker that holds every role. Everything it says about you traces back to your own words, and it never applies for you.
@@ -30,6 +39,7 @@ Give it your old resume and a few job postings. For each job you get a one-page 
 | (nothing extra) | A **tailor report** (HTML for you, Markdown for your agent): your general resume next to the tailored one, a "why" and a source for every edit, what was left out, and the keyword coverage before and after |
 | Yes or no answers | **Possible matches**: keywords your resume says in other words. The tool shows the closest lines and asks. It never adds one on its own. |
 | Keywords you have not done | A **declined list**. Those words stay off every resume and a check fails if one appears. |
+| Roles you are scouting | A `leads.json` of vetted, link-verified roles. You accept or skip each one before it is tracked. |
 | Several jobs | A home page that lists every resume **closest fit first**, plus a searchable tracker with a pipeline funnel and stale-application badges |
 | An interview coming up | A [study-guide bundle](docs/playbooks/study-guide.md) for that role and a [Q&A debrief](docs/playbooks/debrief.md) afterwards |
 
@@ -63,29 +73,55 @@ Then follow docs/first-run/FAQ.md. Ask me questions before you write any claim a
 Do not ask me to run commands.
 ```
 
-Your assistant will open a one-page briefing. It describes a private profile built from your own material, a resume written for one role you approve, a list that can hold several roles, and a brief before an interview. Your files stay on your computer. They are not published with this project.
+Your assistant will open a one-page briefing: a private profile built from your own material, a resume written for one role you approve, a list that can hold several roles, and a brief before an interview.
 
 The page is also here: [docs/first-run/guide.html](docs/first-run/guide.html).
 
-The three-tab home page (Introduction, FAQ, Jobs) opens with `npm run home` at http://localhost:4321. Put your files in `my-documents/`. RB writes drafts in `output/`. Open the tracker from the home page ("Open my tracker") at http://localhost:4321/tracker.html. Rebuild it with `npm run workspace:tracker:html -- --workspace candidate` if it is missing. The file also lives at `candidate/outputs/tracker.html`.
+**What you will see:** the three-tab home page (Introduction, FAQ, Jobs) opens at http://localhost:4321. Your files go in `my-documents/`, drafts appear in `output/`, and "Open my tracker" on the home page opens the tracker. Your files stay on your computer and are not published with this project.
 
 Free and open source, no API key required. See [why it's free](#-why-this-is-free).
 
-## For agents and developers
+## For agents
 
-The person-facing start is the section above. You run the commands. The full script is [`docs/first-run/FAQ.md`](docs/first-run/FAQ.md).
+You operate the CLI. The person decides what is true and when anything is sent. Read these in order:
 
-If you are driving the command line yourself, start with `npm install` and then `npm start`. It runs the whole sample lifecycle in a temporary folder and prints each step. Then run `npm run setup` to create your own private workspace.
+1. [`AGENTS.md`](AGENTS.md): your rules (claims, privacy, communication, merging).
+2. [`docs/first-run/FAQ.md`](docs/first-run/FAQ.md): the script from an empty folder to a resume, a job list and a study guide. Say only what is in [`what-to-say.md`](docs/first-run/what-to-say.md).
+3. [`docs/playbooks/`](docs/playbooks/): one playbook per stage. [`onboarding.md`](docs/playbooks/onboarding.md) tells you which step the person is on.
 
-`npm start` runs a fictional sample (Alex Rivera) through the lifecycle in a temporary folder and then deletes that folder. It is not the first page to show a person. The first page is [`docs/first-run/guide.html`](docs/first-run/guide.html).
+Commands you will use most (run from the repo root; the workspace is `candidate`):
 
-The CLI is built for an assistant to operate, so a person without one is not a supported way to use this. Developers who want to run the commands by hand to test or extend the tool can read the [CLI workflow](docs/cli-workflow.md). The design note is [ADR 0001](docs/decisions/0001-agent-operated-cli.md). Run the practice below only for that, or when the person asks to see an example.
+| Task | Command |
+| --- | --- |
+| Install and open the home page | `npm install`, `npm run home` |
+| Read in their files | `npm run workspace:ingest -- --workspace candidate` |
+| Pending "Add a job" requests | `npm run workspace:job-requests -- --workspace candidate list` |
+| Add a role from a posting | `npm run workspace:add-role -- --workspace candidate ...` |
+| Validate, audit, render, track | `npm run workspace:tailor -- --workspace candidate ...` |
+| Why each edit was made | `npm run workspace:tailor-report -- --workspace candidate ...` |
+| Record "I applied / interview / rejected" | `npm run workspace -- set-status --workspace candidate ...` |
+| Check before handoff or commit | `npm run workspace:validate -- --workspace candidate`, `npm run check:privacy` |
+
+Hard rules, in short:
+
+- **Never submit an application** or pass `--confirm-submit`. Submission is out of scope everywhere, including tests.
+- **Never invent a claim.** Ask first. The evidence ledger is the source of truth, and the render is blocked on an unsupported number.
+- **Do not ask the person to run commands or edit files.** Tell them the result and the real path.
+- **`candidate/` is private.** Never commit it. Only code, docs, templates and fictional examples are committed.
+
+## For developers
+
+`npm install` then `npm start` runs the fictional sample (Alex Rivera) through the whole lifecycle in a temporary folder and deletes it. It is a practice run, not the first page for a person. Then `npm run setup` creates your own private workspace.
 
 ```bash
-# practice sample only; not the first page for a person
 npm install
-npm start
+npm start          # practice sample, nothing is kept
+npm test           # unit and CLI tests
+npm run validate   # schema, claims and privacy checks
+npm run e2e        # persona scorecards (nothing is submitted)
 ```
+
+The CLI is built for an assistant to operate, so running it by hand is for testing and extending the tool. See the [CLI workflow](docs/cli-workflow.md), [ADR 0001](docs/decisions/0001-agent-operated-cli.md) and [Testing with personas](docs/testing.md).
 
 ## 🎓 Study guides that make you sound like you already know the answer
 
@@ -236,20 +272,6 @@ And a real generated DOCX resume, evidence-backed and rendered from the sample w
 <p align="center">
   <img src="docs/images/resume-docx-sample.png" alt="Sample rendered DOCX resume for the fictional candidate Alex Rivera, showing summary, experience, skills, and education sections" width="620">
 </p>
-
-## 🎁 What this creates
-
-- A private candidate workspace.
-- An evidence ledger that ties resume claims back to source material.
-- Evidence-backed, schema-validated **DOCX resumes** tailored per job posting.
-- A **tailor report** per job that shows, line by line, what changed, why, and what backs it.
-- A home page that lists every tailored resume, closest fit first, with its report.
-- A markdown application tracker **and** an interactive HTML tracker.
-- A `leads.json` of vetted, link-verified prospective roles.
-- [Interview study-guide](docs/playbooks/study-guide.md) context bundles for tracked roles.
-- [Q&A debrief](docs/playbooks/debrief.md) feedback for learning from interviews and practice
-  sessions.
-- Follow-up questions and strategy notes when you use an agent.
 
 ## 🔒 Privacy promise
 
