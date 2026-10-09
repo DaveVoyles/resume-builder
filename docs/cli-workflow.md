@@ -7,7 +7,7 @@ npm install
 npm start
 ```
 
-The project is designed for an agent-first workflow. Use the CLI-only workflow when you want a structured, local job-search workspace but plan to do the thinking and writing yourself.
+The project is designed for an agent-first workflow, and an AI assistant is required for normal use. This page is for developers who want to run the commands by hand to test or extend the tool.
 
 ---
 

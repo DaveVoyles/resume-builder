@@ -12,9 +12,9 @@ New here? [`docs/playbooks/onboarding.md`](playbooks/onboarding.md) is the proac
 
 ---
 
-## 🤖 Recommended path: use an agent
+## 🤖 The path: use an AI assistant (required)
 
-Use this path if you want the simplest experience. Ask a terminal agent to download the repo, open the briefing, create your workspace, and interview you before drafting anything.
+This is the supported path, and an AI assistant is required: it interviews you, drafts the resumes and runs the commands, and the CLI only checks and renders what it writes. Ask a terminal agent to download the repo, open the briefing, create your workspace, and interview you before drafting anything.
 
 An agent can help you by following packaged **playbooks** from [`docs/playbooks/`](playbooks/) — vendor-neutral markdown instructions for intake interviews, workspace validation, and resume tailoring. The agent does the semantic work (asking clarifying questions, drafting strategy); the CLI validates the output.
 
@@ -91,9 +91,9 @@ After setup, you should be able to say:
 - 📊 The tracker and similar-role files are generated from structured workspace data.
 - ✅ `npm run check:privacy` passes before you share anything.
 
-## 🧰 If you do not use an agent
+## 🧰 Developers: running the CLI by hand
 
-You can still use the CLI yourself, but it is more hands-on. Start with [CLI workflow](cli-workflow.md) if you prefer to run commands and make resume strategy decisions manually.
+A person without an assistant is not a supported way to use Resume Builder, because nothing else writes the resume. If you are a developer testing or extending the tool, [CLI workflow](cli-workflow.md) shows how to run each command yourself.
 
 ## 📚 Related pages
 

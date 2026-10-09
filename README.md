@@ -48,9 +48,11 @@ Give it your old resume and a few job postings. For each job you get a one-page 
 
 ## Start here if you are a person
 
-You do not need to code. You need a chat assistant that can work on your computer for you. Claude, Grok, or Gemini (Google Antigravity counts) all work. Copilot or ChatGPT also work.
+You do not need to code, but **you do need an AI assistant**. It is required, not optional. The assistant is the one that interviews you, reads your old resumes, drafts each tailored resume, and runs the commands. This program only checks, audits and renders what the assistant writes: it does not call an AI itself, so without an assistant nothing writes your resume.
 
-You talk. The assistant does the computer work. This program does not call an AI and needs no key.
+Any assistant that can work on your computer will do. Claude, Grok, or Gemini (Google Antigravity counts) all work. Copilot or ChatGPT also work. You need no API key for this program.
+
+You talk. The assistant does the computer work.
 
 Paste this to your assistant:
 
@@ -77,7 +79,7 @@ If you are driving the command line yourself, start with `npm install` and then 
 
 `npm start` runs a fictional sample (Alex Rivera) through the lifecycle in a temporary folder and then deletes that folder. It is not the first page to show a person. The first page is [`docs/first-run/guide.html`](docs/first-run/guide.html).
 
-If you are driving the tool yourself, without an assistant, see [CLI workflow](docs/cli-workflow.md). The design note is [ADR 0001](docs/decisions/0001-agent-operated-cli.md). Run the practice below only in that case, or when the person asks to see an example.
+The CLI is built for an assistant to operate, so a person without one is not a supported way to use this. Developers who want to run the commands by hand to test or extend the tool can read the [CLI workflow](docs/cli-workflow.md). The design note is [ADR 0001](docs/decisions/0001-agent-operated-cli.md). Run the practice below only for that, or when the person asks to see an example.
 
 ```bash
 # practice sample only; not the first page for a person
@@ -206,7 +208,8 @@ asks you to defend it. This keeps the search structured and honest:
 - **Nothing leaks by accident.** Real resumes, notes, and application data are private by
   default and gitignored; only reusable code, docs, and a fictional sample are ever committed.
 - **You're not locked into one AI vendor.** Any terminal agent can drive it — GitHub Copilot
-  CLI, Claude, ChatGPT, or none at all. No OpenAI/Anthropic/GitHub API key required.
+  CLI, Claude, ChatGPT, Grok or Gemini. You do need one, but no OpenAI/Anthropic/GitHub API key
+  is required by this program.
 - **Applications stay organized without a spreadsheet.** One command regenerates a markdown
   tracker and an interactive, searchable HTML tracker from structured JSON.
 - **A tailored resume never applies for you.** `tailor` always lands a new role at `interested`
@@ -294,7 +297,7 @@ Every top-level folder has its own README explaining what it holds:
 
 - Node.js 16+ and npm. Node 18+ is recommended. The browser tests (`npm run test:browser`) need Node 20+.
 - Git for cloning the repo and running privacy checks.
-- An AI assistant is optional, but recommended for non-technical users.
+- **An AI assistant (required).** It interviews you, drafts the resumes and runs the commands. Claude, Grok, Gemini, Copilot and ChatGPT all work.
 
 No OpenAI, Anthropic, or GitHub Copilot API key is required by the local CLI.
 
