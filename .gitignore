@@ -57,3 +57,5 @@ outputs/
 /output/*
 !/output/.gitkeep
 !/output/README.txt
+
+.impeccable/config.local.json
