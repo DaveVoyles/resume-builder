@@ -151,4 +151,4 @@ White, rounded, hairline row dividers, uppercase gradient header cells that are 
 
 ## Shared parts
 
-Before hand-writing a button, input, card, modal, tabs, table, toast or similar, run `node ~/REPOS/studio/skills/ui/scripts/ui-find.mjs "<need>"` and reuse a shelf part (and `--ds-*` tokens from `~/REPOS/studio/skills/visual-kit/theme.css`) when one fits. If a part is adopted, record the theme pack and material here. Until then the three renderers' inline styles are the source of truth, and any new page should extract shared tokens rather than copy a fourth stylesheet.
+Before hand-writing a button, input, card, modal, tabs, table, toast or similar, run `node ${SKILLS_ROOT:-$HOME/REPOS/Dvoyles-Skills/skills}/site/ui/scripts/ui-find.mjs "<need>"` and reuse a shelf part (and `--ds-*` tokens from `${SKILLS_ROOT:-$HOME/REPOS/Dvoyles-Skills/skills}/page/visual-kit/theme.css`) when one fits. If a part is adopted, record the theme pack and material here. Until then the three renderers' inline styles are the source of truth, and any new page should extract shared tokens rather than copy a fourth stylesheet.
